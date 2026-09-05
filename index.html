@@ -199,7 +199,17 @@
     .ks1-control .chip, .ks1-control button, .ks1-control input, .ks1-control textarea {
       font-size: 1.05rem; min-height: 48px;
     }
-    #canvas-stage { position: relative; user-select: none; }
+    #canvas-stage {
+      position: relative;
+      user-select: none;
+      /* Stabilize photo area so capture / preview load does not resize the column */
+      height: min(40vh, 320px);
+      min-height: 200px;
+      max-height: 40vh;
+    }
+    @supports (height: 100dvh) {
+      #canvas-stage { height: min(40dvh, 320px); max-height: 40dvh; }
+    }
     .toast {
       position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%);
       background: linear-gradient(90deg, #ff6b9d, #ff8e53); color: #fff;
@@ -290,7 +300,8 @@
         font-size: 0.8rem;
       }
       #canvas-stage {
-        max-height: 40vh;
+        height: min(40dvh, 320px);
+        max-height: 40dvh;
       }
       #step-panel .step-nav {
         display: flex;
@@ -537,13 +548,13 @@
   <!-- Main split -->
   <main class="max-w-7xl mx-auto px-3 sm:px-4 pb-8 no-print">
     <div class="bg-white/95 rounded-b-[22px] shadow-soft border border-t-0 border-va-line overflow-hidden">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-[70vh]">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-[70dvh]">
 
         <!-- Left: Canvas -->
         <section class="border-b lg:border-b-0 lg:border-r border-va-line p-3 sm:p-4 flex flex-col gap-3">
           <div id="source-picker" class="space-y-2"></div>
           <div id="context-hint" class="text-sm bg-va-light text-va-purple rounded-[18px] px-3 py-2 border border-va-line"></div>
-          <div id="canvas-stage" class="relative flex-1 min-h-[200px] sm:min-h-[280px] lg:min-h-[360px] max-h-[40vh] lg:max-h-none rounded-[18px] overflow-hidden bg-[#fff0f6] border-2 border-va-line">
+          <div id="canvas-stage" class="relative flex-1 min-h-[200px] sm:min-h-[280px] lg:min-h-[360px] max-h-[40vh] lg:max-h-none lg:!h-auto rounded-[18px] overflow-hidden bg-[#fff0f6] border-2 border-va-line">
             <!-- artwork injected -->
           </div>
           <p class="text-xs text-va-muted">提示：點擊畫面上的粉紅色大頭針可檢視／編輯註記；點擊空白處可新增大頭針（最多 6 個）。</p>
@@ -1064,8 +1075,17 @@
     }
 
     function renderLiveGalleryIfNeeded() {
-      // Peer picker re-render when on peer tab
-      if (state.source === 'peer') renderSourcePicker();
+      // Peer picker re-render when on peer tab — preserve scroll (iOS jumps on DOM replace)
+      if (state.source !== 'peer') return;
+      const y = window.scrollY || document.documentElement.scrollTop || 0;
+      const vv = window.visualViewport;
+      const offsetTop = vv ? vv.offsetTop : 0;
+      renderSourcePicker();
+      // Restore after images/layout; double-rAF covers iOS keyboard/viewport settle
+      requestAnimationFrame(() => {
+        window.scrollTo(0, y + offsetTop);
+        requestAnimationFrame(() => window.scrollTo(0, y));
+      });
     }
 
     function startGalleryListener(code) {
@@ -1393,7 +1413,7 @@
       } else if (state.source === 'peer') {
         const liveCards = galleryWorks.length
           ? (`<div class="mb-2"><div class="text-xs font-bold text-va-blue mb-1.5">課堂即時作品${gallerySession ? ' · ' + gallerySession : ''}</div>
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">` +
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" style="min-height:${Math.max(120, Math.ceil(galleryWorks.length / 2) * 96)}px">` +
              galleryWorks.map(w => {
                const pid = 'live:' + w.id;
                const label = escapeHtml(w.displayName || '同學');
@@ -1451,7 +1471,9 @@
             const reader = new FileReader();
             reader.onload = () => {
               state.selfImage = reader.result;
+              const y = window.scrollY || 0;
               renderAll();
+              requestAnimationFrame(() => window.scrollTo(0, y));
               save();
               toast('已載入你的作品');
             };
@@ -1542,7 +1564,11 @@
       pop.style.left = left + 'px';
       pop.style.top = top + 'px';
       renderCanvas();
-      document.getElementById('pin-pop-text').focus();
+      const pinTa = document.getElementById('pin-pop-text');
+      // Avoid auto-focus on coarse pointers / narrow viewports (iPhone keyboard jump)
+      const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+      const narrow = Math.min(window.innerWidth, (window.visualViewport && window.visualViewport.width) || window.innerWidth) < 768;
+      if (pinTa && !(coarse || narrow)) pinTa.focus({ preventScroll: true });
     }
 
     function closePinPopover() {
@@ -1813,7 +1839,9 @@
         blank.contentEditable = 'true';
         const existing = blankPlainText(blank);
         blank.textContent = existing ? existing + word : word;
-        blank.focus();
+        if (!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) {
+          blank.focus({ preventScroll: true });
+        }
         persistScaffold();
       } else {
         const ta = document.querySelector('#step-content textarea');
@@ -1821,7 +1849,9 @@
           const start = ta.selectionStart || ta.value.length;
           const end = ta.selectionEnd || ta.value.length;
           ta.value = ta.value.slice(0, start) + word + ta.value.slice(end);
-          ta.focus();
+          if (!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) {
+            ta.focus({ preventScroll: true });
+          }
           ta.selectionStart = ta.selectionEnd = start + word.length;
           persistOpenText();
         } else {
