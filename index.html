@@ -312,13 +312,18 @@
         <div class="flex flex-wrap items-center gap-2">
           <label class="flex items-center gap-1 text-sm text-va-muted">
             <span class="hidden sm:inline">班別</span>
-            <input id="field-class" type="text" placeholder="例如 4A" maxlength="12"
-              class="rounded-full px-3 py-2 text-va-text min-h-touch w-20 sm:w-24 text-sm border border-va-line bg-white" />
+            <input id="field-class" type="text" placeholder="5A" maxlength="12"
+              class="rounded-full px-3 py-2 text-va-text min-h-touch w-16 sm:w-20 text-sm border border-va-line bg-white" />
           </label>
           <label class="flex items-center gap-1 text-sm text-va-muted">
             <span class="hidden sm:inline">姓名</span>
-            <input id="field-name" type="text" placeholder="學生姓名" maxlength="20"
-              class="rounded-full px-3 py-2 text-va-text min-h-touch w-24 sm:w-32 text-sm border border-va-line bg-white" />
+            <input id="field-name" type="text" placeholder="中文姓名" maxlength="20"
+              class="rounded-full px-3 py-2 text-va-text min-h-touch w-24 sm:w-28 text-sm border border-va-line bg-white" />
+          </label>
+          <label class="flex items-center gap-1 text-sm text-va-muted">
+            <span class="hidden sm:inline">學號</span>
+            <input id="field-student-id" type="text" placeholder="20260007" maxlength="16"
+              class="rounded-full px-3 py-2 text-va-text min-h-touch w-24 sm:w-28 text-sm border border-va-line bg-white" />
           </label>
           <button type="button" id="btn-idea-bank" class="btn-pill btn-primary px-4 py-2 text-sm">
             💡 點子庫
@@ -612,6 +617,7 @@
       step: 0,
       className: '',
       studentName: '',
+      studentId: '',
       selfImage: null,
       pins: [],
       activePin: null,
@@ -648,6 +654,7 @@
           step: state.step,
           className: state.className,
           studentName: state.studentName,
+          studentId: state.studentId,
           selfImage: state.selfImage,
           pins: state.pins,
           answers: state.answers,
@@ -679,6 +686,7 @@
           step: typeof p.step === 'number' ? p.step : 0,
           className: p.className || '',
           studentName: p.studentName || '',
+          studentId: p.studentId || '',
           selfImage: p.selfImage || null,
           pins: Array.isArray(p.pins) ? p.pins : [],
           answers: p.answers || {},
@@ -689,8 +697,28 @@
       } catch (e) { /* ignore */ }
     }
 
+    const MASTER_ART_SRC = 'assets/fufeng-fucheng.jpg';
+
+    function masterArtworkHtml(compact) {
+      const thumbCls = compact ? 'w-full h-full object-contain' : 'absolute inset-0 w-full h-full object-contain';
+      const wrapCls = compact
+        ? 'relative w-full h-full bg-[#fff0f6] overflow-hidden'
+        : 'relative w-full h-full bg-[#fff0f6]';
+      // Image hook ready for later download; onerror keeps 示範圖像 SVG visible.
+      return `<div class="${wrapCls}" data-master-art="1">
+  <img id="master-art" src="${MASTER_ART_SRC}" alt="樊楓《俯城之五》" class="${thumbCls} z-[1]"
+    style="object-fit:contain;"
+    onload="this.dataset.loaded='1'; var fb=this.parentElement.querySelector('[data-master-fallback]'); if(fb) fb.style.display='none'; var lb=this.parentElement.querySelector('[data-demo-label]'); if(lb) lb.style.display='none';"
+    onerror="this.style.display='none'; var fb=this.parentElement.querySelector('[data-master-fallback]'); if(fb) fb.style.display=''; var lb=this.parentElement.querySelector('[data-demo-label]'); if(lb) lb.style.display='';" />
+  <div data-master-fallback class="absolute inset-0 w-full h-full">${MASTER_SVG}</div>
+  <div data-demo-label class="absolute top-2 left-2 z-[2] pointer-events-none">
+    <span class="inline-block rounded-full px-2.5 py-1 text-[11px] font-bold text-white" style="background:linear-gradient(90deg,#ff6b9d,#ff8e53);box-shadow:0 2px 0 #ffd36b;">示範圖像／待載入真跡圖</span>
+  </div>
+</div>`;
+    }
+
     function currentArtworkHtml() {
-      if (state.source === 'master') return MASTER_SVG;
+      if (state.source === 'master') return masterArtworkHtml(false);
       if (state.source === 'peer') {
         const peer = PEERS.find(p => p.id === state.selectedPeer) || PEERS[0];
         return peer.svg;
@@ -719,8 +747,8 @@
       const box = document.getElementById('source-picker');
       if (state.source === 'master') {
         box.innerHTML = `<div class="src-card selected p-3 flex gap-3 items-center">
-          <div class="w-16 h-12 rounded bg-slate-200 overflow-hidden shrink-0">${MASTER_SVG.replace('class="w-full h-full"', 'class="w-full h-full" style="pointer-events:none"')}</div>
-          <div><div class="font-bold text-va-blue">樊楓《俯城之五》</div><div class="text-xs text-va-muted">大師名作 · 示範圖像（非真跡）</div></div>
+          <div class="w-16 h-12 rounded bg-slate-200 overflow-hidden shrink-0">${masterArtworkHtml(true).replace('id="master-art"', 'id="master-art-thumb"').replace('class="w-full h-full"', 'class="w-full h-full" style="pointer-events:none"')}</div>
+          <div><div class="font-bold text-va-blue">樊楓《俯城之五》</div><div class="text-xs text-va-muted">大師名作 · 示範圖像（非真跡）· 待放入 assets/fufeng-fucheng.jpg</div></div>
         </div>`;
       } else if (state.source === 'peer') {
         box.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">` + PEERS.map(p => `
@@ -1041,6 +1069,7 @@
       document.getElementById('btn-next').disabled = state.step === STEPS.length - 1;
       document.getElementById('field-class').value = state.className;
       document.getElementById('field-name').value = state.studentName;
+      document.getElementById('field-student-id').value = state.studentId;
       document.getElementById('step-panel').classList.toggle('ks1-control', state.ks === 'ks1');
     }
 
@@ -1054,7 +1083,7 @@
 
     function buildPrintCard() {
       const meta = document.getElementById('print-meta');
-      meta.textContent = `班別：${state.className || '——'}　姓名：${state.studentName || '——'}　階段：${state.ks.toUpperCase()}${state.ks === 'ks2' ? ' · 第' + state.level + '層' : ''}　來源：${{ master: '大師名作館', self: '我的創作歷程', peer: '同儕藝廊' }[state.source]}`;
+      meta.textContent = `班別：${state.className || '——'}　姓名：${state.studentName || '——'}　學號：${state.studentId || '——'}　階段：${state.ks.toUpperCase()}${state.ks === 'ks2' ? ' · 第' + state.level + '層' : ''}　來源：${{ master: '大師名作館', self: '我的創作歷程', peer: '同儕藝廊' }[state.source]}`;
       const art = document.getElementById('print-artwork-wrap');
       art.innerHTML = `<div style="border:1px solid #ccc;border-radius:8px;overflow:hidden;max-height:180px;">${currentArtworkHtml()}</div>`;
       const stepsEl = document.getElementById('print-steps');
@@ -1154,6 +1183,7 @@
     });
     document.getElementById('field-class').addEventListener('input', e => { state.className = e.target.value; save(); });
     document.getElementById('field-name').addEventListener('input', e => { state.studentName = e.target.value; save(); });
+    document.getElementById('field-student-id').addEventListener('input', e => { state.studentId = e.target.value; save(); });
     document.getElementById('btn-idea-bank').addEventListener('click', openIdeaBank);
     document.getElementById('idea-close').addEventListener('click', () => document.getElementById('idea-modal').classList.add('hidden'));
     document.getElementById('idea-close-2').addEventListener('click', () => document.getElementById('idea-modal').classList.add('hidden'));
@@ -1185,6 +1215,7 @@
     load();
     document.getElementById('field-class').value = state.className;
     document.getElementById('field-name').value = state.studentName;
+    document.getElementById('field-student-id').value = state.studentId;
     if (!localStorage.getItem(STORAGE_KEY)) {
       state.pins = [
         { id: 'seed1', scope: 'master:main', x: 42, y: 28, note: '高聳樓群——密度與垂直線' },
