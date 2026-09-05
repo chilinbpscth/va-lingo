@@ -37,12 +37,25 @@ python3 -m http.server 8080
 
 > Student roster on public Pages is for school demo; for production load roster privately / restrict Pages.
 
+
+## Google Workspace 雲端提交（初步）
+
+學校可先用 **Drive + Apps Script** 接收學生評賞（Firebase 可選、稍後再接）。
+
+1. 依 **[DEPLOY-GOOGLE.md](./DEPLOY-GOOGLE.md)** 建立根資料夾、貼上 `apps-script/Code.gs`、部署網頁應用程式
+2. 在網頁按「雲端設定」貼上 `/exec` 網址（存於瀏覽器 localStorage）
+3. 學生選班別／姓名後按「提交到學校雲端」→ Drive 路徑 `班別/學號_姓名/`
+
+本機 localStorage 自動儲存與「匯出評賞歷程卡」仍可離線使用。
+
 ## 檔案
 
-/workspace/va-lingo/index.html
-/workspace/va-lingo/roster.json
-/workspace/va-lingo/README.md
-/workspace/va-lingo/RESTYLE.md
+- `index.html` — 前端（含雲端提交）
+- `roster.json` — 示範名單
+- `apps-script/Code.gs` — Apps Script 提交 API
+- `apps-script/appsscript.json` — 專案資訊清單
+- `DEPLOY-GOOGLE.md` — IT／老師部署步驟（zh-HK）
+- `README.md` / `RESTYLE.md`
 
 ## 建議演示
 

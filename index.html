@@ -207,8 +207,11 @@
       z-index: 100; opacity: 0; transition: opacity .25s; pointer-events: none;
       box-shadow: 0 3px 0 #ffd36b, var(--shadow);
       font-weight: 700;
+      max-width: min(92vw, 28rem); text-align: center; line-height: 1.35;
     }
     .toast.show { opacity: 1; }
+    .toast.show.toast-interactive { pointer-events: auto; border-radius: 1rem; }
+    .toast a { color: #fff; text-decoration: underline; font-weight: 800; }
     .modal-backdrop {
       position: fixed; inset: 0; background: rgba(59,42,85,.45); z-index: 80;
       display: flex; align-items: center; justify-content: center; padding: 1rem;
@@ -404,7 +407,7 @@
         <div class="flex items-center gap-3 min-w-0">
           <div class="w-11 h-11 rounded-full logo-badge flex items-center justify-center font-bold shrink-0 text-lg comic">藝</div>
           <div class="min-w-0">
-            <h1 class="text-xl sm:text-2xl font-bold leading-tight truncate title-bubble">VA-Lingo 藝言堂</h1>
+            <h1 id="app-title" class="text-xl sm:text-2xl font-bold leading-tight truncate title-bubble select-none" title="長按可開啟雲端設定">VA-Lingo 藝言堂</h1>
             <p class="text-xs sm:text-sm text-va-muted truncate">單元：觀我香港：熱鬧的香港</p>
           </div>
         </div>
@@ -434,6 +437,12 @@
           </button>
           <button type="button" id="btn-export" class="btn-pill btn-ghost px-4 py-2 text-sm">
             匯出評賞歷程卡
+          </button>
+          <button type="button" id="btn-cloud-submit" class="btn-pill btn-primary px-4 py-2 text-sm" title="需先設定學校 Apps Script 網址">
+            提交到學校雲端
+          </button>
+          <button type="button" id="btn-cloud-settings" class="btn-pill btn-ghost px-3 py-2 text-xs text-va-muted" title="IT：貼上 Apps Script /exec 網址">
+            雲端設定
           </button>
         </div>
       </div>
@@ -541,6 +550,22 @@
       <button type="button" id="pin-pop-save" class="flex-1 btn-pill btn-primary py-2 text-sm">儲存</button>
       <button type="button" id="pin-pop-del" class="btn-pill btn-ghost px-3 py-2 text-sm text-red-600">刪除</button>
       <button type="button" id="pin-pop-close" class="btn-pill btn-ghost px-3 py-2 text-sm">關閉</button>
+    </div>
+  </div>
+
+  <!-- Cloud submit URL settings (IT) -->
+  <div id="cloud-modal" class="modal-backdrop hidden no-print" role="dialog" aria-modal="true" aria-labelledby="cloud-modal-title">
+    <div class="bg-white rounded-2xl shadow-lg max-w-md w-full p-5 border border-va-line">
+      <h2 id="cloud-modal-title" class="text-lg font-bold text-va-blue mb-2">雲端設定（IT）</h2>
+      <p class="text-sm text-va-muted mb-3">貼上 Google Apps Script 網頁應用程式 <code class="text-xs">/exec</code> 網址。詳見 <span class="font-semibold">DEPLOY-GOOGLE.md</span>。</p>
+      <label class="block text-sm font-semibold text-va-muted mb-1" for="cloud-url-input">SUBMIT_URL</label>
+      <input id="cloud-url-input" type="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec"
+        class="w-full rounded-xl border border-va-line px-3 py-2 text-sm mb-3" />
+      <div class="flex flex-wrap gap-2 justify-end">
+        <button type="button" id="cloud-url-clear" class="btn-pill btn-ghost px-3 py-2 text-sm">清除</button>
+        <button type="button" id="cloud-modal-close" class="btn-pill btn-ghost px-3 py-2 text-sm">取消</button>
+        <button type="button" id="cloud-url-save" class="btn-pill btn-primary px-4 py-2 text-sm">儲存</button>
+      </div>
     </div>
   </div>
 
@@ -835,6 +860,11 @@
     }
 
     const STORAGE_KEY = 'va-lingo-phase1-v1';
+    const SUBMIT_URL_KEY = 'vaSubmitUrl';
+    /** 學校 Apps Script /exec；由「雲端設定」寫入 localStorage，勿把密鑰寫死在程式 */
+    let SUBMIT_URL = (localStorage.getItem(SUBMIT_URL_KEY) || '').trim();
+    const UNIT_TITLE = '觀我香港：熱鬧的香港';
+
 
     const state = {
       ks: 'ks2',
@@ -864,12 +894,22 @@
       return [state.ks, state.source, state.source === 'peer' ? state.selectedPeer : 'main', stepKey(), extra || ''].filter(Boolean).join('|');
     }
 
-    function toast(msg) {
+    function toast(msg, opts) {
       const el = document.getElementById('toast');
-      el.textContent = msg;
+      const o = opts || {};
+      el.classList.remove('toast-interactive');
+      if (o.html) {
+        el.innerHTML = msg;
+        el.classList.add('toast-interactive');
+      } else {
+        el.textContent = msg;
+      }
       el.classList.add('show');
       clearTimeout(toast._t);
-      toast._t = setTimeout(() => el.classList.remove('show'), 2200);
+      const ms = o.duration != null ? o.duration : (o.html ? 6000 : 2200);
+      toast._t = setTimeout(() => {
+        el.classList.remove('show', 'toast-interactive');
+      }, ms);
     }
 
     function save() {
@@ -1621,6 +1661,190 @@
       });
     }
 
+    // ----- Google Workspace 雲端提交 -----
+    function refreshSubmitButton() {
+      const btn = document.getElementById('btn-cloud-submit');
+      if (!btn) return;
+      const ready = !!SUBMIT_URL;
+      btn.disabled = !ready;
+      btn.title = ready
+        ? '把評賞歷程提交到學校 Drive'
+        : '尚未設定 SUBMIT_URL — 請先按「雲端設定」貼上 /exec 網址';
+      btn.style.opacity = ready ? '' : '0.55';
+    }
+
+    function openCloudSettings() {
+      const modal = document.getElementById('cloud-modal');
+      const input = document.getElementById('cloud-url-input');
+      if (input) input.value = SUBMIT_URL || '';
+      modal.classList.remove('hidden');
+      if (input) setTimeout(() => input.focus(), 50);
+    }
+
+    function closeCloudSettings() {
+      document.getElementById('cloud-modal').classList.add('hidden');
+    }
+
+    function saveCloudUrl() {
+      const input = document.getElementById('cloud-url-input');
+      let url = (input && input.value || '').trim();
+      if (url && !/^https:\/\//i.test(url)) {
+        toast('請使用 https:// 開頭的 /exec 網址');
+        return;
+      }
+      SUBMIT_URL = url;
+      if (url) localStorage.setItem(SUBMIT_URL_KEY, url);
+      else localStorage.removeItem(SUBMIT_URL_KEY);
+      refreshSubmitButton();
+      closeCloudSettings();
+      toast(url ? '雲端網址已儲存' : '已清除雲端網址');
+    }
+
+    /** 把 data URL 壓成 JPEG（最大寬 1600、quality 0.7）；失敗則回傳原文 */
+    function compressDataUrl(dataUrl, maxW, quality) {
+      return new Promise((resolve) => {
+        if (!dataUrl || typeof dataUrl !== 'string' || dataUrl.indexOf('data:') !== 0) {
+          resolve(null);
+          return;
+        }
+        const img = new Image();
+        img.onload = () => {
+          try {
+            let w = img.naturalWidth || img.width;
+            let h = img.naturalHeight || img.height;
+            if (!w || !h) { resolve(dataUrl); return; }
+            const limit = maxW || 1600;
+            if (w > limit) {
+              h = Math.round(h * (limit / w));
+              w = limit;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', quality != null ? quality : 0.7));
+          } catch (e) {
+            resolve(dataUrl);
+          }
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+
+    /** 彙整五步評賞文字（給 submission.json 的 steps） */
+    function buildStepsPayload() {
+      const prevStep = state.step;
+      const out = {};
+      STEPS.forEach((st, i) => {
+        state.step = i;
+        const useScaffold = state.ks === 'ks1' || state.level === 1;
+        const entry = { id: st.id, title: st.title };
+        if (state.ks === 'ks1' && i === 0) {
+          entry.mood = state.moods[answerKey('mood')] || '';
+        }
+        if (useScaffold) {
+          entry.scaffold = (state.answers[answerKey('scaffold')] || []).slice();
+          entry.text = entry.scaffold.filter(Boolean).join('／');
+        } else {
+          entry.open = state.answers[answerKey('open')] || '';
+          entry.text = entry.open;
+          entry.rubric = state.rubrics[answerKey('rubric')] || {};
+        }
+        out[st.id] = entry;
+      });
+      state.step = prevStep;
+      return out;
+    }
+
+    async function submitToCloud() {
+      if (!SUBMIT_URL) {
+        toast('請先在「雲端設定」貼上學校 /exec 網址');
+        openCloudSettings();
+        return;
+      }
+      if (!state.className) {
+        toast('請先選擇班別');
+        return;
+      }
+      if (!state.studentId && !state.studentName) {
+        toast('請先選擇學生');
+        return;
+      }
+
+      const btn = document.getElementById('btn-cloud-submit');
+      if (btn) { btn.disabled = true; btn.textContent = '提交中…'; }
+
+      try {
+        let imageBase64 = null;
+        let imageMime = null;
+        if (state.selfImage) {
+          const compressed = await compressDataUrl(state.selfImage, 1600, 0.7);
+          imageBase64 = compressed || state.selfImage;
+          imageMime = 'image/jpeg';
+        }
+
+        const payload = {
+          action: 'submit',
+          className: state.className,
+          studentName: state.studentName,
+          studentId: state.studentId,
+          ks: state.ks,
+          level: state.level,
+          source: state.source,
+          unit: UNIT_TITLE,
+          steps: buildStepsPayload(),
+          pins: state.pins,
+          answers: state.answers,
+          moods: state.moods,
+          rubrics: state.rubrics
+        };
+        if (imageBase64) {
+          payload.imageBase64 = imageBase64;
+          payload.imageMime = imageMime;
+        }
+
+        // 勿加自訂 Authorization 等標頭，以免 Apps Script CORS 失敗
+        const res = await fetch(SUBMIT_URL, {
+          method: 'POST',
+          // text/plain 可避過部分 preflight；Apps Script 仍可 JSON.parse
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+
+        const text = await res.text();
+        let data = null;
+        try { data = JSON.parse(text); } catch (e) { /* ignore */ }
+
+        if (!res.ok && !data) {
+          throw new Error('伺服器回應 ' + res.status);
+        }
+        if (!data || !data.ok) {
+          throw new Error((data && data.error) || '提交失敗');
+        }
+
+        save(); // 本機仍保留
+        const link = data.folderUrl || data.fileUrl || '';
+        if (link) {
+          toast(
+            '已提交到學校雲端！ <a href="' + link.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener">開啟資料夾</a>',
+            { html: true, duration: 8000 }
+          );
+        } else {
+          toast('已提交到學校雲端！', { duration: 4000 });
+        }
+        if (data.warning) toast(data.warning, { duration: 5000 });
+      } catch (err) {
+        toast('提交失敗：' + (err && err.message ? err.message : String(err)), { duration: 4500 });
+      } finally {
+        if (btn) {
+          btn.textContent = '提交到學校雲端';
+          refreshSubmitButton();
+        }
+      }
+    }
+
     // Events
     document.querySelectorAll('.ks-toggle').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1677,6 +1901,38 @@
       buildPrintCard();
       window.print();
     });
+    document.getElementById('btn-cloud-submit').addEventListener('click', () => {
+      submitToCloud();
+    });
+    document.getElementById('btn-cloud-settings').addEventListener('click', openCloudSettings);
+    document.getElementById('cloud-modal-close').addEventListener('click', closeCloudSettings);
+    document.getElementById('cloud-url-save').addEventListener('click', saveCloudUrl);
+    document.getElementById('cloud-url-clear').addEventListener('click', () => {
+      const input = document.getElementById('cloud-url-input');
+      if (input) input.value = '';
+      SUBMIT_URL = '';
+      localStorage.removeItem(SUBMIT_URL_KEY);
+      refreshSubmitButton();
+      toast('已清除雲端網址');
+    });
+    document.getElementById('cloud-modal').addEventListener('click', e => {
+      if (e.target.id === 'cloud-modal') closeCloudSettings();
+    });
+    // 長按標題 → 雲端設定（方便 iPad IT）
+    (function bindTitleLongPress() {
+      const title = document.getElementById('app-title');
+      if (!title) return;
+      let timer = null;
+      const start = (e) => {
+        timer = setTimeout(() => { timer = null; openCloudSettings(); }, 800);
+      };
+      const clear = () => { if (timer) { clearTimeout(timer); timer = null; } };
+      title.addEventListener('pointerdown', start);
+      title.addEventListener('pointerup', clear);
+      title.addEventListener('pointerleave', clear);
+      title.addEventListener('pointercancel', clear);
+    })();
+    refreshSubmitButton();
     document.getElementById('pin-pop-save').addEventListener('click', () => {
       if (!popoverPin) return;
       popoverPin.note = document.getElementById('pin-pop-text').value.trim();
