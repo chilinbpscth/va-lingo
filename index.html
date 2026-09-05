@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-HK" data-app="va-lingo">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -21,38 +21,62 @@
               purple: '#134e4a',
               soft: '#fffaf3',
               text: '#2c2420',
+              ink: '#2c2420',
               line: '#e8d9c8',
               bg: '#f7efe2',
+              panel: '#fffaf3',
               ok: '#0f766e',
+              danger: '#dc2626',
+              focus: '#193826',
               cinnabar: '#b91c1c'
             }
           },
           minHeight: { touch: '44px' },
           minWidth: { touch: '44px' },
-          borderRadius: { card: '22px' },
-          boxShadow: { soft: '0 12px 28px rgba(15, 118, 110, .12)' }
+          borderRadius: { card: '22px', pill: '999px' },
+          boxShadow: { soft: '0 8px 24px rgba(44, 36, 32, 0.06)' },
+          fontFamily: { sans: ['"Noto Sans TC"', '"PingFang HK"', '"Helvetica Neue"', 'sans-serif'] }
         }
       }
     };
   </script>
   <style>
     :root {
-      --accent: #0f766e;
-      --accent-dark: #0f766e;
-      --cinnabar: #b91c1c;
-      --purple: #134e4a;
-      --soft: #fffaf3;
-      --text: #2c2420;
+      --bg: #f7efe2;
+      --bg-warm: #fffaf3;
+      --panel: #fffaf3;
+      --panel-soft: #efe4d4;
+      --ink: #2c2420;
       --muted: #6b5e55;
       --line: #e8d9c8;
-      --bg: #f7efe2;
-      --paper: #fffaf3;
-      --radius: 22px;
-      --shadow: 0 12px 28px rgba(15, 118, 110, .12);
       --ok: #0f766e;
-      --va-blue: #0f766e;
-      --va-gold: #0f766e;
+      --danger: #dc2626;
+      --focus: #193826;
+      --radius: 14px;
+      --radius-pill: 999px;
+      --shadow: 0 8px 24px rgba(44, 36, 32, 0.06);
+      --font: "Noto Sans TC", "PingFang HK", "Helvetica Neue", sans-serif;
+      --accent: #0f766e;
+      --accent-2: #b91c1c;
+      --on-accent: #ffffff;
+      /* backward-compatible aliases for existing rules */
+      --accent-dark: var(--accent);
+      --cinnabar: var(--accent-2);
+      --purple: #134e4a;
+      --soft: var(--panel);
+      --text: var(--ink);
+      --paper: var(--bg-warm);
+      --va-blue: var(--accent);
+      --va-gold: var(--accent);
       --app-header-h: 72px;
+    }
+    [data-app="va-lingo"] {
+      --accent: #0f766e;
+      --accent-2: #b91c1c;
+    }
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
     }
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
     .comic {
@@ -61,8 +85,8 @@
       letter-spacing: 0.01em;
     }
     body {
-      font-family: "Noto Sans TC", "PingFang HK", "Hiragino Sans GB", "Microsoft JhengHei", system-ui, sans-serif;
-      color: var(--text);
+      font-family: var(--font);
+      color: var(--ink);
       background-color: var(--bg);
       letter-spacing: 0;
     }
@@ -81,19 +105,19 @@
     .scene-bg svg { position: absolute; width: 100%; height: 100%; }
     .app-shell { position: relative; z-index: 1; }
     .card-surface {
-      background: #fff;
+      background: var(--panel);
       border: 1.5px solid var(--line);
-      border-radius: var(--radius);
+      border-radius: 22px;
       box-shadow: var(--shadow);
     }
     .btn-pill {
-      border-radius: 999px !important;
+      border-radius: var(--radius-pill) !important;
       min-height: 44px;
       font-weight: 700;
     }
     .btn-primary {
-      background: #0f766e;
-      color: #fff !important;
+      background: var(--accent);
+      color: var(--on-accent) !important;
       box-shadow: 0 3px 0 #c4b5a0;
       border: 0 !important;
     }
@@ -107,17 +131,17 @@
     }
     .pin {
       width: 28px; height: 28px; border-radius: 50% 50% 50% 0;
-      background: #0f766e; color: #fff; font-size: 12px; font-weight: 700;
+      background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
       transform: rotate(-45deg); cursor: pointer; border: 2px solid #fff;
       box-shadow: 0 2px 6px rgba(15,118,110,.35); z-index: 10;
       min-width: 28px; min-height: 28px;
     }
     .pin span { transform: rotate(45deg); }
-    .pin:hover, .pin.active { background: #b91c1c; transform: rotate(-45deg) scale(1.15); }
+    .pin:hover, .pin.active { background: var(--accent-2); transform: rotate(-45deg) scale(1.15); }
     .chip {
-      min-height: 44px; padding: 0.5rem 0.95rem; border-radius: 9999px;
-      border: 1.5px solid var(--line); background: #f7efe2; color: var(--text);
+      min-height: 44px; padding: 0.5rem 0.95rem; border-radius: var(--radius-pill);
+      border: 1.5px solid var(--line); background: var(--bg); color: var(--ink);
       font-size: 0.875rem; cursor: grab; transition: all .15s; white-space: nowrap;
       box-shadow: 0 2px 0 #e8d9c8;
       touch-action: none; user-select: none; -webkit-user-select: none;
@@ -129,8 +153,8 @@
     .chip.used { opacity: .55; border-style: dashed; box-shadow: none; cursor: grab; }
     .chip.dragging { opacity: .35; }
     .chip.selected, .chip.on {
-      background: #0f766e;
-      color: #fff; border-color: transparent; box-shadow: 0 3px 0 #c4b5a0;
+      background: var(--accent);
+      color: var(--on-accent); border-color: transparent; box-shadow: 0 3px 0 #c4b5a0;
     }
     .chip-ghost {
       position: fixed; z-index: 250; pointer-events: none;
@@ -154,15 +178,15 @@
       box-shadow: 0 2px 0 #e8d9c8;
     }
     .step-btn.active {
-      background: #0f766e !important;
-      color: #fff !important;
+      background: var(--accent) !important;
+      color: var(--on-accent) !important;
       border-color: transparent !important;
       box-shadow: 0 3px 0 #c4b5a0;
     }
     .step-btn.done {
       background: #ecf5f4 !important;
-      color: #0f766e !important;
-      border-color: #0f766e !important;
+      color: var(--accent) !important;
+      border-color: var(--accent) !important;
       box-shadow: 0 2px 0 #b8d4cf;
     }
     .scaffold-blank {
@@ -185,11 +209,11 @@
     .blank-clear {
       display: inline-flex; align-items: center; justify-content: center;
       min-width: 32px; min-height: 32px; margin-left: .1rem;
-      border: none; border-radius: 9999px; background: #f3e4e0; color: #b91c1c;
+      border: none; border-radius: var(--radius-pill); background: #f3e4e0; color: var(--accent-2);
       font-size: 1.1rem; line-height: 1; cursor: pointer; font-weight: 700;
       padding: 0;
     }
-    .blank-clear:hover, .blank-clear:focus { background: #b91c1c; color: #fff; }
+    .blank-clear:hover, .blank-clear:focus { background: var(--accent-2); color: var(--on-accent); }
     .mood-btn {
       min-width: 56px; min-height: 56px; font-size: 1.75rem;
       border-radius: 1rem; border: 1.5px solid var(--line); background: #fff;
@@ -216,7 +240,7 @@
     }
     .toast {
       position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%);
-      background: #0f766e; color: #fff;
+      background: var(--accent); color: var(--on-accent);
       padding: .65rem 1.25rem; border-radius: 9999px;
       z-index: 100; opacity: 0; transition: opacity .25s; pointer-events: none;
       box-shadow: 0 3px 0 #c4b5a0, var(--shadow);
@@ -256,8 +280,8 @@
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(15,118,110,.18), 0 3px 0 #c4b5a0;
     }
-    textarea:focus, input:focus, select:focus {
-      outline: 2px solid var(--accent); outline-offset: 1px;
+    textarea:focus:not(:focus-visible), input:focus:not(:focus-visible), select:focus:not(:focus-visible) {
+      outline: none;
     }
     .title-bubble {
       color: var(--accent-dark);
