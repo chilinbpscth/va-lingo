@@ -16,6 +16,8 @@
 python3 -m http.server 8080
 ```
 
+（名單以 `fetch('roster.json')` 載入，請用本機伺服器或 GitHub Pages，勿直接用 `file://`。）
+
 ## 產品
 
 - 學習階段 KS1／KS2；KS2 第一層句式鷹架／第二層開放書寫+自評檢核
@@ -25,7 +27,7 @@ python3 -m http.server 8080
 
 ## 已可演示功能
 
-- 頁首班別／姓名、點子庫、localStorage、匯出評賞歷程卡
+- 頁首班別／學生名單選擇（roster.json）、點子庫、localStorage、匯出評賞歷程卡
 - 樊楓《俯城之五》示範 SVG；同儕3件；創作上傳
 - 大頭針<=6、詞彙芯片、KS1 emoji；mhchow 對齊色票（粉紅／橙漸層）
 
@@ -33,19 +35,23 @@ python3 -m http.server 8080
 
 - 示意圖像／無後端；Tailwind CDN 與 Google Fonts 需網絡
 
+> Student roster on public Pages is for school demo; for production load roster privately / restrict Pages.
+
 ## 檔案
 
 /workspace/va-lingo/index.html
+/workspace/va-lingo/roster.json
 /workspace/va-lingo/README.md
 /workspace/va-lingo/RESTYLE.md
 
 ## 建議演示
 
-1. KS2 L1 大師名作館五步填空
-2. KS2 L2 開放書寫與檢核
-3. KS1 心情 emoji
-4. 同儕藝廊回饋
-5. 上傳作品加大頭針
-6. 匯出評賞歷程卡
+1. 頁首選班別（如 5A）再選學生，確認學號自動填入
+2. KS2 L1 大師名作館五步填空
+3. KS2 L2 開放書寫與檢核
+4. KS1 心情 emoji
+5. 同儕藝廊回饋
+6. 上傳作品加大頭針
+7. 匯出評賞歷程卡
 
 *Phase-1 課堂演示原型 · 非正式教材定稿*

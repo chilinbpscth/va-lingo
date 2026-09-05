@@ -312,19 +312,24 @@
         <div class="flex flex-wrap items-center gap-2">
           <label class="flex items-center gap-1 text-sm text-va-muted">
             <span class="hidden sm:inline">班別</span>
-            <input id="field-class" type="text" placeholder="5A" maxlength="12"
-              class="rounded-full px-3 py-2 text-va-text min-h-touch w-16 sm:w-20 text-sm border border-va-line bg-white" />
+            <select id="field-class" aria-label="班別"
+              class="rounded-full px-3 py-2 text-va-text min-h-touch text-sm border border-va-line bg-white">
+              <option value="">請選擇班別</option>
+            </select>
           </label>
           <label class="flex items-center gap-1 text-sm text-va-muted">
             <span class="hidden sm:inline">姓名</span>
-            <input id="field-name" type="text" placeholder="中文姓名" maxlength="20"
-              class="rounded-full px-3 py-2 text-va-text min-h-touch w-24 sm:w-28 text-sm border border-va-line bg-white" />
+            <select id="field-student" aria-label="學生" disabled
+              class="rounded-full px-3 py-2 text-va-text min-h-touch text-sm border border-va-line bg-white min-w-[8rem] sm:min-w-[11rem]">
+              <option value="">請選擇學生</option>
+            </select>
           </label>
           <label class="flex items-center gap-1 text-sm text-va-muted">
             <span class="hidden sm:inline">學號</span>
-            <input id="field-student-id" type="text" placeholder="20260007" maxlength="16"
-              class="rounded-full px-3 py-2 text-va-text min-h-touch w-24 sm:w-28 text-sm border border-va-line bg-white" />
+            <span id="field-student-id-display" aria-live="polite"
+              class="inline-flex items-center rounded-full px-3 py-2 text-va-text min-h-touch min-w-[6.5rem] text-sm border border-va-line bg-[#fff7fb] text-va-muted">——</span>
           </label>
+          <span id="roster-load-note" class="hidden text-xs text-red-600 font-semibold">名單載入失敗</span>
           <button type="button" id="btn-idea-bank" class="btn-pill btn-primary px-4 py-2 text-sm">
             💡 點子庫
           </button>
@@ -606,6 +611,129 @@
         svg: `<svg viewBox="0 0 400 260" class="w-full h-full" preserveAspectRatio="xMidYMid slice"><rect width="400" height="140" fill="#aed6f1"/><rect y="140" width="400" height="120" fill="#85929e"/><polygon points="40,140 40,90 70,90 70,140" fill="#5d6d7e"/><polygon points="90,140 90,70 130,70 130,140" fill="#566573"/><polygon points="150,140 150,50 200,50 200,140" fill="#2c3e50"/><polygon points="220,140 220,80 270,80 270,140" fill="#34495e"/><polygon points="300,100 340,90 360,110 320,120" fill="#fff" opacity=".9"/><line x1="300" y1="100" x2="280" y2="130" stroke="#fff" stroke-width="2"/><text x="12" y="24" fill="#5b3a8c" font-size="12" font-family="sans-serif">示範圖像</text></svg>`
       }
     ];
+
+    let rosterStudents = [];
+    let rosterLoaded = false;
+
+    function sortClasses(classes) {
+      return classes.slice().sort((a, b) => {
+        const na = parseInt(a, 10) || 0;
+        const nb = parseInt(b, 10) || 0;
+        if (na !== nb) return na - nb;
+        return String(a).localeCompare(String(b), 'zh-HK');
+      });
+    }
+
+    function uniqueClasses() {
+      return sortClasses([...new Set(rosterStudents.map(s => s.class).filter(Boolean))]);
+    }
+
+    function studentsInClass(cls) {
+      return rosterStudents
+        .filter(s => s.class === cls)
+        .slice()
+        .sort((a, b) => String(a.seat).localeCompare(String(b.seat), 'zh-HK', { numeric: true }));
+    }
+
+    function updateStudentIdDisplay() {
+      const idDisp = document.getElementById('field-student-id-display');
+      if (idDisp) idDisp.textContent = state.studentId || '——';
+    }
+
+    function fillClassSelect() {
+      const sel = document.getElementById('field-class');
+      if (!sel) return;
+      const cur = state.className || '';
+      sel.innerHTML = '<option value="">請選擇班別</option>' +
+        uniqueClasses().map(c => '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>').join('');
+      sel.value = (cur && uniqueClasses().includes(cur)) ? cur : '';
+    }
+
+    function rebuildStudentSelect(cls, preferredId) {
+      const sel = document.getElementById('field-student');
+      if (!sel) return;
+      if (!cls) {
+        sel.innerHTML = '<option value="">請選擇學生</option>';
+        sel.disabled = true;
+        sel.value = '';
+        updateStudentIdDisplay();
+        return;
+      }
+      const list = studentsInClass(cls);
+      sel.disabled = false;
+      sel.innerHTML = '<option value="">請選擇學生</option>' +
+        list.map(s => '<option value="' + escapeHtml(s.id) + '">' + escapeHtml(s.seat) + ' ' + escapeHtml(s.name) + '</option>').join('');
+      const pick = (preferredId && list.some(s => s.id === preferredId)) ? preferredId : '';
+      sel.value = pick;
+      updateStudentIdDisplay();
+    }
+
+    function applyStudentFromSelect() {
+      const classSel = document.getElementById('field-class');
+      const studentSel = document.getElementById('field-student');
+      const cls = (classSel && classSel.value) || '';
+      const id = (studentSel && studentSel.value) || '';
+      const stu = rosterStudents.find(s => s.id === id);
+      state.className = cls;
+      if (stu) {
+        state.className = stu.class;
+        state.studentName = stu.name;
+        state.studentId = stu.id;
+      } else {
+        state.studentName = '';
+        state.studentId = '';
+      }
+      updateStudentIdDisplay();
+      save();
+    }
+
+    function restoreRosterUI() {
+      fillClassSelect();
+      const classSel = document.getElementById('field-class');
+      const cls = (classSel && classSel.value) || '';
+      state.className = cls;
+      rebuildStudentSelect(cls, state.studentId);
+      const studentSel = document.getElementById('field-student');
+      const id = (studentSel && studentSel.value) || '';
+      if (id) {
+        const stu = rosterStudents.find(s => s.id === id);
+        if (stu) {
+          state.className = stu.class;
+          state.studentName = stu.name;
+          state.studentId = stu.id;
+        } else {
+          state.studentName = '';
+          state.studentId = '';
+        }
+      } else {
+        state.studentName = '';
+        state.studentId = '';
+      }
+      updateStudentIdDisplay();
+    }
+
+    async function loadRoster() {
+      const note = document.getElementById('roster-load-note');
+      try {
+        const res = await fetch('roster.json');
+        if (!res.ok) throw new Error('roster fetch failed');
+        const data = await res.json();
+        rosterStudents = Array.isArray(data.students) ? data.students : [];
+        rosterLoaded = true;
+        if (note) note.classList.add('hidden');
+        restoreRosterUI();
+        save();
+      } catch (e) {
+        rosterStudents = [];
+        rosterLoaded = false;
+        fillClassSelect();
+        rebuildStudentSelect('');
+        if (note) {
+          note.textContent = '名單載入失敗';
+          note.classList.remove('hidden');
+        }
+      }
+    }
 
     const STORAGE_KEY = 'va-lingo-phase1-v1';
 
@@ -1067,9 +1195,7 @@
       });
       document.getElementById('btn-prev').disabled = state.step === 0;
       document.getElementById('btn-next').disabled = state.step === STEPS.length - 1;
-      document.getElementById('field-class').value = state.className;
-      document.getElementById('field-name').value = state.studentName;
-      document.getElementById('field-student-id').value = state.studentId;
+      updateStudentIdDisplay();
       document.getElementById('step-panel').classList.toggle('ks1-control', state.ks === 'ks1');
     }
 
@@ -1181,9 +1307,17 @@
     document.getElementById('btn-next').addEventListener('click', () => {
       if (state.step < STEPS.length - 1) { state.step++; renderAll(); save(); }
     });
-    document.getElementById('field-class').addEventListener('input', e => { state.className = e.target.value; save(); });
-    document.getElementById('field-name').addEventListener('input', e => { state.studentName = e.target.value; save(); });
-    document.getElementById('field-student-id').addEventListener('input', e => { state.studentId = e.target.value; save(); });
+    document.getElementById('field-class').addEventListener('change', () => {
+      const cls = document.getElementById('field-class').value || '';
+      state.className = cls;
+      state.studentName = '';
+      state.studentId = '';
+      rebuildStudentSelect(cls, '');
+      save();
+    });
+    document.getElementById('field-student').addEventListener('change', () => {
+      applyStudentFromSelect();
+    });
     document.getElementById('btn-idea-bank').addEventListener('click', openIdeaBank);
     document.getElementById('idea-close').addEventListener('click', () => document.getElementById('idea-modal').classList.add('hidden'));
     document.getElementById('idea-close-2').addEventListener('click', () => document.getElementById('idea-modal').classList.add('hidden'));
@@ -1213,9 +1347,6 @@
 
     // seed default pins for master on first visit
     load();
-    document.getElementById('field-class').value = state.className;
-    document.getElementById('field-name').value = state.studentName;
-    document.getElementById('field-student-id').value = state.studentId;
     if (!localStorage.getItem(STORAGE_KEY)) {
       state.pins = [
         { id: 'seed1', scope: 'master:main', x: 42, y: 28, note: '高聳樓群——密度與垂直線' },
@@ -1225,6 +1356,7 @@
     }
     renderAll();
     save();
+    loadRoster();
   })();
   </script>
 </body>
