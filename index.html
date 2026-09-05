@@ -2,11 +2,11 @@
 <html lang="zh-HK">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>VA-Lingo 藝言堂 — 觀我香港：熱鬧的香港</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;800&family=Yusei+Magic&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -52,13 +52,19 @@
     }
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
     .comic {
-      font-family: "ZCOOL KuaiLe", "Yusei Magic", "Noto Sans TC", sans-serif;
-      letter-spacing: .04em;
+      font-family: "Noto Sans TC", "PingFang HK", "Hiragino Sans GB", "Microsoft JhengHei", system-ui, sans-serif;
+      font-weight: 800;
+      letter-spacing: 0.01em;
     }
     body {
-      font-family: "Yusei Magic", "Noto Sans TC", "PingFang HK", "Microsoft JhengHei", system-ui, sans-serif;
+      font-family: "Noto Sans TC", "PingFang HK", "Hiragino Sans GB", "Microsoft JhengHei", system-ui, sans-serif;
       color: var(--text);
       background-color: var(--bg);
+      letter-spacing: 0;
+    }
+    .chip, .btn-pill, .step-btn, .source-tab, label, button, select, input, textarea {
+      font-family: inherit;
+      letter-spacing: 0.01em;
     }
     .scene-bg {
       position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
@@ -239,7 +245,9 @@
     .title-bubble {
       color: var(--accent-dark);
       text-shadow: 0 3px 0 #ffd36b;
-      font-family: "ZCOOL KuaiLe", "Yusei Magic", "Noto Sans TC", sans-serif;
+      font-family: "Noto Sans TC", "PingFang HK", "Hiragino Sans GB", "Microsoft JhengHei", system-ui, sans-serif;
+      font-weight: 800;
+      letter-spacing: 0.01em;
     }
     .mode-bar {
       background: rgba(255,255,255,.92);
@@ -266,6 +274,64 @@
     .seg-toggle .ks-toggle,
     .seg-toggle .level-toggle {
       border-radius: 0;
+    }
+    /* Mobile / tablet (< lg): denser padding, usable steps + sticky nav */
+    @media (max-width: 1023px) {
+      .app-shell .max-w-7xl { padding-left: 0.65rem; padding-right: 0.65rem; }
+      header.app-header .max-w-7xl { padding-top: 0.65rem; padding-bottom: 0.65rem; }
+      .mode-bar .max-w-7xl { padding-top: 0.4rem; padding-bottom: 0.4rem; gap: 0.5rem; }
+      .mode-bar .ks-toggle,
+      .mode-bar .level-toggle {
+        padding-left: 0.65rem;
+        padding-right: 0.65rem;
+        font-size: 0.8rem;
+      }
+      #canvas-stage {
+        max-height: 40vh;
+      }
+      #step-panel .step-nav {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+        padding-bottom: 0.25rem;
+        margin-inline: -0.15rem;
+        padding-inline: 0.15rem;
+      }
+      #step-panel .step-nav .step-btn {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+        min-height: 48px;
+        padding-left: 0.9rem;
+        padding-right: 0.9rem;
+        font-size: 0.875rem;
+      }
+      #step-nav-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        background: linear-gradient(to top, #fff7fb 70%, rgba(255,247,251,0.85));
+        padding-top: 0.5rem;
+        padding-bottom: 0.35rem;
+        margin-top: auto;
+      }
+      .header-fields {
+        width: 100%;
+      }
+      .header-fields > label {
+        flex: 1 1 100%;
+        min-width: 0;
+      }
+      .header-fields select,
+      .header-fields #field-student-id-display {
+        width: 100%;
+        min-width: 0 !important;
+      }
+    }
+    @media (min-width: 1024px) {
+      #canvas-stage { max-height: none; }
     }
   </style>
 
@@ -342,25 +408,25 @@
             <p class="text-xs sm:text-sm text-va-muted truncate">單元：觀我香港：熱鬧的香港</p>
           </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <label class="flex items-center gap-1 text-sm text-va-muted">
-            <span class="hidden sm:inline">班別</span>
+        <div class="header-fields flex flex-wrap items-center gap-2 w-full lg:w-auto">
+          <label class="flex items-center gap-1.5 text-sm text-va-muted w-full sm:w-auto min-w-0">
+            <span class="shrink-0 font-semibold">班別</span>
             <select id="field-class" aria-label="班別"
-              class="rounded-full px-3 py-2 text-va-text min-h-touch text-sm border border-va-line bg-white">
+              class="rounded-full px-3 py-2 text-va-text min-h-touch text-sm border border-va-line bg-white flex-1 min-w-0 sm:min-w-[7rem]">
               <option value="">請選擇班別</option>
             </select>
           </label>
-          <label class="flex items-center gap-1 text-sm text-va-muted">
-            <span class="hidden sm:inline">姓名</span>
+          <label class="flex items-center gap-1.5 text-sm text-va-muted w-full sm:w-auto min-w-0">
+            <span class="shrink-0 font-semibold">學生</span>
             <select id="field-student" aria-label="學生" disabled
-              class="rounded-full px-3 py-2 text-va-text min-h-touch text-sm border border-va-line bg-white min-w-[8rem] sm:min-w-[11rem]">
+              class="rounded-full px-3 py-2 text-va-text min-h-touch text-sm border border-va-line bg-white flex-1 min-w-0 sm:min-w-[8rem] lg:min-w-[11rem]">
               <option value="">請選擇學生</option>
             </select>
           </label>
-          <label class="flex items-center gap-1 text-sm text-va-muted">
-            <span class="hidden sm:inline">學號</span>
+          <label class="flex items-center gap-1.5 text-sm text-va-muted w-full sm:w-auto min-w-0">
+            <span class="shrink-0 font-semibold">學號</span>
             <span id="field-student-id-display" aria-live="polite"
-              class="inline-flex items-center rounded-full px-3 py-2 text-va-text min-h-touch min-w-[6.5rem] text-sm border border-va-line bg-[#fff7fb] text-va-muted">——</span>
+              class="inline-flex items-center rounded-full px-3 py-2 text-va-text min-h-touch min-w-0 sm:min-w-[6.5rem] text-sm border border-va-line bg-[#fff7fb] text-va-muted flex-1">——</span>
           </label>
           <span id="roster-load-note" class="hidden text-xs text-red-600 font-semibold">名單載入失敗</span>
           <button type="button" id="btn-idea-bank" class="btn-pill btn-primary px-4 py-2 text-sm">
@@ -376,19 +442,19 @@
 
   <!-- Mode / Level bar -->
   <div class="mode-bar no-print sticky top-[72px] z-30">
-    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 flex flex-wrap items-center gap-3 justify-between">
-      <div class="flex items-center gap-2 flex-wrap">
-        <span class="text-sm font-semibold text-va-blue comic">學習階段</span>
-        <div class="inline-flex seg-toggle">
-          <button type="button" data-ks="ks1" class="ks-toggle px-4 py-2 min-h-touch text-sm font-semibold bg-va-blue text-white">KS1（小一至小三）</button>
-          <button type="button" data-ks="ks2" class="ks-toggle px-4 py-2 min-h-touch text-sm font-semibold bg-white text-va-blue">KS2（小四至小六）</button>
+    <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-2.5 flex flex-wrap items-center gap-2 sm:gap-3 justify-between">
+      <div class="flex items-center gap-2 flex-wrap min-w-0">
+        <span class="text-xs sm:text-sm font-semibold text-va-blue comic shrink-0">學習階段</span>
+        <div class="inline-flex seg-toggle flex-wrap max-w-full">
+          <button type="button" data-ks="ks1" class="ks-toggle px-2.5 sm:px-4 py-2 min-h-touch text-xs sm:text-sm font-semibold bg-va-blue text-white">KS1（小一至小三）</button>
+          <button type="button" data-ks="ks2" class="ks-toggle px-2.5 sm:px-4 py-2 min-h-touch text-xs sm:text-sm font-semibold bg-white text-va-blue">KS2（小四至小六）</button>
         </div>
       </div>
       <div id="level-wrap" class="hidden items-center gap-2 flex-wrap">
         <span class="text-sm font-semibold text-va-blue comic">鷹架層級</span>
         <div class="inline-flex seg-toggle">
-          <button type="button" data-level="1" class="level-toggle px-4 py-2 min-h-touch text-sm font-semibold bg-va-gold text-white">第一層：句式提示</button>
-          <button type="button" data-level="2" class="level-toggle px-4 py-2 min-h-touch text-sm font-semibold bg-white text-slate-700">第二層：開放書寫</button>
+          <button type="button" data-level="1" class="level-toggle px-2.5 sm:px-4 py-2 min-h-touch text-xs sm:text-sm font-semibold bg-va-gold text-white">第一層：句式提示</button>
+          <button type="button" data-level="2" class="level-toggle px-2.5 sm:px-4 py-2 min-h-touch text-xs sm:text-sm font-semibold bg-white text-slate-700">第二層：開放書寫</button>
         </div>
       </div>
       <div class="text-xs text-va-muted" id="save-status">尚未儲存</div>
@@ -413,7 +479,7 @@
         <section class="border-b lg:border-b-0 lg:border-r border-va-line p-3 sm:p-4 flex flex-col gap-3">
           <div id="source-picker" class="space-y-2"></div>
           <div id="context-hint" class="text-sm bg-va-light text-va-purple rounded-[18px] px-3 py-2 border border-va-line"></div>
-          <div id="canvas-stage" class="relative flex-1 min-h-[280px] sm:min-h-[360px] rounded-[18px] overflow-hidden bg-[#fff0f6] border-2 border-va-line">
+          <div id="canvas-stage" class="relative flex-1 min-h-[200px] sm:min-h-[280px] lg:min-h-[360px] max-h-[40vh] lg:max-h-none rounded-[18px] overflow-hidden bg-[#fff0f6] border-2 border-va-line">
             <!-- artwork injected -->
           </div>
           <p class="text-xs text-va-muted">提示：點擊畫面上的粉紅色大頭針可檢視／編輯註記；點擊空白處可新增大頭針（最多 6 個）。</p>
@@ -422,12 +488,12 @@
 
         <!-- Right: Steps -->
         <section id="step-panel" class="p-3 sm:p-4 flex flex-col gap-3 bg-[#fff7fb]">
-          <nav class="flex flex-wrap gap-1.5" aria-label="評賞五步驟">
-            <button type="button" data-step="0" class="step-btn active px-3 py-2 text-xs sm:text-sm font-medium">① 整體感受</button>
-            <button type="button" data-step="1" class="step-btn px-3 py-2 text-xs sm:text-sm font-medium">② 表象描述</button>
-            <button type="button" data-step="2" class="step-btn px-3 py-2 text-xs sm:text-sm font-medium">③ 形式分析</button>
-            <button type="button" data-step="3" class="step-btn px-3 py-2 text-xs sm:text-sm font-medium">④ 意義詮釋</button>
-            <button type="button" data-step="4" class="step-btn px-3 py-2 text-xs sm:text-sm font-medium">⑤ 價值判斷</button>
+          <nav class="step-nav flex flex-nowrap gap-1.5 overflow-x-auto lg:flex-wrap lg:overflow-visible snap-x snap-mandatory -mx-0.5 px-0.5 pb-1" aria-label="評賞五步驟">
+            <button type="button" data-step="0" class="step-btn active snap-start shrink-0 px-3.5 py-2.5 text-sm font-medium">① 整體感受</button>
+            <button type="button" data-step="1" class="step-btn snap-start shrink-0 px-3.5 py-2.5 text-sm font-medium">② 表象描述</button>
+            <button type="button" data-step="2" class="step-btn snap-start shrink-0 px-3.5 py-2.5 text-sm font-medium">③ 形式分析</button>
+            <button type="button" data-step="3" class="step-btn snap-start shrink-0 px-3.5 py-2.5 text-sm font-medium">④ 意義詮釋</button>
+            <button type="button" data-step="4" class="step-btn snap-start shrink-0 px-3.5 py-2.5 text-sm font-medium">⑤ 價值判斷</button>
           </nav>
 
           <div id="step-content" class="flex-1 space-y-3"></div>
@@ -444,7 +510,7 @@
             </div>
           </div>
 
-          <div class="flex gap-2 pt-1">
+          <div id="step-nav-actions" class="flex gap-2 pt-1">
             <button type="button" id="btn-prev" class="btn-pill btn-ghost flex-1 font-semibold py-2.5 disabled:opacity-40">← 上一步</button>
             <button type="button" id="btn-next" class="btn-pill btn-primary flex-1 font-semibold py-2.5 disabled:opacity-40">下一步 →</button>
           </div>
