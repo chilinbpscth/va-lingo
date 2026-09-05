@@ -14,41 +14,44 @@
         extend: {
           colors: {
             va: {
-              blue: '#e8437a',
-              gold: '#ff6b9d',
-              light: '#ffe3ef',
-              muted: '#7a6a8a',
-              purple: '#5b3a8c',
-              soft: '#ffe3ef',
-              text: '#3b2a55',
-              line: '#ffd6e8',
-              bg: '#fff7fb',
-              ok: '#1abc9c'
+              blue: '#0f766e',
+              gold: '#0f766e',
+              light: '#ecf5f4',
+              muted: '#6b5e55',
+              purple: '#134e4a',
+              soft: '#fffaf3',
+              text: '#2c2420',
+              line: '#e8d9c8',
+              bg: '#f7efe2',
+              ok: '#0f766e',
+              cinnabar: '#b91c1c'
             }
           },
           minHeight: { touch: '44px' },
           minWidth: { touch: '44px' },
           borderRadius: { card: '22px' },
-          boxShadow: { soft: '0 12px 28px rgba(255, 107, 157, .16)' }
+          boxShadow: { soft: '0 12px 28px rgba(15, 118, 110, .12)' }
         }
       }
     };
   </script>
   <style>
     :root {
-      --accent: #ff6b9d;
-      --accent-dark: #e8437a;
-      --purple: #5b3a8c;
-      --soft: #ffe3ef;
-      --text: #3b2a55;
-      --muted: #7a6a8a;
-      --line: #ffd6e8;
-      --bg: #fff7fb;
+      --accent: #0f766e;
+      --accent-dark: #0f766e;
+      --cinnabar: #b91c1c;
+      --purple: #134e4a;
+      --soft: #fffaf3;
+      --text: #2c2420;
+      --muted: #6b5e55;
+      --line: #e8d9c8;
+      --bg: #f7efe2;
+      --paper: #fffaf3;
       --radius: 22px;
-      --shadow: 0 12px 28px rgba(255, 107, 157, .16);
-      --ok: #1abc9c;
-      --va-blue: #e8437a;
-      --va-gold: #ff6b9d;
+      --shadow: 0 12px 28px rgba(15, 118, 110, .12);
+      --ok: #0f766e;
+      --va-blue: #0f766e;
+      --va-gold: #0f766e;
       --app-header-h: 72px;
     }
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
@@ -70,9 +73,9 @@
     .scene-bg {
       position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
       background:
-        radial-gradient(ellipse 60% 40% at 10% 0%, #ffe8f3 0%, transparent 60%),
-        radial-gradient(ellipse 50% 35% at 90% 8%, #fff0d6 0%, transparent 55%),
-        radial-gradient(ellipse 40% 30% at 80% 90%, #e8f0ff 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 10% 0%, #fffaf3 0%, transparent 60%),
+        radial-gradient(ellipse 50% 35% at 90% 8%, #f0e6d8 0%, transparent 55%),
+        radial-gradient(ellipse 40% 30% at 80% 90%, #e8f0ee 0%, transparent 50%),
         var(--bg);
     }
     .scene-bg svg { position: absolute; width: 100%; height: 100%; }
@@ -89,9 +92,9 @@
       font-weight: 700;
     }
     .btn-primary {
-      background: linear-gradient(90deg, #ff6b9d, #ff8e53);
+      background: #0f766e;
       color: #fff !important;
-      box-shadow: 0 3px 0 #ffd36b;
+      box-shadow: 0 3px 0 #c4b5a0;
       border: 0 !important;
     }
     .btn-primary:hover { filter: brightness(1.05); }
@@ -100,47 +103,47 @@
       background: #fff;
       color: var(--accent-dark);
       border: 1.5px solid var(--line);
-      box-shadow: 0 2px 0 #ffe3ef;
+      box-shadow: 0 2px 0 #e8d9c8;
     }
     .pin {
       width: 28px; height: 28px; border-radius: 50% 50% 50% 0;
-      background: #ff6b9d; color: #fff; font-size: 12px; font-weight: 700;
+      background: #0f766e; color: #fff; font-size: 12px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
       transform: rotate(-45deg); cursor: pointer; border: 2px solid #fff;
-      box-shadow: 0 2px 6px rgba(255,107,157,.45); z-index: 10;
+      box-shadow: 0 2px 6px rgba(15,118,110,.35); z-index: 10;
       min-width: 28px; min-height: 28px;
     }
     .pin span { transform: rotate(45deg); }
-    .pin:hover, .pin.active { background: #ff8e53; transform: rotate(-45deg) scale(1.15); }
+    .pin:hover, .pin.active { background: #b91c1c; transform: rotate(-45deg) scale(1.15); }
     .chip {
       min-height: 44px; padding: 0.5rem 0.95rem; border-radius: 9999px;
-      border: 1.5px solid var(--line); background: #fff7fb; color: var(--text);
+      border: 1.5px solid var(--line); background: #f7efe2; color: var(--text);
       font-size: 0.875rem; cursor: grab; transition: all .15s; white-space: nowrap;
-      box-shadow: 0 2px 0 #ffe3ef;
+      box-shadow: 0 2px 0 #e8d9c8;
       touch-action: none; user-select: none; -webkit-user-select: none;
     }
     .chip:hover, .chip:focus {
-      border-color: var(--accent); background: #fff0f6;
-      box-shadow: 0 3px 0 #ffd36b;
+      border-color: var(--accent); background: #ecf5f4;
+      box-shadow: 0 3px 0 #c4b5a0;
     }
     .chip.used { opacity: .55; border-style: dashed; box-shadow: none; cursor: grab; }
     .chip.dragging { opacity: .35; }
     .chip.selected, .chip.on {
-      background: linear-gradient(90deg, #ff6b9d, #ff8e53);
-      color: #fff; border-color: transparent; box-shadow: 0 3px 0 #ffd36b;
+      background: #0f766e;
+      color: #fff; border-color: transparent; box-shadow: 0 3px 0 #c4b5a0;
     }
     .chip-ghost {
       position: fixed; z-index: 250; pointer-events: none;
       min-height: 44px; padding: 0.5rem 0.95rem; border-radius: 9999px;
-      border: 1.5px solid var(--accent); background: #fff0f6; color: var(--text);
+      border: 1.5px solid var(--accent); background: #ecf5f4; color: var(--text);
       font-size: 0.875rem; white-space: nowrap; font-weight: 600;
-      box-shadow: 0 8px 20px rgba(255,107,157,.35), 0 3px 0 #ffd36b;
+      box-shadow: 0 8px 20px rgba(15,118,110,.28), 0 3px 0 #c4b5a0;
       transform: translate(-50%, -50%) scale(1.06);
       opacity: .95;
     }
     .scaffold-blank.drag-over {
-      background: #ffe3ef !important;
-      box-shadow: 0 0 0 3px rgba(255,107,157,.35);
+      background: #ecf5f4 !important;
+      box-shadow: 0 0 0 3px rgba(15,118,110,.28);
     }
     .step-btn {
       min-height: 44px; min-width: 44px;
@@ -148,19 +151,19 @@
       border: 1.5px solid var(--line) !important;
       background: #fff;
       color: var(--muted);
-      box-shadow: 0 2px 0 #ffe3ef;
+      box-shadow: 0 2px 0 #e8d9c8;
     }
     .step-btn.active {
-      background: linear-gradient(90deg, #ff6b9d, #ff8e53) !important;
+      background: #0f766e !important;
       color: #fff !important;
       border-color: transparent !important;
-      box-shadow: 0 3px 0 #ffd36b;
+      box-shadow: 0 3px 0 #c4b5a0;
     }
     .step-btn.done {
-      background: #e8faf6 !important;
-      color: #0e8c74 !important;
-      border-color: #1abc9c !important;
-      box-shadow: 0 2px 0 #a8e6d8;
+      background: #ecf5f4 !important;
+      color: #0f766e !important;
+      border-color: #0f766e !important;
+      box-shadow: 0 2px 0 #b8d4cf;
     }
     .scaffold-blank {
       display: inline-flex; align-items: center; justify-content: center;
@@ -170,32 +173,32 @@
       cursor: text; outline: none; background: var(--soft); border-radius: 6px 6px 0 0;
       transition: background .15s, box-shadow .15s;
     }
-    .scaffold-blank:empty::before { content: '_____'; color: #c4a8b8; font-weight: 400; }
+    .scaffold-blank:empty::before { content: '_____'; color: #a89888; font-weight: 400; }
     .scaffold-blank.filled {
       display: inline-flex; align-items: center; gap: .2rem;
       min-height: 44px; padding: .2rem .35rem .2rem .75rem;
       border: 1.5px solid var(--accent); border-bottom: 1.5px solid var(--accent);
-      border-radius: 9999px; background: #fff0f6; color: var(--accent-dark);
-      cursor: default; box-shadow: 0 2px 0 #ffe3ef;
+      border-radius: 9999px; background: #ecf5f4; color: var(--accent-dark);
+      cursor: default; box-shadow: 0 2px 0 #e8d9c8;
     }
     .scaffold-blank.filled:empty::before { content: none; }
     .blank-clear {
       display: inline-flex; align-items: center; justify-content: center;
       min-width: 32px; min-height: 32px; margin-left: .1rem;
-      border: none; border-radius: 9999px; background: #ffd6e7; color: #c2185b;
+      border: none; border-radius: 9999px; background: #f3e4e0; color: #b91c1c;
       font-size: 1.1rem; line-height: 1; cursor: pointer; font-weight: 700;
       padding: 0;
     }
-    .blank-clear:hover, .blank-clear:focus { background: #ff6b9d; color: #fff; }
+    .blank-clear:hover, .blank-clear:focus { background: #b91c1c; color: #fff; }
     .mood-btn {
       min-width: 56px; min-height: 56px; font-size: 1.75rem;
       border-radius: 1rem; border: 1.5px solid var(--line); background: #fff;
-      box-shadow: 0 2px 0 #ffe3ef;
+      box-shadow: 0 2px 0 #e8d9c8;
     }
     .mood-btn.selected {
       border-color: var(--accent);
-      background: #fff0f6;
-      box-shadow: 0 0 0 3px rgba(255,107,157,.28), 0 3px 0 #ffd36b;
+      background: #ecf5f4;
+      box-shadow: 0 0 0 3px rgba(15,118,110,.22), 0 3px 0 #c4b5a0;
     }
     .ks1-control .chip, .ks1-control button, .ks1-control input, .ks1-control textarea {
       font-size: 1.05rem; min-height: 48px;
@@ -213,10 +216,10 @@
     }
     .toast {
       position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%);
-      background: linear-gradient(90deg, #ff6b9d, #ff8e53); color: #fff;
+      background: #0f766e; color: #fff;
       padding: .65rem 1.25rem; border-radius: 9999px;
       z-index: 100; opacity: 0; transition: opacity .25s; pointer-events: none;
-      box-shadow: 0 3px 0 #ffd36b, var(--shadow);
+      box-shadow: 0 3px 0 #c4b5a0, var(--shadow);
       font-weight: 700;
       max-width: min(92vw, 28rem); text-align: center; line-height: 1.35;
     }
@@ -224,7 +227,7 @@
     .toast.show.toast-interactive { pointer-events: auto; border-radius: 1rem; }
     .toast a { color: #fff; text-decoration: underline; font-weight: 800; }
     .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(59,42,85,.45); z-index: 80;
+      position: fixed; inset: 0; background: rgba(44,36,32,.45); z-index: 80;
       display: flex; align-items: center; justify-content: center; padding: 1rem;
     }
     .rubric-item { min-height: 44px; border-color: var(--line) !important; }
@@ -251,14 +254,14 @@
     }
     .src-card:hover, .src-card.selected {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(255,107,157,.2), 0 3px 0 #ffd36b;
+      box-shadow: 0 0 0 3px rgba(15,118,110,.18), 0 3px 0 #c4b5a0;
     }
     textarea:focus, input:focus, select:focus {
       outline: 2px solid var(--accent); outline-offset: 1px;
     }
     .title-bubble {
       color: var(--accent-dark);
-      text-shadow: 0 3px 0 #ffd36b;
+      text-shadow: none;
       font-family: "Noto Sans TC", "PingFang HK", "Hiragino Sans GB", "Microsoft JhengHei", system-ui, sans-serif;
       font-weight: 800;
       letter-spacing: 0.01em;
@@ -273,13 +276,13 @@
     header.app-header {
       background: rgba(255,255,255,.95);
       border-bottom: 1.5px solid var(--line);
-      box-shadow: 0 8px 20px rgba(255,107,157,.1);
+      box-shadow: 0 8px 20px rgba(15,118,110,.08);
       backdrop-filter: blur(10px);
     }
     .logo-badge {
-      background: linear-gradient(135deg, #ff6b9d, #ff8e53);
+      background: linear-gradient(135deg, #0f766e, #134e4a);
       color: #fff;
-      box-shadow: 0 3px 0 #ffd36b;
+      box-shadow: 0 3px 0 #c4b5a0;
     }
     .seg-toggle {
       border-radius: 999px;
@@ -338,7 +341,7 @@
         position: sticky;
         bottom: 0;
         z-index: 5;
-        background: linear-gradient(to top, #fff7fb 70%, rgba(255,247,251,0.85));
+        background: linear-gradient(to top, #f7efe2 70%, rgba(247,239,226,0.85));
         padding-top: 0.5rem;
         padding-bottom: 0.35rem;
         margin-top: auto;
@@ -412,28 +415,28 @@
       background: #fff;
       border: 1.5px solid var(--line);
       border-radius: 18px;
-      box-shadow: 0 2px 0 #ffe3ef;
+      box-shadow: 0 2px 0 #e8d9c8;
     }
     .gallery-thumb {
       border: 1.5px solid var(--line);
       border-radius: 14px;
       overflow: hidden;
-      background: #fff7fb;
+      background: #f7efe2;
       text-align: left;
       min-height: 44px;
       transition: box-shadow .15s, border-color .15s;
     }
     .gallery-thumb:hover, .gallery-thumb.selected {
       border-color: var(--accent);
-      box-shadow: 0 3px 0 #ffd36b;
+      box-shadow: 0 3px 0 #c4b5a0;
     }
-    .gallery-thumb.selected { background: #fff0f6; }
+    .gallery-thumb.selected { background: #ecf5f4; }
     .gallery-thumb img {
-      width: 100%; height: 4.5rem; object-fit: cover; display: block; background: #ffe3ef;
+      width: 100%; height: 4.5rem; object-fit: cover; display: block; background: #fffaf3;
     }
     #gallery-lightbox {
       position: fixed; inset: 0; z-index: 80;
-      background: rgba(59, 42, 85, .72);
+      background: rgba(44, 36, 32, .72);
       display: flex; align-items: center; justify-content: center;
       padding: 1rem;
     }
@@ -462,44 +465,44 @@
       </g>
       <!-- smiling sun -->
       <g transform="translate(1080 70)">
-        <circle r="36" fill="#ffe066"/>
-        <g stroke="#ffd36b" stroke-width="4" stroke-linecap="round">
+        <circle r="36" fill="#e8d4a8"/>
+        <g stroke="#d4c4a0" stroke-width="4" stroke-linecap="round">
           <line y1="-48" y2="-58"/><line y1="48" y2="58"/>
           <line x1="-48" x2="-58"/><line x1="48" x2="58"/>
           <line x1="-34" y1="-34" x2="-42" y2="-42"/><line x1="34" y1="34" x2="42" y2="42"/>
           <line x1="34" y1="-34" x2="42" y2="-42"/><line x1="-34" y1="34" x2="-42" y2="42"/>
         </g>
-        <circle cx="-10" cy="-4" r="3.5" fill="#e8437a"/>
-        <circle cx="10" cy="-4" r="3.5" fill="#e8437a"/>
-        <path d="M-12 10 Q0 20 12 10" fill="none" stroke="#e8437a" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="-10" cy="-4" r="3.5" fill="#0f766e"/>
+        <circle cx="10" cy="-4" r="3.5" fill="#0f766e"/>
+        <path d="M-12 10 Q0 20 12 10" fill="none" stroke="#0f766e" stroke-width="3" stroke-linecap="round"/>
       </g>
       <!-- balloons -->
       <g opacity=".8">
-        <ellipse cx="90" cy="280" rx="28" ry="36" fill="#ff9ec0"/>
-        <path d="M90 316 Q88 340 95 360" fill="none" stroke="#e8437a" stroke-width="2"/>
+        <ellipse cx="90" cy="280" rx="28" ry="36" fill="#c5ddd9"/>
+        <path d="M90 316 Q88 340 95 360" fill="none" stroke="#0f766e" stroke-width="2"/>
         <circle cx="82" cy="270" r="5" fill="#fff" opacity=".7"/>
-        <ellipse cx="160" cy="340" rx="24" ry="32" fill="#a8d8ff"/>
-        <path d="M160 372 Q162 390 155 410" fill="none" stroke="#5b3a8c" stroke-width="2"/>
-        <ellipse cx="1120" cy="300" rx="26" ry="34" fill="#ffe066"/>
+        <ellipse cx="160" cy="340" rx="24" ry="32" fill="#d4c4b0"/>
+        <path d="M160 372 Q162 390 155 410" fill="none" stroke="#134e4a" stroke-width="2"/>
+        <ellipse cx="1120" cy="300" rx="26" ry="34" fill="#e8d4a8"/>
         <path d="M1120 334 Q1115 355 1122 375" fill="none" stroke="#e67e22" stroke-width="2"/>
-        <!-- heart on pink balloon -->
+        <!-- accent mark on balloon -->
         <path d="M82 275 c0-4 6-4 8 0 c2-4 8-4 8 0 c0 5-8 10-8 10 s-8-5-8-10z" fill="#fff" opacity=".85"/>
       </g>
       <!-- art palette + brushes (bottom left) -->
       <g transform="translate(40 620)" opacity=".9">
-        <ellipse cx="50" cy="60" rx="55" ry="40" fill="#ffd6e8"/>
-        <circle cx="25" cy="50" r="8" fill="#ff6b9d"/>
-        <circle cx="48" cy="42" r="8" fill="#ff8e53"/>
-        <circle cx="70" cy="50" r="8" fill="#5b3a8c"/>
-        <circle cx="55" cy="68" r="7" fill="#1abc9c"/>
-        <circle cx="32" cy="70" r="6" fill="#ffe066"/>
+        <ellipse cx="50" cy="60" rx="55" ry="40" fill="#e8d9c8"/>
+        <circle cx="25" cy="50" r="8" fill="#0f766e"/>
+        <circle cx="48" cy="42" r="8" fill="#0d9488"/>
+        <circle cx="70" cy="50" r="8" fill="#134e4a"/>
+        <circle cx="55" cy="68" r="7" fill="#0f766e"/>
+        <circle cx="32" cy="70" r="6" fill="#e8d4a8"/>
         <rect x="100" y="20" width="8" height="70" rx="3" fill="#c4a484" transform="rotate(20 104 55)"/>
         <rect x="118" y="15" width="8" height="75" rx="3" fill="#b8956c" transform="rotate(-10 122 52)"/>
-        <ellipse cx="112" cy="18" rx="7" ry="10" fill="#ff6b9d" transform="rotate(20 112 18)"/>
-        <ellipse cx="118" cy="12" rx="7" ry="10" fill="#5b3a8c" transform="rotate(-10 118 12)"/>
+        <ellipse cx="112" cy="18" rx="7" ry="10" fill="#0f766e" transform="rotate(20 112 18)"/>
+        <ellipse cx="118" cy="12" rx="7" ry="10" fill="#134e4a" transform="rotate(-10 118 12)"/>
       </g>
       <!-- stars -->
-      <g fill="#ffd36b" opacity=".75">
+      <g fill="#d4c4a0" opacity=".65">
         <polygon points="240,160 244,170 255,170 246,177 250,188 240,181 230,188 234,177 225,170 236,170"/>
         <polygon points="700,200 703,208 712,208 705,213 708,221 700,216 692,221 695,213 688,208 697,208"/>
         <polygon points="900,420 903,427 910,427 904,431 907,438 900,434 893,438 896,431 890,427 897,427"/>
@@ -537,7 +540,7 @@
           <label class="flex items-center gap-1.5 text-sm text-va-muted w-full sm:w-auto min-w-0">
             <span class="shrink-0 font-semibold">學號</span>
             <span id="field-student-id-display" aria-live="polite"
-              class="inline-flex items-center rounded-full px-3 py-2 text-va-text min-h-touch min-w-0 sm:min-w-[6.5rem] text-sm border border-va-line bg-[#fff7fb] text-va-muted flex-1">——</span>
+              class="inline-flex items-center rounded-full px-3 py-2 text-va-text min-h-touch min-w-0 sm:min-w-[6.5rem] text-sm border border-va-line bg-[#f7efe2] text-va-muted flex-1">——</span>
           </label>
           <span id="roster-load-note" class="hidden text-xs text-red-600 font-semibold">名單載入失敗</span>
           <button type="button" id="btn-idea-bank" class="btn-pill btn-primary px-4 py-2 text-sm">
@@ -613,15 +616,15 @@
         <section class="border-b lg:border-b-0 lg:border-r border-va-line p-3 sm:p-4 flex flex-col gap-3">
           <div id="source-picker" class="space-y-2"></div>
           <div id="context-hint" class="text-sm bg-va-light text-va-purple rounded-[18px] px-3 py-2 border border-va-line"></div>
-          <div id="canvas-stage" class="relative flex-1 min-h-[200px] sm:min-h-[280px] lg:min-h-[360px] max-h-[40vh] lg:max-h-none lg:!h-auto rounded-[18px] overflow-hidden bg-[#fff0f6] border-2 border-va-line">
+          <div id="canvas-stage" class="relative flex-1 min-h-[200px] sm:min-h-[280px] lg:min-h-[360px] max-h-[40vh] lg:max-h-none lg:!h-auto rounded-[18px] overflow-hidden bg-[#ecf5f4] border-2 border-va-line">
             <!-- artwork injected -->
           </div>
-          <p class="text-xs text-va-muted">提示：點擊畫面上的粉紅色大頭針可檢視／編輯註記；點擊空白處可新增大頭針（最多 6 個）。</p>
+          <p class="text-xs text-va-muted">提示：點擊畫面上的青瓷色大頭針可檢視／編輯註記；點擊空白處可新增大頭針（最多 6 個）。</p>
           <div id="pin-notes-list" class="space-y-2 max-h-40 overflow-y-auto text-sm"></div>
         </section>
 
         <!-- Right: Steps -->
-        <section id="step-panel" class="p-3 sm:p-4 flex flex-col gap-3 bg-[#fff7fb]">
+        <section id="step-panel" class="p-3 sm:p-4 flex flex-col gap-3 bg-[#f7efe2]">
           <nav class="step-nav flex flex-wrap gap-1.5 overflow-x-auto lg:overflow-visible -mx-0.5 px-0.5 pb-1" aria-label="評賞五步驟">
             <button type="button" data-step="0" class="step-btn active snap-start shrink-0 px-3.5 py-2.5 text-sm font-medium">① 整體感受</button>
             <button type="button" data-step="1" class="step-btn snap-start shrink-0 px-3.5 py-2.5 text-sm font-medium">② 表象描述</button>
@@ -656,7 +659,7 @@
   <!-- Idea Bank Modal -->
   <div id="idea-modal" class="modal-backdrop hidden no-print" role="dialog" aria-modal="true" aria-labelledby="idea-title">
     <div class="bg-white rounded-[22px] shadow-soft border border-va-line max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
-      <div class="bg-gradient-to-r from-[#ff6b9d] to-[#ff8e53] text-white px-4 py-3 flex items-center justify-between">
+      <div class="bg-gradient-to-r from-[#0f766e] to-[#134e4a] text-white px-4 py-3 flex items-center justify-between">
         <h2 id="idea-title" class="font-bold text-lg comic">💡 點子庫</h2>
         <button type="button" id="idea-close" class="min-w-touch min-h-touch text-2xl leading-none px-2" aria-label="關閉">×</button>
       </div>
@@ -719,8 +722,8 @@
 
   <!-- Print card -->
   <article id="print-card" aria-hidden="true">
-    <header style="border-bottom:3px solid #e8437a;padding-bottom:8px;margin-bottom:12px;">
-      <h1 style="font-size:22pt;color:#e8437a;margin:0;">VA-Lingo 藝言堂 · 評賞歷程卡</h1>
+    <header style="border-bottom:3px solid #0f766e;padding-bottom:8px;margin-bottom:12px;">
+      <h1 style="font-size:22pt;color:#0f766e;margin:0;">VA-Lingo 藝言堂 · 評賞歷程卡</h1>
       <p style="margin:4px 0 0;font-size:11pt;">單元：觀我香港：熱鬧的香港</p>
       <p style="margin:4px 0 0;font-size:11pt;" id="print-meta"></p>
     </header>
@@ -851,9 +854,9 @@
   <path d="M60 320 Q200 300 340 330 T620 310" fill="none" stroke="#1a252f" stroke-width="3" opacity=".15" stroke-linecap="round"/>
   <path d="M100 360 Q280 340 400 355" fill="none" stroke="#1a252f" stroke-width="8" opacity=".08" stroke-linecap="round"/>
   <!-- label -->
-  <rect x="16" y="16" width="168" height="36" rx="6" fill="#e8437a" opacity=".92"/>
+  <rect x="16" y="16" width="168" height="36" rx="6" fill="#0f766e" opacity=".92"/>
   <text x="28" y="40" fill="#fff" font-size="14" font-family="sans-serif" font-weight="700">示範圖像／非真跡</text>
-  <text x="16" y="500" fill="#5b3a8c" font-size="13" font-family="sans-serif" opacity=".85">樊楓《俯城之五》· 水墨都市鳥瞰（示意）</text>
+  <text x="16" y="500" fill="#134e4a" font-size="13" font-family="sans-serif" opacity=".85">樊楓《俯城之五》· 水墨都市鳥瞰（示意）</text>
 </svg>`;
 
     const PEERS = [
@@ -862,21 +865,21 @@
         name: '同學 A · 陳同學',
         title: '維港夜色拼貼',
         hint: '同學以色紙拼貼表現維港兩岸霓虹與倒影。',
-        svg: `<svg viewBox="0 0 400 260" class="w-full h-full" preserveAspectRatio="xMidYMid slice"><rect width="400" height="260" fill="#0b1a2b"/><rect x="20" y="80" width="40" height="100" fill="#f39c12"/><rect x="70" y="60" width="50" height="120" fill="#e74c3c"/><rect x="130" y="90" width="35" height="90" fill="#3498db"/><rect x="180" y="50" width="55" height="130" fill="#9b59b6"/><rect x="250" y="75" width="45" height="105" fill="#1abc9c"/><rect x="310" y="55" width="60" height="125" fill="#e67e22"/><ellipse cx="200" cy="220" rx="160" ry="30" fill="#1a5276" opacity=".6"/><text x="12" y="24" fill="#ffd36b" font-size="12" font-family="sans-serif">示範圖像</text></svg>`
+        svg: `<svg viewBox="0 0 400 260" class="w-full h-full" preserveAspectRatio="xMidYMid slice"><rect width="400" height="260" fill="#0b1a2b"/><rect x="20" y="80" width="40" height="100" fill="#f39c12"/><rect x="70" y="60" width="50" height="120" fill="#e74c3c"/><rect x="130" y="90" width="35" height="90" fill="#3498db"/><rect x="180" y="50" width="55" height="130" fill="#9b59b6"/><rect x="250" y="75" width="45" height="105" fill="#0f766e"/><rect x="310" y="55" width="60" height="125" fill="#e67e22"/><ellipse cx="200" cy="220" rx="160" ry="30" fill="#1a5276" opacity=".6"/><text x="12" y="24" fill="#e8d4a8" font-size="12" font-family="sans-serif">示範圖像</text></svg>`
       },
       {
         id: 'peer2',
         name: '同學 B · 李同學',
         title: '街上的小巴',
         hint: '線描與水彩：熱鬧街景中的紅色小巴。',
-        svg: `<svg viewBox="0 0 400 260" class="w-full h-full" preserveAspectRatio="xMidYMid slice"><rect width="400" height="260" fill="#f5e6d3"/><rect x="0" y="160" width="400" height="100" fill="#bfbfbf"/><rect x="80" y="100" width="140" height="80" rx="8" fill="#c0392b"/><circle cx="110" cy="185" r="16" fill="#2c3e50"/><circle cx="190" cy="185" r="16" fill="#2c3e50"/><rect x="95" y="115" width="30" height="28" fill="#85c1e9"/><rect x="140" y="115" width="50" height="28" fill="#85c1e9"/><rect x="260" y="40" width="50" height="120" fill="#7f8c8d"/><rect x="320" y="60" width="40" height="100" fill="#95a5a6"/><text x="12" y="24" fill="#5b3a8c" font-size="12" font-family="sans-serif">示範圖像</text></svg>`
+        svg: `<svg viewBox="0 0 400 260" class="w-full h-full" preserveAspectRatio="xMidYMid slice"><rect width="400" height="260" fill="#f5e6d3"/><rect x="0" y="160" width="400" height="100" fill="#bfbfbf"/><rect x="80" y="100" width="140" height="80" rx="8" fill="#c0392b"/><circle cx="110" cy="185" r="16" fill="#2c3e50"/><circle cx="190" cy="185" r="16" fill="#2c3e50"/><rect x="95" y="115" width="30" height="28" fill="#85c1e9"/><rect x="140" y="115" width="50" height="28" fill="#85c1e9"/><rect x="260" y="40" width="50" height="120" fill="#7f8c8d"/><rect x="320" y="60" width="40" height="100" fill="#95a5a6"/><text x="12" y="24" fill="#134e4a" font-size="12" font-family="sans-serif">示範圖像</text></svg>`
       },
       {
         id: 'peer3',
         name: '同學 C · 黃同學',
         title: '天台看飛機',
         hint: '粉彩：從天台望向起飛的飛機與密集樓宇。',
-        svg: `<svg viewBox="0 0 400 260" class="w-full h-full" preserveAspectRatio="xMidYMid slice"><rect width="400" height="140" fill="#aed6f1"/><rect y="140" width="400" height="120" fill="#85929e"/><polygon points="40,140 40,90 70,90 70,140" fill="#5d6d7e"/><polygon points="90,140 90,70 130,70 130,140" fill="#566573"/><polygon points="150,140 150,50 200,50 200,140" fill="#2c3e50"/><polygon points="220,140 220,80 270,80 270,140" fill="#34495e"/><polygon points="300,100 340,90 360,110 320,120" fill="#fff" opacity=".9"/><line x1="300" y1="100" x2="280" y2="130" stroke="#fff" stroke-width="2"/><text x="12" y="24" fill="#5b3a8c" font-size="12" font-family="sans-serif">示範圖像</text></svg>`
+        svg: `<svg viewBox="0 0 400 260" class="w-full h-full" preserveAspectRatio="xMidYMid slice"><rect width="400" height="140" fill="#aed6f1"/><rect y="140" width="400" height="120" fill="#85929e"/><polygon points="40,140 40,90 70,90 70,140" fill="#5d6d7e"/><polygon points="90,140 90,70 130,70 130,140" fill="#566573"/><polygon points="150,140 150,50 200,50 200,140" fill="#2c3e50"/><polygon points="220,140 220,80 270,80 270,140" fill="#34495e"/><polygon points="300,100 340,90 360,110 320,120" fill="#fff" opacity=".9"/><line x1="300" y1="100" x2="280" y2="130" stroke="#fff" stroke-width="2"/><text x="12" y="24" fill="#134e4a" font-size="12" font-family="sans-serif">示範圖像</text></svg>`
       }
     ];
 
@@ -1410,8 +1413,8 @@
     function masterArtworkHtml(compact) {
       const thumbCls = compact ? 'w-full h-full object-contain' : 'absolute inset-0 w-full h-full object-contain';
       const wrapCls = compact
-        ? 'relative w-full h-full bg-[#fff0f6] overflow-hidden'
-        : 'relative w-full h-full bg-[#fff0f6]';
+        ? 'relative w-full h-full bg-[#ecf5f4] overflow-hidden'
+        : 'relative w-full h-full bg-[#ecf5f4]';
       // Image hook ready for later download; onerror keeps 示範圖像 SVG visible.
       return `<div class="${wrapCls}" data-master-art="1">
   <img id="master-art" src="${MASTER_ART_SRC}" alt="樊楓《俯城之五》" class="${thumbCls} z-[1]"
@@ -1420,7 +1423,7 @@
     onerror="this.style.display='none'; var fb=this.parentElement.querySelector('[data-master-fallback]'); if(fb) fb.style.display=''; var lb=this.parentElement.querySelector('[data-demo-label]'); if(lb) lb.style.display='';" />
   <div data-master-fallback class="absolute inset-0 w-full h-full">${MASTER_SVG}</div>
   <div data-demo-label class="absolute top-2 left-2 z-[2] pointer-events-none">
-    <span class="inline-block rounded-full px-2.5 py-1 text-[11px] font-bold text-white" style="background:linear-gradient(90deg,#ff6b9d,#ff8e53);box-shadow:0 2px 0 #ffd36b;">示範圖像／待載入真跡圖</span>
+    <span class="inline-block rounded-full px-2.5 py-1 text-[11px] font-bold text-white" style="background:linear-gradient(90deg,#0f766e,#134e4a);box-shadow:0 2px 0 #c4b5a0;">示範圖像／待載入真跡圖</span>
   </div>
 </div>`;
     }
@@ -1600,7 +1603,7 @@
       }
       list.innerHTML = pins.map((p, i) => `
         <div class="flex gap-2 items-start bg-white border border-va-line rounded-[14px] p-2">
-          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#ff6b9d] text-white text-xs font-bold shrink-0">${i + 1}</span>
+          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#0f766e] text-white text-xs font-bold shrink-0">${i + 1}</span>
           <span class="flex-1 text-slate-700">${escapeHtml(p.note || '（未寫註記）')}</span>
         </div>`).join('');
     }
@@ -1958,7 +1961,7 @@
       }
 
       if (state.source === 'peer' && state.step === 4) {
-        html += `<div class="bg-[#fff0f6] border border-va-line rounded-[18px] p-3 mb-2">
+        html += `<div class="bg-[#ecf5f4] border border-va-line rounded-[18px] p-3 mb-2">
           <p class="text-sm font-semibold text-va-blue mb-2 comic">同儕回饋句式（點選填入）</p>
           <div class="flex flex-wrap gap-2">` +
           PEER_STARTERS.map(s => `<button type="button" class="chip peer-starter" data-starter="${escapeHtml(s)}">${escapeHtml(s)}</button>`).join('') +
@@ -1987,7 +1990,7 @@
         const checked = state.rubrics[rk] || {};
         (RUBRICS[step.id] || []).forEach((item, i) => {
           html += `<label class="rubric-item flex items-center gap-2 bg-white border rounded-lg px-3 py-2 cursor-pointer">
-            <input type="checkbox" data-rubric="${i}" class="w-5 h-5 accent-[#ff6b9d]" ${checked[i] ? 'checked' : ''}/>
+            <input type="checkbox" data-rubric="${i}" class="w-5 h-5 accent-[#0f766e]" ${checked[i] ? 'checked' : ''}/>
             <span class="text-sm">${escapeHtml(item)}</span>
           </label>`;
         });
@@ -2123,7 +2126,7 @@
           const parts = state.answers[answerKey('scaffold')] || [];
           const filled = (SCAFFOLDS[st.id][state.ks] || '').replace(/<span class="scaffold-blank"[^>]*><\/span>/g, () => {
             const t = parts.shift();
-            return '<u style="color:#e8437a;font-weight:600;">' + escapeHtml(t || '……') + '</u>';
+            return '<u style="color:#0f766e;font-weight:600;">' + escapeHtml(t || '……') + '</u>';
           });
           // simpler: just show joined blanks
           const saved = state.answers[answerKey('scaffold')] || [];
@@ -2138,14 +2141,14 @@
           }
         }
         blocks += `<section style="margin-bottom:10px;page-break-inside:avoid;">
-          <h3 style="margin:0 0 4px;color:#e8437a;font-size:12pt;border-left:4px solid #ff6b9d;padding-left:8px;">${st.emoji} ${i + 1}. ${st.title}</h3>
+          <h3 style="margin:0 0 4px;color:#0f766e;font-size:12pt;border-left:4px solid #0f766e;padding-left:8px;">${st.emoji} ${i + 1}. ${st.title}</h3>
           <div style="font-size:11pt;">${body}</div>
         </section>`;
       });
       state.step = prevStep;
       const pins = scopedPins().filter(p => p.note);
       if (pins.length) {
-        blocks += `<section style="margin-top:8px;"><h3 style="color:#e8437a;font-size:12pt;">大頭針註記</h3><ol>` +
+        blocks += `<section style="margin-top:8px;"><h3 style="color:#0f766e;font-size:12pt;">大頭針註記</h3><ol>` +
           pins.map(p => `<li>${escapeHtml(p.note)}</li>`).join('') + `</ol></section>`;
       }
       stepsEl.innerHTML = blocks;

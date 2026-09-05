@@ -1,40 +1,32 @@
-# VA-Lingo visual restyle (mhchow-aligned)
+# VA-Lingo visual restyle（宣紙／青瓷／朱砂）
 
-Restyled `index.html` to match the school gift-redemption (mhchow) primary-school visual language. Functionality unchanged.
+`index.html` 改為視藝前端配色「宣紙主調＋青瓷＋朱砂」。功能不變（KS 鷹架、Firebase 畫廊、Drive 提交、手機版修正皆保留）。
 
-## Tokens adopted
+## Tokens
 
 | Token | Value | Role |
 |-------|-------|------|
-| `--accent` | `#ff6b9d` | Primary pink |
-| `--accent-dark` | `#e8437a` | Bubbly titles / emphasis |
-| `--purple` | `#5b3a8c` | Secondary accents |
-| `--soft` | `#ffe3ef` | Soft fills / blanks |
-| `--text` | `#3b2a55` | Body text |
-| `--muted` | `#7a6a8a` | Secondary text |
-| `--line` | `#ffd6e8` | Borders |
-| `--bg` | `#fff7fb` | Page background |
-| `--radius` | `22px` | Card corners |
-| `--shadow` | `0 12px 28px rgba(255,107,157,.16)` | Soft pink elevation |
-| `--ok` | `#1abc9c` | Completed step pills |
+| `--bg` | `#f7efe2` | 宣紙紙底 |
+| `--paper` / `--soft` | `#fffaf3` | 暖白表面／軟填色 |
+| `--text` | `#2c2420` | 墨色正文 |
+| `--muted` | `#6b5e55` | 次要文字 |
+| `--line` | `#e8d9c8` | 卡片／邊線 |
+| `--accent` / `--accent-dark` / `--ok` | `#0f766e` | 青瓷主色（按鈕、分頁、完成態） |
+| `--cinnabar` | `#b91c1c` | 朱砂強調（稀疏：清除鈕、針腳 hover） |
+| `--purple` | `#134e4a` | 次級青瓷深色 |
+| `--shadow` | `0 12px 28px rgba(15,118,110,.12)` | 青瓷柔陰影 |
+| Font | **Noto Sans TC** | 標題與正文皆保留 |
 
-Tailwind `va.*` aliases remapped: `va-blue` → accent-dark, `va-gold` → accent, `va-light` → soft, plus `va-purple` / `va-line` / `va-bg` / `va-ok`.
-
-## Typography
-
-- Google Fonts: **Yusei Magic** + **ZCOOL KuaiLe** (+ Noto Sans TC)
-- Titles / comic labels: ZCOOL KuaiLe (`.comic`, `.title-bubble`)
-- Body: Yusei Magic / rounded CJK stack
+Tailwind `va.*`：`va-blue` / `va-gold` → 青瓷 `#0f766e`；`va-light` → `#ecf5f4`；`va-bg` → `#f7efe2`；`va-line` → `#e8d9c8`；`va-cinnabar` → `#b91c1c`。
 
 ## Components
 
-- **Buttons:** pill (`border-radius: 999px`); primary = `linear-gradient(90deg, #ff6b9d, #ff8e53)` + yellow under-shadow `0 3px 0 #ffd36b`
-- **Cards / panels:** white, ~18–22px radius, pink border + soft pink shadow
-- **Chips:** soft pink/lavender pills; hover uses accent + yellow under-shadow
-- **Step pills:** active = accent gradient; completed (prior steps) = teal/ok `#1abc9c` tint
-- **Header:** white/pink glassy bar with bubbly `#e8437a` title (not corporate academy blue)
-- **Background:** `#fff7fb` + lightweight SVG scene (smiling sun, clouds, balloons, art palette/brushes) — no mhchow base64 JPEG
+- **Buttons:** 圓角 pill；主鈕純青瓷（不再用粉橘漸層／黃底陰影）
+- **Cards / chips / sticky bars:** 宣紙底、暖白卡面、紙色邊線
+- **Step pills:** 進行中＝青瓷；完成＝青瓷淡底
+- **Header / mode tabs:** 白／紙玻璃感，標題青瓷，無糖果粉紅大底
+- **朱砂:** 僅用於強調互動（如 blank clear、pin active），不作大面積填色
 
-## Kept working
+## Dropped
 
-KS1/KS2, scaffold levels, three source tabs, five steps, pins, vocab chips, idea bank, localStorage, print export, masterwork SVG, peer gallery, self upload, zh-HK copy. Touch targets remain ≥44px.
+Gift-exchange / mhchow 糖果粉紅大底（`#fff7fb`、`#ff6b9d`、`#ffe3ef` 等）已移除。
