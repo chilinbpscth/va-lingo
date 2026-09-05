@@ -108,17 +108,32 @@
     .chip {
       min-height: 44px; padding: 0.5rem 0.95rem; border-radius: 9999px;
       border: 1.5px solid var(--line); background: #fff7fb; color: var(--text);
-      font-size: 0.875rem; cursor: pointer; transition: all .15s; white-space: nowrap;
+      font-size: 0.875rem; cursor: grab; transition: all .15s; white-space: nowrap;
       box-shadow: 0 2px 0 #ffe3ef;
+      touch-action: none; user-select: none; -webkit-user-select: none;
     }
     .chip:hover, .chip:focus {
       border-color: var(--accent); background: #fff0f6;
       box-shadow: 0 3px 0 #ffd36b;
     }
-    .chip.used { opacity: .55; border-style: dashed; box-shadow: none; }
+    .chip.used { opacity: .55; border-style: dashed; box-shadow: none; cursor: grab; }
+    .chip.dragging { opacity: .35; }
     .chip.selected, .chip.on {
       background: linear-gradient(90deg, #ff6b9d, #ff8e53);
       color: #fff; border-color: transparent; box-shadow: 0 3px 0 #ffd36b;
+    }
+    .chip-ghost {
+      position: fixed; z-index: 250; pointer-events: none;
+      min-height: 44px; padding: 0.5rem 0.95rem; border-radius: 9999px;
+      border: 1.5px solid var(--accent); background: #fff0f6; color: var(--text);
+      font-size: 0.875rem; white-space: nowrap; font-weight: 600;
+      box-shadow: 0 8px 20px rgba(255,107,157,.35), 0 3px 0 #ffd36b;
+      transform: translate(-50%, -50%) scale(1.06);
+      opacity: .95;
+    }
+    .scaffold-blank.drag-over {
+      background: #ffe3ef !important;
+      box-shadow: 0 0 0 3px rgba(255,107,157,.35);
     }
     .step-btn {
       min-height: 44px; min-width: 44px;
@@ -141,12 +156,30 @@
       box-shadow: 0 2px 0 #a8e6d8;
     }
     .scaffold-blank {
-      display: inline-block; min-width: 4.5rem;
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 4.5rem; min-height: 44px; vertical-align: middle;
       border-bottom: 2px dashed var(--accent-dark);
       padding: 0 .35rem; margin: 0 .15rem; color: var(--accent-dark); font-weight: 600;
       cursor: text; outline: none; background: var(--soft); border-radius: 6px 6px 0 0;
+      transition: background .15s, box-shadow .15s;
     }
     .scaffold-blank:empty::before { content: '_____'; color: #c4a8b8; font-weight: 400; }
+    .scaffold-blank.filled {
+      display: inline-flex; align-items: center; gap: .2rem;
+      min-height: 44px; padding: .2rem .35rem .2rem .75rem;
+      border: 1.5px solid var(--accent); border-bottom: 1.5px solid var(--accent);
+      border-radius: 9999px; background: #fff0f6; color: var(--accent-dark);
+      cursor: default; box-shadow: 0 2px 0 #ffe3ef;
+    }
+    .scaffold-blank.filled:empty::before { content: none; }
+    .blank-clear {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 32px; min-height: 32px; margin-left: .1rem;
+      border: none; border-radius: 9999px; background: #ffd6e7; color: #c2185b;
+      font-size: 1.1rem; line-height: 1; cursor: pointer; font-weight: 700;
+      padding: 0;
+    }
+    .blank-clear:hover, .blank-clear:focus { background: #ff6b9d; color: #fff; }
     .mood-btn {
       min-width: 56px; min-height: 56px; font-size: 1.75rem;
       border-radius: 1rem; border: 1.5px solid var(--line); background: #fff;
@@ -753,7 +786,8 @@
       moods: {},
       rubrics: {},
       usedChips: {},
-      lastBlankTarget: null
+      lastBlankTarget: null,
+      selectedChipWord: null
     };
 
     function stepKey() {
@@ -1010,26 +1044,267 @@
       renderCanvas();
     }
 
+    let chipPointer = null; // { word, btn, startX, startY, dragging, pointerId, ghost }
+
+    function vocabWordList() {
+      const v = VOCAB[state.ks];
+      return [...(v.elements || []), ...(v.principles || [])];
+    }
+
+    function blankPlainText(blank) {
+      if (!blank) return '';
+      const clone = blank.cloneNode(true);
+      clone.querySelectorAll('.blank-clear').forEach(el => el.remove());
+      return (clone.textContent || '').trim();
+    }
+
+    function clearChipSelection() {
+      state.selectedChipWord = null;
+      document.querySelectorAll('#chips-elements .chip.selected, #chips-principles .chip.selected')
+        .forEach(el => el.classList.remove('selected'));
+    }
+
+    function setChipSelection(word, btn) {
+      clearChipSelection();
+      state.selectedChipWord = word;
+      if (btn) btn.classList.add('selected');
+    }
+
+    function syncUsedChipsFromBlanks() {
+      const key = answerKey('chips');
+      const used = {};
+      document.querySelectorAll('#step-content .scaffold-blank[data-chip-word]').forEach(b => {
+        const w = b.getAttribute('data-chip-word');
+        if (w) used[w] = true;
+      });
+      state.usedChips[key] = used;
+    }
+
+    function markWordUsed(word) {
+      const key = answerKey('chips');
+      state.usedChips[key] = state.usedChips[key] || {};
+      state.usedChips[key][word] = true;
+    }
+
+    function removeChipGhost() {
+      document.querySelectorAll('.chip-ghost').forEach(g => g.remove());
+      document.querySelectorAll('.scaffold-blank.drag-over').forEach(b => b.classList.remove('drag-over'));
+    }
+
+    function blankFromPoint(x, y) {
+      const stack = document.elementsFromPoint(x, y);
+      for (const el of stack) {
+        if (el.classList && el.classList.contains('scaffold-blank')) return el;
+        const parent = el.closest && el.closest('.scaffold-blank');
+        if (parent) return parent;
+      }
+      return null;
+    }
+
+    function highlightBlankUnder(x, y) {
+      document.querySelectorAll('.scaffold-blank.drag-over').forEach(b => b.classList.remove('drag-over'));
+      const blank = blankFromPoint(x, y);
+      if (blank) blank.classList.add('drag-over');
+    }
+
+    function createChipGhost(word, x, y) {
+      removeChipGhost();
+      const ghost = document.createElement('div');
+      ghost.className = 'chip-ghost';
+      ghost.textContent = word;
+      ghost.style.left = x + 'px';
+      ghost.style.top = y + 'px';
+      document.body.appendChild(ghost);
+      return ghost;
+    }
+
+    function setBlankAsChip(blank, word) {
+      blank.classList.add('filled');
+      blank.setAttribute('data-chip-word', word);
+      blank.contentEditable = 'false';
+      blank.innerHTML = `${escapeHtml(word)}<button type="button" class="blank-clear" aria-label="清除詞彙">×</button>`;
+      const clr = blank.querySelector('.blank-clear');
+      if (clr) {
+        clr.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          clearScaffoldBlank(blank);
+        });
+        clr.addEventListener('pointerdown', (e) => e.stopPropagation());
+      }
+    }
+
+    function resetBlankEditable(blank) {
+      blank.classList.remove('filled', 'drag-over');
+      blank.removeAttribute('data-chip-word');
+      blank.contentEditable = 'true';
+      blank.textContent = '';
+    }
+
+    function clearScaffoldBlank(blank) {
+      if (!blank) return;
+      resetBlankEditable(blank);
+      syncUsedChipsFromBlanks();
+      persistScaffold();
+      renderChips();
+      save();
+    }
+
+    function placeChipOnBlank(word, blank) {
+      if (!blank || !word) return false;
+      // Replacing an existing chip fill is allowed
+      setBlankAsChip(blank, word);
+      state.lastBlankTarget = blank;
+      clearChipSelection();
+      syncUsedChipsFromBlanks();
+      persistScaffold();
+      renderChips();
+      save();
+      return true;
+    }
+
+    function decorateRestoredBlank(blank, text) {
+      const t = (text || '').trim();
+      if (!t) {
+        resetBlankEditable(blank);
+        return;
+      }
+      if (vocabWordList().includes(t)) {
+        setBlankAsChip(blank, t);
+      } else {
+        blank.classList.remove('filled');
+        blank.removeAttribute('data-chip-word');
+        blank.contentEditable = 'true';
+        blank.textContent = t;
+      }
+    }
+
+    function bindVocabChip(btn) {
+      const word = btn.getAttribute('data-word');
+      btn.setAttribute('draggable', 'true');
+      btn.addEventListener('dragstart', (e) => {
+        // Prefer pointer-based drag (iPad-friendly); cancel native HTML5 DnD.
+        e.preventDefault();
+      });
+      btn.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        if (chipPointer) return;
+        chipPointer = {
+          word,
+          btn,
+          startX: e.clientX,
+          startY: e.clientY,
+          dragging: false,
+          pointerId: e.pointerId,
+          ghost: null
+        };
+        try { btn.setPointerCapture(e.pointerId); } catch (_) {}
+      });
+      btn.addEventListener('pointermove', (e) => {
+        if (!chipPointer || chipPointer.pointerId !== e.pointerId) return;
+        const dx = e.clientX - chipPointer.startX;
+        const dy = e.clientY - chipPointer.startY;
+        if (!chipPointer.dragging && Math.hypot(dx, dy) > 8) {
+          chipPointer.dragging = true;
+          clearChipSelection();
+          btn.classList.add('dragging');
+          chipPointer.ghost = createChipGhost(word, e.clientX, e.clientY);
+        }
+        if (chipPointer.dragging && chipPointer.ghost) {
+          chipPointer.ghost.style.left = e.clientX + 'px';
+          chipPointer.ghost.style.top = e.clientY + 'px';
+          highlightBlankUnder(e.clientX, e.clientY);
+        }
+      });
+      const endPointer = (e) => {
+        if (!chipPointer || chipPointer.pointerId !== e.pointerId) return;
+        const wasDragging = chipPointer.dragging;
+        const w = chipPointer.word;
+        const b = chipPointer.btn;
+        if (wasDragging) {
+          const target = blankFromPoint(e.clientX, e.clientY);
+          if (target) placeChipOnBlank(w, target);
+          else toast('請拖到句式空格上');
+        } else {
+          // Tap: select / deselect — does NOT auto-paste into next blank
+          if (state.selectedChipWord === w) clearChipSelection();
+          else setChipSelection(w, b);
+        }
+        try { b.releasePointerCapture(e.pointerId); } catch (_) {}
+        b.classList.remove('dragging');
+        removeChipGhost();
+        chipPointer = null;
+      };
+      btn.addEventListener('pointerup', endPointer);
+      btn.addEventListener('pointercancel', endPointer);
+      // Block legacy click-to-paste
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    }
+
+    function bindScaffoldBlank(blank) {
+      blank.addEventListener('focus', () => { state.lastBlankTarget = blank; });
+      blank.addEventListener('input', () => {
+        // Manual typing — not a chip fill
+        if (blank.getAttribute('data-chip-word')) {
+          blank.removeAttribute('data-chip-word');
+          blank.classList.remove('filled');
+          const clr = blank.querySelector('.blank-clear');
+          if (clr) clr.remove();
+          syncUsedChipsFromBlanks();
+          renderChips();
+        }
+        persistScaffold();
+      });
+      blank.addEventListener('blur', persistScaffold);
+
+      blank.addEventListener('pointerdown', (e) => {
+        // If a vocab chip is selected, place it on this blank (two-step iPad fallback)
+        if (state.selectedChipWord) {
+          e.preventDefault();
+          placeChipOnBlank(state.selectedChipWord, blank);
+          return;
+        }
+        // Tap filled chip-blank again to clear (× also works)
+        if (blank.classList.contains('filled') && blank.getAttribute('data-chip-word')) {
+          if (e.target && e.target.classList && e.target.classList.contains('blank-clear')) return;
+          e.preventDefault();
+          clearScaffoldBlank(blank);
+        }
+      });
+    }
+
     function renderChips() {
       const vocab = VOCAB[state.ks];
       const used = state.usedChips[answerKey('chips')] || {};
       const mk = (arr, hostId) => {
         const host = document.getElementById(hostId);
-        host.innerHTML = arr.map(w => `<button type="button" class="chip ${used[w] ? 'used' : ''}" data-word="${escapeHtml(w)}">${escapeHtml(w)}</button>`).join('');
-        host.querySelectorAll('.chip').forEach(btn => {
-          btn.addEventListener('click', () => insertChip(btn.getAttribute('data-word')));
-        });
+        if (!host) return;
+        host.innerHTML = arr.map(w => {
+          const sel = state.selectedChipWord === w ? 'selected' : '';
+          return `<button type="button" class="chip ${used[w] ? 'used' : ''} ${sel}" data-word="${escapeHtml(w)}" draggable="true">${escapeHtml(w)}</button>`;
+        }).join('');
+        host.querySelectorAll('.chip').forEach(bindVocabChip);
       };
       mk(vocab.elements, 'chips-elements');
       mk(vocab.principles, 'chips-principles');
     }
 
+    /** Idea bank / peer helpers: insert into focused blank or textarea (not used by vocab chips). */
     function insertChip(word) {
       const blank = state.lastBlankTarget && document.body.contains(state.lastBlankTarget)
         ? state.lastBlankTarget
-        : document.querySelector('#step-content .scaffold-blank');
-      if (blank && blank.isContentEditable) {
-        blank.textContent = (blank.textContent || '') ? blank.textContent + word : word;
+        : document.querySelector('#step-content .scaffold-blank:not(.filled)') ||
+          document.querySelector('#step-content .scaffold-blank');
+      if (blank) {
+        // Free-text / idea paste into blank
+        blank.classList.remove('filled');
+        blank.removeAttribute('data-chip-word');
+        blank.contentEditable = 'true';
+        const existing = blankPlainText(blank);
+        blank.textContent = existing ? existing + word : word;
         blank.focus();
         persistScaffold();
       } else {
@@ -1046,16 +1321,14 @@
           return;
         }
       }
-      const key = answerKey('chips');
-      state.usedChips[key] = state.usedChips[key] || {};
-      state.usedChips[key][word] = true;
+      markWordUsed(word);
       renderChips();
       save();
     }
 
     function persistScaffold() {
       const blanks = [...document.querySelectorAll('#step-content .scaffold-blank')];
-      state.answers[answerKey('scaffold')] = blanks.map(b => b.textContent || '');
+      state.answers[answerKey('scaffold')] = blanks.map(b => blankPlainText(b));
       save();
     }
 
@@ -1097,15 +1370,15 @@
         const saved = state.answers[sk] || [];
         const template = SCAFFOLDS[step.id][state.ks];
         html += `<div id="scaffold-box" class="bg-white border-2 border-va-line rounded-[18px] p-4 text-base leading-relaxed">${template}</div>
-          <p class="text-xs text-va-muted mt-1">點擊詞彙芯片可填入空格；亦可直接點空格輸入。</p>`;
+          <p class="text-xs text-va-muted mt-1">將詞彙拖入空格；亦可點空格自行輸入。iPad：先點詞彙再點空格。</p>`;
         panel.innerHTML = html + '</div>';
+        clearChipSelection();
         const blanks = panel.querySelectorAll('.scaffold-blank');
         blanks.forEach((b, i) => {
-          if (saved[i]) b.textContent = saved[i];
-          b.addEventListener('focus', () => { state.lastBlankTarget = b; });
-          b.addEventListener('input', persistScaffold);
-          b.addEventListener('blur', persistScaffold);
+          decorateRestoredBlank(b, saved[i] || '');
+          bindScaffoldBlank(b);
         });
+        syncUsedChipsFromBlanks();
       } else {
         const open = state.answers[answerKey('open')] || '';
         html += `<textarea id="open-text" rows="6" class="w-full border-2 border-va-line rounded-[18px] p-3 text-base" placeholder="請以完整句子書寫你的${step.title}……">${escapeHtml(open)}</textarea>`;
@@ -1148,8 +1421,18 @@
         btn.addEventListener('click', () => {
           const s = btn.getAttribute('data-starter');
           if (useScaffold) {
-            const blank = document.querySelector('#step-content .scaffold-blank');
-            if (blank) { blank.textContent = s; state.lastBlankTarget = blank; persistScaffold(); }
+            const blank = document.querySelector('#step-content .scaffold-blank:not(.filled)') ||
+              document.querySelector('#step-content .scaffold-blank');
+            if (blank) {
+              blank.classList.remove('filled');
+              blank.removeAttribute('data-chip-word');
+              blank.contentEditable = 'true';
+              blank.textContent = s;
+              state.lastBlankTarget = blank;
+              syncUsedChipsFromBlanks();
+              persistScaffold();
+              renderChips();
+            }
           } else {
             const ta = document.getElementById('open-text');
             if (ta) { ta.value = (ta.value ? ta.value + '\n' : '') + s; persistOpenText(); }
