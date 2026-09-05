@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>VA-Lingo 藝言堂 — 觀我香港：熱鬧的香港</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;800&family=Yusei+Magic&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            va: {
+              blue: '#e8437a',
+              gold: '#ff6b9d',
+              light: '#ffe3ef',
+              muted: '#7a6a8a',
+              purple: '#5b3a8c',
+              soft: '#ffe3ef',
+              text: '#3b2a55',
+              line: '#ffd6e8',
+              bg: '#fff7fb',
+              ok: '#1abc9c'
+            }
+          },
+          minHeight: { touch: '44px' },
+          minWidth: { touch: '44px' },
+          borderRadius: { card: '22px' },
+          boxShadow: { soft: '0 12px 28px rgba(255, 107, 157, .16)' }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      --accent: #ff6b9d;
+      --accent-dark: #e8437a;
+      --purple: #5b3a8c;
+      --soft: #ffe3ef;
+      --text: #3b2a55;
+      --muted: #7a6a8a;
+      --line: #ffd6e8;
+      --bg: #fff7fb;
+      --radius: 22px;
+      --shadow: 0 12px 28px rgba(255, 107, 157, .16);
+      --ok: #1abc9c;
+      --va-blue: #e8437a;
+      --va-gold: #ff6b9d;
+    }
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    .comic {
+      font-family: "ZCOOL KuaiLe", "Yusei Magic", "Noto Sans TC", sans-serif;
+      letter-spacing: .04em;
+    }
+    body {
+      font-family: "Yusei Magic", "Noto Sans TC", "PingFang HK", "Microsoft JhengHei", system-ui, sans-serif;
+      color: var(--text);
+      background-color: var(--bg);
+    }
+    .scene-bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+      background:
+        radial-gradient(ellipse 60% 40% at 10% 0%, #ffe8f3 0%, transparent 60%),
+        radial-gradient(ellipse 50% 35% at 90% 8%, #fff0d6 0%, transparent 55%),
+        radial-gradient(ellipse 40% 30% at 80% 90%, #e8f0ff 0%, transparent 50%),
+        var(--bg);
+    }
+    .scene-bg svg { position: absolute; width: 100%; height: 100%; }
+    .app-shell { position: relative; z-index: 1; }
+    .card-surface {
+      background: #fff;
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .btn-pill {
+      border-radius: 999px !important;
+      min-height: 44px;
+      font-weight: 700;
+    }
+    .btn-primary {
+      background: linear-gradient(90deg, #ff6b9d, #ff8e53);
+      color: #fff !important;
+      box-shadow: 0 3px 0 #ffd36b;
+      border: 0 !important;
+    }
+    .btn-primary:hover { filter: brightness(1.05); }
+    .btn-primary:disabled { opacity: .4; filter: none; box-shadow: none; }
+    .btn-ghost {
+      background: #fff;
+      color: var(--accent-dark);
+      border: 1.5px solid var(--line);
+      box-shadow: 0 2px 0 #ffe3ef;
+    }
+    .pin {
+      width: 28px; height: 28px; border-radius: 50% 50% 50% 0;
+      background: #ff6b9d; color: #fff; font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      transform: rotate(-45deg); cursor: pointer; border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(255,107,157,.45); z-index: 10;
+      min-width: 28px; min-height: 28px;
+    }
+    .pin span { transform: rotate(45deg); }
+    .pin:hover, .pin.active { background: #ff8e53; transform: rotate(-45deg) scale(1.15); }
+    .chip {
+      min-height: 44px; padding: 0.5rem 0.95rem; border-radius: 9999px;
+      border: 1.5px solid var(--line); background: #fff7fb; color: var(--text);
+      font-size: 0.875rem; cursor: pointer; transition: all .15s; white-space: nowrap;
+      box-shadow: 0 2px 0 #ffe3ef;
+    }
+    .chip:hover, .chip:focus {
+      border-color: var(--accent); background: #fff0f6;
+      box-shadow: 0 3px 0 #ffd36b;
+    }
+    .chip.used { opacity: .55; border-style: dashed; box-shadow: none; }
+    .chip.selected, .chip.on {
+      background: linear-gradient(90deg, #ff6b9d, #ff8e53);
+      color: #fff; border-color: transparent; box-shadow: 0 3px 0 #ffd36b;
+    }
+    .step-btn {
+      min-height: 44px; min-width: 44px;
+      border-radius: 999px !important;
+      border: 1.5px solid var(--line) !important;
+      background: #fff;
+      color: var(--muted);
+      box-shadow: 0 2px 0 #ffe3ef;
+    }
+    .step-btn.active {
+      background: linear-gradient(90deg, #ff6b9d, #ff8e53) !important;
+      color: #fff !important;
+      border-color: transparent !important;
+      box-shadow: 0 3px 0 #ffd36b;
+    }
+    .step-btn.done {
+      background: #e8faf6 !important;
+      color: #0e8c74 !important;
+      border-color: #1abc9c !important;
+      box-shadow: 0 2px 0 #a8e6d8;
+    }
+    .scaffold-blank {
+      display: inline-block; min-width: 4.5rem;
+      border-bottom: 2px dashed var(--accent-dark);
+      padding: 0 .35rem; margin: 0 .15rem; color: var(--accent-dark); font-weight: 600;
+      cursor: text; outline: none; background: var(--soft); border-radius: 6px 6px 0 0;
+    }
+    .scaffold-blank:empty::before { content: '_____'; color: #c4a8b8; font-weight: 400; }
+    .mood-btn {
+      min-width: 56px; min-height: 56px; font-size: 1.75rem;
+      border-radius: 1rem; border: 1.5px solid var(--line); background: #fff;
+      box-shadow: 0 2px 0 #ffe3ef;
+    }
+    .mood-btn.selected {
+      border-color: var(--accent);
+      background: #fff0f6;
+      box-shadow: 0 0 0 3px rgba(255,107,157,.28), 0 3px 0 #ffd36b;
+    }
+    .ks1-control .chip, .ks1-control button, .ks1-control input, .ks1-control textarea {
+      font-size: 1.05rem; min-height: 48px;
+    }
+    #canvas-stage { position: relative; user-select: none; }
+    .toast {
+      position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(90deg, #ff6b9d, #ff8e53); color: #fff;
+      padding: .65rem 1.25rem; border-radius: 9999px;
+      z-index: 100; opacity: 0; transition: opacity .25s; pointer-events: none;
+      box-shadow: 0 3px 0 #ffd36b, var(--shadow);
+      font-weight: 700;
+    }
+    .toast.show { opacity: 1; }
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(59,42,85,.45); z-index: 80;
+      display: flex; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .rubric-item { min-height: 44px; border-color: var(--line) !important; }
+    @media print {
+      @page { size: A4; margin: 14mm; }
+      body * { visibility: hidden !important; }
+      #print-card, #print-card * { visibility: visible !important; }
+      #print-card {
+        position: absolute; left: 0; top: 0; width: 100%;
+        background: #fff; color: #000; padding: 0;
+      }
+      .no-print, .scene-bg { display: none !important; }
+    }
+    #print-card { display: none; }
+    @media print { #print-card { display: block !important; } }
+    .tab-active {
+      border-bottom: 3px solid var(--accent) !important;
+      color: var(--accent-dark) !important;
+      font-weight: 700;
+    }
+    .src-card {
+      border: 1.5px solid var(--line); border-radius: 18px; cursor: pointer; transition: all .15s;
+      background: #fff;
+    }
+    .src-card:hover, .src-card.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255,107,157,.2), 0 3px 0 #ffd36b;
+    }
+    textarea:focus, input:focus, select:focus {
+      outline: 2px solid var(--accent); outline-offset: 1px;
+    }
+    .title-bubble {
+      color: var(--accent-dark);
+      text-shadow: 0 3px 0 #ffd36b;
+      font-family: "ZCOOL KuaiLe", "Yusei Magic", "Noto Sans TC", sans-serif;
+    }
+    .mode-bar {
+      background: rgba(255,255,255,.92);
+      border-bottom: 1.5px solid var(--line);
+      backdrop-filter: blur(8px);
+    }
+    header.app-header {
+      background: rgba(255,255,255,.95);
+      border-bottom: 1.5px solid var(--line);
+      box-shadow: 0 8px 20px rgba(255,107,157,.1);
+      backdrop-filter: blur(10px);
+    }
+    .logo-badge {
+      background: linear-gradient(135deg, #ff6b9d, #ff8e53);
+      color: #fff;
+      box-shadow: 0 3px 0 #ffd36b;
+    }
+    .seg-toggle {
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1.5px solid var(--line);
+      background: #fff;
+    }
+    .seg-toggle .ks-toggle,
+    .seg-toggle .level-toggle {
+      border-radius: 0;
+    }
+  </style>
+
+</head>
+<body class="text-va-text min-h-screen">
+  <div class="scene-bg no-print" aria-hidden="true">
+    <svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <!-- soft clouds -->
+      <g fill="#ffffff" opacity=".85">
+        <ellipse cx="120" cy="70" rx="70" ry="28"/>
+        <ellipse cx="170" cy="70" rx="45" ry="22"/>
+        <ellipse cx="80" cy="78" rx="40" ry="18"/>
+        <ellipse cx="520" cy="50" rx="60" ry="24"/>
+        <ellipse cx="560" cy="52" rx="36" ry="16"/>
+        <ellipse cx="980" cy="110" rx="55" ry="22"/>
+        <ellipse cx="1020" cy="108" rx="34" ry="15"/>
+      </g>
+      <!-- smiling sun -->
+      <g transform="translate(1080 70)">
+        <circle r="36" fill="#ffe066"/>
+        <g stroke="#ffd36b" stroke-width="4" stroke-linecap="round">
+          <line y1="-48" y2="-58"/><line y1="48" y2="58"/>
+          <line x1="-48" x2="-58"/><line x1="48" x2="58"/>
+          <line x1="-34" y1="-34" x2="-42" y2="-42"/><line x1="34" y1="34" x2="42" y2="42"/>
+          <line x1="34" y1="-34" x2="42" y2="-42"/><line x1="-34" y1="34" x2="-42" y2="42"/>
+        </g>
+        <circle cx="-10" cy="-4" r="3.5" fill="#e8437a"/>
+        <circle cx="10" cy="-4" r="3.5" fill="#e8437a"/>
+        <path d="M-12 10 Q0 20 12 10" fill="none" stroke="#e8437a" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <!-- balloons -->
+      <g opacity=".8">
+        <ellipse cx="90" cy="280" rx="28" ry="36" fill="#ff9ec0"/>
+        <path d="M90 316 Q88 340 95 360" fill="none" stroke="#e8437a" stroke-width="2"/>
+        <circle cx="82" cy="270" r="5" fill="#fff" opacity=".7"/>
+        <ellipse cx="160" cy="340" rx="24" ry="32" fill="#a8d8ff"/>
+        <path d="M160 372 Q162 390 155 410" fill="none" stroke="#5b3a8c" stroke-width="2"/>
+        <ellipse cx="1120" cy="300" rx="26" ry="34" fill="#ffe066"/>
+        <path d="M1120 334 Q1115 355 1122 375" fill="none" stroke="#e67e22" stroke-width="2"/>
+        <!-- heart on pink balloon -->
+        <path d="M82 275 c0-4 6-4 8 0 c2-4 8-4 8 0 c0 5-8 10-8 10 s-8-5-8-10z" fill="#fff" opacity=".85"/>
+      </g>
+      <!-- art palette + brushes (bottom left) -->
+      <g transform="translate(40 620)" opacity=".9">
+        <ellipse cx="50" cy="60" rx="55" ry="40" fill="#ffd6e8"/>
+        <circle cx="25" cy="50" r="8" fill="#ff6b9d"/>
+        <circle cx="48" cy="42" r="8" fill="#ff8e53"/>
+        <circle cx="70" cy="50" r="8" fill="#5b3a8c"/>
+        <circle cx="55" cy="68" r="7" fill="#1abc9c"/>
+        <circle cx="32" cy="70" r="6" fill="#ffe066"/>
+        <rect x="100" y="20" width="8" height="70" rx="3" fill="#c4a484" transform="rotate(20 104 55)"/>
+        <rect x="118" y="15" width="8" height="75" rx="3" fill="#b8956c" transform="rotate(-10 122 52)"/>
+        <ellipse cx="112" cy="18" rx="7" ry="10" fill="#ff6b9d" transform="rotate(20 112 18)"/>
+        <ellipse cx="118" cy="12" rx="7" ry="10" fill="#5b3a8c" transform="rotate(-10 118 12)"/>
+      </g>
+      <!-- stars -->
+      <g fill="#ffd36b" opacity=".75">
+        <polygon points="240,160 244,170 255,170 246,177 250,188 240,181 230,188 234,177 225,170 236,170"/>
+        <polygon points="700,200 703,208 712,208 705,213 708,221 700,216 692,221 695,213 688,208 697,208"/>
+        <polygon points="900,420 903,427 910,427 904,431 907,438 900,434 893,438 896,431 890,427 897,427"/>
+      </g>
+    </svg>
+  </div>
+  <div class="app-shell">
+
+  <!-- Header -->
+  <header class="app-header no-print sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-11 h-11 rounded-full logo-badge flex items-center justify-center font-bold shrink-0 text-lg comic">藝</div>
+          <div class="min-w-0">
+            <h1 class="text-xl sm:text-2xl font-bold leading-tight truncate title-bubble">VA-Lingo 藝言堂</h1>
+            <p class="text-xs sm:text-sm text-va-muted truncate">單元：觀我香港：熱鬧的香港</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="flex items-center gap-1 text-sm text-va-muted">
+            <span class="hidden sm:inline">班別</span>
+            <input id="field-class" type="text" placeholder="例如 4A" maxlength="12"
+              class="rounded-full px-3 py-2 text-va-text min-h-touch w-20 sm:w-24 text-sm border border-va-line bg-white" />
+          </label>
+          <label class="flex items-center gap-1 text-sm text-va-muted">
+            <span class="hidden sm:inline">姓名</span>
+            <input id="field-name" type="text" placeholder="學生姓名" maxlength="20"
+              class="rounded-full px-3 py-2 text-va-text min-h-touch w-24 sm:w-32 text-sm border border-va-line bg-white" />
+          </label>
+          <button type="button" id="btn-idea-bank" class="btn-pill btn-primary px-4 py-2 text-sm">
+            💡 點子庫
+          </button>
+          <button type="button" id="btn-export" class="btn-pill btn-ghost px-4 py-2 text-sm">
+            匯出評賞歷程卡
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mode / Level bar -->
+  <div class="mode-bar no-print sticky top-[72px] z-30">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 flex flex-wrap items-center gap-3 justify-between">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-sm font-semibold text-va-blue comic">學習階段</span>
+        <div class="inline-flex seg-toggle">
+          <button type="button" data-ks="ks1" class="ks-toggle px-4 py-2 min-h-touch text-sm font-semibold bg-va-blue text-white">KS1（小一至小三）</button>
+          <button type="button" data-ks="ks2" class="ks-toggle px-4 py-2 min-h-touch text-sm font-semibold bg-white text-va-blue">KS2（小四至小六）</button>
+        </div>
+      </div>
+      <div id="level-wrap" class="hidden items-center gap-2 flex-wrap">
+        <span class="text-sm font-semibold text-va-blue comic">鷹架層級</span>
+        <div class="inline-flex seg-toggle">
+          <button type="button" data-level="1" class="level-toggle px-4 py-2 min-h-touch text-sm font-semibold bg-va-gold text-white">第一層：句式提示</button>
+          <button type="button" data-level="2" class="level-toggle px-4 py-2 min-h-touch text-sm font-semibold bg-white text-slate-700">第二層：開放書寫</button>
+        </div>
+      </div>
+      <div class="text-xs text-va-muted" id="save-status">尚未儲存</div>
+    </div>
+  </div>
+
+  <!-- Source tabs -->
+  <div class="max-w-7xl mx-auto px-3 sm:px-4 pt-3 no-print">
+    <div class="flex gap-1 border-b border-va-line bg-white/95 rounded-t-[22px] px-2 overflow-x-auto shadow-soft border border-b-0 border-va-line" role="tablist">
+      <button type="button" data-source="master" class="source-tab tab-active px-4 py-3 min-h-touch text-sm whitespace-nowrap comic">大師名作館</button>
+      <button type="button" data-source="self" class="source-tab px-4 py-3 min-h-touch text-sm text-slate-600 whitespace-nowrap">我的創作歷程</button>
+      <button type="button" data-source="peer" class="source-tab px-4 py-3 min-h-touch text-sm text-slate-600 whitespace-nowrap">同儕藝廊</button>
+    </div>
+  </div>
+
+  <!-- Main split -->
+  <main class="max-w-7xl mx-auto px-3 sm:px-4 pb-8 no-print">
+    <div class="bg-white/95 rounded-b-[22px] shadow-soft border border-t-0 border-va-line overflow-hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-[70vh]">
+
+        <!-- Left: Canvas -->
+        <section class="border-b lg:border-b-0 lg:border-r border-va-line p-3 sm:p-4 flex flex-col gap-3">
+          <div id="source-picker" class="space-y-2"></div>
+          <div id="context-hint" class="text-sm bg-va-light text-va-purple rounded-[18px] px-3 py-2 border border-va-line"></div>
+          <div id="canvas-stage" class="relative flex-1 min-h-[280px] sm:min-h-[360px] rounded-[18px] overflow-hidden bg-[#fff0f6] border-2 border-va-line">
+            <!-- artwork injected -->
+          </div>
+          <p class="text-xs text-va-muted">提示：點擊畫面上的粉紅色大頭針可檢視／編輯註記；點擊空白處可新增大頭針（最多 6 個）。</p>
+          <div id="pin-notes-list" class="space-y-2 max-h-40 overflow-y-auto text-sm"></div>
+        </section>
+
+        <!-- Right: Steps -->
+        <section id="step-panel" class="p-3 sm:p-4 flex flex-col gap-3 bg-[#fff7fb]">
+          <nav class="flex flex-wrap gap-1.5" aria-label="評賞五步驟">
+            <button type="button" data-step="0" class="step-btn active px-3 py-2 text-xs sm:text-sm font-medium">① 整體感受</button>
+            <button type="button" data-step="1" class="step-btn px-3 py-2 text-xs sm:text-sm font-medium">② 表象描述</button>
+            <button type="button" data-step="2" class="step-btn px-3 py-2 text-xs sm:text-sm font-medium">③ 形式分析</button>
+            <button type="button" data-step="3" class="step-btn px-3 py-2 text-xs sm:text-sm font-medium">④ 意義詮釋</button>
+            <button type="button" data-step="4" class="step-btn px-3 py-2 text-xs sm:text-sm font-medium">⑤ 價值判斷</button>
+          </nav>
+
+          <div id="step-content" class="flex-1 space-y-3"></div>
+
+          <!-- Vocab -->
+          <div class="border-t border-va-line pt-3 space-y-2">
+            <div>
+              <h3 class="text-sm font-bold text-va-blue mb-1.5 comic">視覺元素</h3>
+              <div id="chips-elements" class="flex flex-wrap gap-2"></div>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-va-blue mb-1.5 comic">組織原理</h3>
+              <div id="chips-principles" class="flex flex-wrap gap-2"></div>
+            </div>
+          </div>
+
+          <div class="flex gap-2 pt-1">
+            <button type="button" id="btn-prev" class="btn-pill btn-ghost flex-1 font-semibold py-2.5 disabled:opacity-40">← 上一步</button>
+            <button type="button" id="btn-next" class="btn-pill btn-primary flex-1 font-semibold py-2.5 disabled:opacity-40">下一步 →</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Idea Bank Modal -->
+  <div id="idea-modal" class="modal-backdrop hidden no-print" role="dialog" aria-modal="true" aria-labelledby="idea-title">
+    <div class="bg-white rounded-[22px] shadow-soft border border-va-line max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
+      <div class="bg-gradient-to-r from-[#ff6b9d] to-[#ff8e53] text-white px-4 py-3 flex items-center justify-between">
+        <h2 id="idea-title" class="font-bold text-lg comic">💡 點子庫</h2>
+        <button type="button" id="idea-close" class="min-w-touch min-h-touch text-2xl leading-none px-2" aria-label="關閉">×</button>
+      </div>
+      <div class="p-4 overflow-y-auto space-y-3 text-sm" id="idea-body"></div>
+      <div class="p-3 border-t border-va-line flex justify-end">
+        <button type="button" id="idea-close-2" class="btn-pill btn-primary px-5 py-2 font-semibold">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pin note popover -->
+  <div id="pin-popover" class="hidden fixed z-50 bg-white rounded-[18px] shadow-soft border-2 border-va-line p-3 w-64 no-print">
+    <label class="text-xs font-semibold text-va-blue">大頭針註記 #<span id="pin-pop-num"></span></label>
+    <textarea id="pin-pop-text" rows="3" class="w-full mt-1 border border-va-line rounded-[14px] p-2 text-sm" placeholder="寫下你看到的細節……"></textarea>
+    <div class="flex gap-2 mt-2">
+      <button type="button" id="pin-pop-save" class="flex-1 btn-pill btn-primary py-2 text-sm">儲存</button>
+      <button type="button" id="pin-pop-del" class="btn-pill btn-ghost px-3 py-2 text-sm text-red-600">刪除</button>
+      <button type="button" id="pin-pop-close" class="btn-pill btn-ghost px-3 py-2 text-sm">關閉</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast no-print" role="status"></div>
+
+  </div><!-- /.app-shell -->
+
+  <!-- Print card -->
+  <article id="print-card" aria-hidden="true">
+    <header style="border-bottom:3px solid #e8437a;padding-bottom:8px;margin-bottom:12px;">
+      <h1 style="font-size:22pt;color:#e8437a;margin:0;">VA-Lingo 藝言堂 · 評賞歷程卡</h1>
+      <p style="margin:4px 0 0;font-size:11pt;">單元：觀我香港：熱鬧的香港</p>
+      <p style="margin:4px 0 0;font-size:11pt;" id="print-meta"></p>
+    </header>
+    <div id="print-artwork-wrap" style="margin-bottom:12px;"></div>
+    <div id="print-steps"></div>
+    <footer style="margin-top:16px;border-top:1px solid #ccc;padding-top:8px;font-size:9pt;color:#666;">
+      Phase-1 原型示範 · 本卡由學生於課堂即時匯出 · 非正式成績單
+    </footer>
+  </article>
+
+  <script>
+  (function () {
+    'use strict';
+
+    const STEPS = [
+      { id: 'feel', title: '整體感受', emoji: '💭' },
+      { id: 'describe', title: '表象描述', emoji: '👀' },
+      { id: 'form', title: '形式分析', emoji: '🔷' },
+      { id: 'meaning', title: '意義詮釋', emoji: '💡' },
+      { id: 'judge', title: '價值判斷', emoji: '⭐' }
+    ];
+
+    const VOCAB = {
+      ks1: {
+        elements: ['線條', '顏色', '形狀', '空間', '質感'],
+        principles: ['重複', '對比', '節奏', '均衡']
+      },
+      ks2: {
+        elements: ['線條', '色彩', '形狀', '空間', '質感', '明暗', '體積'],
+        principles: ['對比', '節奏', '均衡', '統一', '強調', '比例', '漸變']
+      }
+    };
+
+    const MOODS = [
+      { emoji: '😊', label: '開心' },
+      { emoji: '🤩', label: '興奮' },
+      { emoji: '😮', label: '驚訝' },
+      { emoji: '😌', label: '平靜' },
+      { emoji: '🤔', label: '好奇' },
+      { emoji: '🏙️', label: '熱鬧' }
+    ];
+
+    const SCAFFOLDS = {
+      feel: {
+        ks1: '這幅畫令我覺得<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>，因為<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>。',
+        ks2: '初見作品，我感受到<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>的氣氛；最吸引我的是<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>。'
+      },
+      describe: {
+        ks1: '我看見<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>和<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>。畫面裏有很多<span class="scaffold-blank" contenteditable="true" data-blank="2"></span>。',
+        ks2: '畫面前景可見<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>；中景有<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>；遠景則是<span class="scaffold-blank" contenteditable="true" data-blank="2"></span>。'
+      },
+      form: {
+        ks1: '畫家用了<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>的顏色，線條看起來<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>。',
+        ks2: '在視覺元素方面，作品運用<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>與<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>；組織原理上可見<span class="scaffold-blank" contenteditable="true" data-blank="2"></span>，令畫面產生<span class="scaffold-blank" contenteditable="true" data-blank="3"></span>的效果。'
+      },
+      meaning: {
+        ks1: '我想畫家想說香港很<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>。這讓我想到<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>。',
+        ks2: '鳥瞰視角暗示<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>；水墨與都市題材結合，可能表達<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>。我聯想到<span class="scaffold-blank" contenteditable="true" data-blank="2"></span>。'
+      },
+      judge: {
+        ks1: '我<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>這幅畫，因為<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>。我會給它<span class="scaffold-blank" contenteditable="true" data-blank="2"></span>顆星。',
+        ks2: '我認為作品的優點是<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>；若可改善，或可<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>。對我個人而言，其價值在於<span class="scaffold-blank" contenteditable="true" data-blank="2"></span>。'
+      }
+    };
+
+    const RUBRICS = {
+      feel: ['能清楚表達個人感受', '感受與畫面有具體連結'],
+      describe: ['能指出前景／中景／遠景細節', '描述客觀、用詞準確'],
+      form: ['能運用視覺元素詞彙', '能指出至少一項組織原理', '分析與畫面證據呼應'],
+      meaning: ['詮釋有文化／生活連結', '能提出合理推論（非空想）'],
+      judge: ['判斷有理據', '能提出欣賞或改善建議', '展現個人觀點']
+    };
+
+    const PEER_STARTERS = [
+      '我最欣賞你作品中的……',
+      '你用……令畫面看起來很……',
+      '如果再改一點……可能會更……',
+      '這幅畫令我想起……'
+    ];
+
+    const IDEA_BANK = {
+      feel: ['熱鬧而有秩序', '像從飛機望香港', '墨色城市很特別', '既熟悉又陌生'],
+      describe: ['密密麻麻的樓宇', '彎曲的海岸線', '交錯的道路', '淡墨遠山與濃墨高樓'],
+      form: ['疏密對比', '鳥瞰透視', '水墨層次', '線條節奏如脈絡'],
+      meaning: ['都市人的生活節奏', '傳統媒材與現代城市對話', '從高處俯瞰「家」的感覺'],
+      judge: ['成功融合水墨與都市景觀', '視角獨特，引人思考身份與地方', '適合用來討論「我的香港」']
+    };
+
+    const MASTER_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" class="w-full h-full" preserveAspectRatio="xMidYMid slice" role="img" aria-label="示範圖像：水墨都市鳥瞰">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#b8c9d4"/>
+      <stop offset="55%" stop-color="#dfe6eb"/>
+      <stop offset="100%" stop-color="#c5d0d8"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2c3e50"/>
+      <stop offset="100%" stop-color="#1a252f"/>
+    </linearGradient>
+    <filter id="wash"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2"/></filter>
+  </defs>
+  <rect width="800" height="520" fill="url(#sky)"/>
+  <!-- distant hills -->
+  <path d="M0 210 Q120 170 220 195 T420 180 T650 200 T800 175 L800 260 L0 260 Z" fill="#8a9ba8" opacity=".55"/>
+  <path d="M0 230 Q180 200 300 225 T560 210 T800 235 L800 280 L0 280 Z" fill="#6d7f8c" opacity=".45"/>
+  <!-- harbour water -->
+  <ellipse cx="420" cy="400" rx="280" ry="70" fill="#7f9eb0" opacity=".35"/>
+  <path d="M180 380 Q320 360 450 385 T700 375" fill="none" stroke="#5d7a8a" stroke-width="2" opacity=".4"/>
+  <!-- buildings cluster -->
+  <g fill="url(#ink)" opacity=".92">
+    <rect x="90" y="200" width="28" height="160"/><rect x="125" y="170" width="36" height="190"/>
+    <rect x="168" y="210" width="24" height="150"/><rect x="200" y="145" width="42" height="215"/>
+    <rect x="250" y="185" width="30" height="175"/><rect x="288" y="120" width="48" height="240"/>
+    <rect x="345" y="160" width="34" height="200"/><rect x="388" y="100" width="55" height="260"/>
+    <rect x="450" y="150" width="38" height="210"/><rect x="496" y="130" width="44" height="230"/>
+    <rect x="548" y="175" width="32" height="185"/><rect x="588" y="145" width="50" height="215"/>
+    <rect x="648" y="190" width="36" height="170"/><rect x="692" y="165" width="40" height="195"/>
+  </g>
+  <!-- windows hint -->
+  <g fill="#d5e0e8" opacity=".25">
+    <rect x="210" y="160" width="6" height="8"/><rect x="222" y="160" width="6" height="8"/>
+    <rect x="210" y="175" width="6" height="8"/><rect x="300" y="140" width="5" height="7"/>
+    <rect x="400" y="120" width="6" height="8"/><rect x="415" y="120" width="6" height="8"/>
+    <rect x="510" y="150" width="5" height="7"/><rect x="600" y="160" width="6" height="8"/>
+  </g>
+  <!-- ink wash strokes -->
+  <path d="M60 320 Q200 300 340 330 T620 310" fill="none" stroke="#1a252f" stroke-width="3" opacity=".15" stroke-linecap="round"/>
+  <path d="M100 360 Q280 340 400 355" fill="none" stroke="#1a252f" stroke-width="8" opacity=".08" stroke-linecap="round"/>
+  <!-- label -->
+  <rect x="16" y="16" width="168" height="36" rx="6" fill="#e8437a" opacity=".92"/>
+  <text x="28" y="40" fill="#fff" font-size="14" font-family="sans-serif" font-weight="700">示範圖像／非真跡</text>
+  <text x="16" y="500" fill="#5b3a8c" font-size="13" font-family="sans-serif" opacity=".85">樊楓《俯城之五》· 水墨都市鳥瞰（示意）</text>
+</svg>`;
+
+    const PEERS = [
+      {
+        id: 'peer1',
+        name: '同學 A · 陳同學',
+        title: '維港夜色拼貼',
+        hint: '同學以色紙拼貼表現維港兩岸霓虹與倒影。',
+        svg: `<svg viewBox="0 0 400 260" class="w-full h-full" preserveAspectRatio="xMidYMid slice"><rect width="400" height="260" fill="#0b1a2b"/><rect x="20" y="80" width="40" height="100" fill="#f39c12"/><rect x="70" y="60" width="50" height="120" fill="#e74c3c"/><rect x="130" y="90" width="35" height="90" fill="#3498db"/><rect x="180" y="50" width="55" height="130" fill="#9b59b6"/><rect x="250" y="75" width="45" height="105" fill="#1abc9c"/><rect x="310" y="55" width="60" height="125" fill="#e67e22"/><ellipse cx="200" cy="220" rx="160" ry="30" fill="#1a5276" opacity=".6"/><text x="12" y="24" fill="#ffd36b" font-size="12" font-family="sans-serif">示範圖像</text></svg>`
+      },
+      {
+        id: 'peer2',
+        name: '同學 B · 李同學',
+        title: '街上的小巴',
+        hint: '線描與水彩：熱鬧街景中的紅色小巴。',
+        svg: `<svg viewBox="0 0 400 260" class="w-full h-full" preserveAspectRatio="xMidYMid slice"><rect width="400" height="260" fill="#f5e6d3"/><rect x="0" y="160" width="400" height="100" fill="#bfbfbf"/><rect x="80" y="100" width="140" height="80" rx="8" fill="#c0392b"/><circle cx="110" cy="185" r="16" fill="#2c3e50"/><circle cx="190" cy="185" r="16" fill="#2c3e50"/><rect x="95" y="115" width="30" height="28" fill="#85c1e9"/><rect x="140" y="115" width="50" height="28" fill="#85c1e9"/><rect x="260" y="40" width="50" height="120" fill="#7f8c8d"/><rect x="320" y="60" width="40" height="100" fill="#95a5a6"/><text x="12" y="24" fill="#5b3a8c" font-size="12" font-family="sans-serif">示範圖像</text></svg>`
+      },
+      {
+        id: 'peer3',
+        name: '同學 C · 黃同學',
+        title: '天台看飛機',
+        hint: '粉彩：從天台望向起飛的飛機與密集樓宇。',
+        svg: `<svg viewBox="0 0 400 260" class="w-full h-full" preserveAspectRatio="xMidYMid slice"><rect width="400" height="140" fill="#aed6f1"/><rect y="140" width="400" height="120" fill="#85929e"/><polygon points="40,140 40,90 70,90 70,140" fill="#5d6d7e"/><polygon points="90,140 90,70 130,70 130,140" fill="#566573"/><polygon points="150,140 150,50 200,50 200,140" fill="#2c3e50"/><polygon points="220,140 220,80 270,80 270,140" fill="#34495e"/><polygon points="300,100 340,90 360,110 320,120" fill="#fff" opacity=".9"/><line x1="300" y1="100" x2="280" y2="130" stroke="#fff" stroke-width="2"/><text x="12" y="24" fill="#5b3a8c" font-size="12" font-family="sans-serif">示範圖像</text></svg>`
+      }
+    ];
+
+    const STORAGE_KEY = 'va-lingo-phase1-v1';
+
+    const state = {
+      ks: 'ks2',
+      level: 1,
+      source: 'master',
+      selectedPeer: 'peer1',
+      step: 0,
+      className: '',
+      studentName: '',
+      selfImage: null,
+      pins: [],
+      activePin: null,
+      answers: {},
+      moods: {},
+      rubrics: {},
+      usedChips: {},
+      lastBlankTarget: null
+    };
+
+    function stepKey() {
+      return STEPS[state.step].id;
+    }
+
+    function answerKey(extra) {
+      return [state.ks, state.source, state.source === 'peer' ? state.selectedPeer : 'main', stepKey(), extra || ''].filter(Boolean).join('|');
+    }
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => el.classList.remove('show'), 2200);
+    }
+
+    function save() {
+      try {
+        const payload = {
+          ks: state.ks,
+          level: state.level,
+          source: state.source,
+          selectedPeer: state.selectedPeer,
+          step: state.step,
+          className: state.className,
+          studentName: state.studentName,
+          selfImage: state.selfImage,
+          pins: state.pins,
+          answers: state.answers,
+          moods: state.moods,
+          rubrics: state.rubrics,
+          usedChips: state.usedChips,
+          savedAt: new Date().toISOString()
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        const d = new Date();
+        const hk = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }));
+        const t = hk.toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('save-status').textContent = '已自動儲存 ' + t + '（香港時間）';
+      } catch (e) {
+        document.getElementById('save-status').textContent = '儲存失敗（可能超出容量）';
+      }
+    }
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const p = JSON.parse(raw);
+        Object.assign(state, {
+          ks: p.ks || 'ks2',
+          level: p.level || 1,
+          source: p.source || 'master',
+          selectedPeer: p.selectedPeer || 'peer1',
+          step: typeof p.step === 'number' ? p.step : 0,
+          className: p.className || '',
+          studentName: p.studentName || '',
+          selfImage: p.selfImage || null,
+          pins: Array.isArray(p.pins) ? p.pins : [],
+          answers: p.answers || {},
+          moods: p.moods || {},
+          rubrics: p.rubrics || {},
+          usedChips: p.usedChips || {}
+        });
+      } catch (e) { /* ignore */ }
+    }
+
+    function currentArtworkHtml() {
+      if (state.source === 'master') return MASTER_SVG;
+      if (state.source === 'peer') {
+        const peer = PEERS.find(p => p.id === state.selectedPeer) || PEERS[0];
+        return peer.svg;
+      }
+      if (state.selfImage) {
+        return `<img src="${state.selfImage}" alt="我的創作" class="w-full h-full object-contain bg-slate-100" />`;
+      }
+      return `<div class="w-full h-full flex flex-col items-center justify-center text-va-muted gap-2 bg-slate-100">
+        <div class="text-4xl">📷</div>
+        <p class="text-sm">請上傳或拍攝你的作品</p>
+      </div>`;
+    }
+
+    function contextHint() {
+      if (state.source === 'master') {
+        return '📌 文化情境提示：樊楓以<strong>鳥瞰</strong>視角描繪都市，結合<strong>水墨</strong>筆墨層次表現香港的密度與節奏。試從「高處望城」想：你看見怎樣的香港？';
+      }
+      if (state.source === 'peer') {
+        const peer = PEERS.find(p => p.id === state.selectedPeer) || PEERS[0];
+        return '🤝 同儕作品：' + peer.hint + ' 請用友善、具體的句子給予回饋。';
+      }
+      return '🎨 這是你自己的創作。試用評賞五步驟回顧過程：你想表達熱鬧香港的哪一面？';
+    }
+
+    function renderSourcePicker() {
+      const box = document.getElementById('source-picker');
+      if (state.source === 'master') {
+        box.innerHTML = `<div class="src-card selected p-3 flex gap-3 items-center">
+          <div class="w-16 h-12 rounded bg-slate-200 overflow-hidden shrink-0">${MASTER_SVG.replace('class="w-full h-full"', 'class="w-full h-full" style="pointer-events:none"')}</div>
+          <div><div class="font-bold text-va-blue">樊楓《俯城之五》</div><div class="text-xs text-va-muted">大師名作 · 示範圖像（非真跡）</div></div>
+        </div>`;
+      } else if (state.source === 'peer') {
+        box.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">` + PEERS.map(p => `
+          <button type="button" class="src-card p-2 text-left ${state.selectedPeer === p.id ? 'selected' : ''}" data-peer="${p.id}">
+            <div class="h-16 rounded overflow-hidden mb-1">${p.svg}</div>
+            <div class="text-xs font-bold truncate">${p.title}</div>
+            <div class="text-[10px] text-va-muted truncate">${p.name}</div>
+          </button>`).join('') + `</div>`;
+        box.querySelectorAll('[data-peer]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.selectedPeer = btn.getAttribute('data-peer');
+            state.pins = state.pins.filter(p => p.scope === pinScope());
+            renderAll();
+            save();
+          });
+        });
+      } else {
+        box.innerHTML = `<div class="flex flex-wrap gap-2 items-center">
+          <label class="inline-flex items-center gap-2 btn-pill btn-primary px-4 py-2.5 min-h-touch cursor-pointer text-sm">
+            📷 拍攝／上傳作品
+            <input id="self-file" type="file" accept="image/*" capture="environment" class="hidden" />
+          </label>
+          ${state.selfImage ? '<button type="button" id="clear-self" class="btn-pill btn-ghost px-3 py-2 min-h-touch text-sm">清除圖片</button>' : ''}
+        </div>`;
+        const fi = document.getElementById('self-file');
+        if (fi) {
+          fi.addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+              state.selfImage = reader.result;
+              renderAll();
+              save();
+              toast('已載入你的作品');
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+        const clr = document.getElementById('clear-self');
+        if (clr) clr.addEventListener('click', () => { state.selfImage = null; renderAll(); save(); });
+      }
+    }
+
+    function pinScope() {
+      return state.source + ':' + (state.source === 'peer' ? state.selectedPeer : 'main');
+    }
+
+    function scopedPins() {
+      return state.pins.filter(p => p.scope === pinScope());
+    }
+
+    function renderCanvas() {
+      const stage = document.getElementById('canvas-stage');
+      stage.innerHTML = currentArtworkHtml();
+      scopedPins().forEach((pin, idx) => {
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'pin absolute' + (state.activePin === pin.id ? ' active' : '');
+        el.style.left = pin.x + '%';
+        el.style.top = pin.y + '%';
+        el.style.transform = 'translate(-50%, -100%) rotate(-45deg)';
+        el.innerHTML = '<span>' + (idx + 1) + '</span>';
+        el.title = pin.note || '大頭針 ' + (idx + 1);
+        el.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          openPinPopover(pin, el);
+        });
+        stage.appendChild(el);
+      });
+      stage.onclick = (ev) => {
+        if (ev.target.closest('.pin')) return;
+        const pins = scopedPins();
+        if (pins.length >= 6) { toast('最多 6 個大頭針'); return; }
+        const rect = stage.getBoundingClientRect();
+        const x = ((ev.clientX - rect.left) / rect.width) * 100;
+        const y = ((ev.clientY - rect.top) / rect.height) * 100;
+        const pin = { id: 'p' + Date.now(), scope: pinScope(), x: Math.max(3, Math.min(97, x)), y: Math.max(5, Math.min(95, y)), note: '' };
+        state.pins.push(pin);
+        renderCanvas();
+        renderPinList();
+        openPinPopover(pin, stage.querySelector('.pin.active') || stage.querySelectorAll('.pin')[scopedPins().length - 1]);
+        save();
+      };
+      document.getElementById('context-hint').innerHTML = contextHint();
+      renderPinList();
+    }
+
+    function renderPinList() {
+      const list = document.getElementById('pin-notes-list');
+      const pins = scopedPins();
+      if (!pins.length) {
+        list.innerHTML = '<p class="text-xs text-va-muted">尚未加入大頭針註記。</p>';
+        return;
+      }
+      list.innerHTML = pins.map((p, i) => `
+        <div class="flex gap-2 items-start bg-white border border-va-line rounded-[14px] p-2">
+          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#ff6b9d] text-white text-xs font-bold shrink-0">${i + 1}</span>
+          <span class="flex-1 text-slate-700">${escapeHtml(p.note || '（未寫註記）')}</span>
+        </div>`).join('');
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    let popoverPin = null;
+    function openPinPopover(pin, anchorEl) {
+      popoverPin = pin;
+      state.activePin = pin.id;
+      const pop = document.getElementById('pin-popover');
+      document.getElementById('pin-pop-num').textContent = String(scopedPins().findIndex(p => p.id === pin.id) + 1);
+      document.getElementById('pin-pop-text').value = pin.note || '';
+      pop.classList.remove('hidden');
+      const r = (anchorEl || document.getElementById('canvas-stage')).getBoundingClientRect();
+      let left = r.left + r.width / 2 - 128;
+      let top = r.bottom + 8;
+      if (left < 8) left = 8;
+      if (left + 256 > window.innerWidth - 8) left = window.innerWidth - 264;
+      if (top + 180 > window.innerHeight) top = Math.max(8, r.top - 190);
+      pop.style.left = left + 'px';
+      pop.style.top = top + 'px';
+      renderCanvas();
+      document.getElementById('pin-pop-text').focus();
+    }
+
+    function closePinPopover() {
+      document.getElementById('pin-popover').classList.add('hidden');
+      state.activePin = null;
+      popoverPin = null;
+      renderCanvas();
+    }
+
+    function renderChips() {
+      const vocab = VOCAB[state.ks];
+      const used = state.usedChips[answerKey('chips')] || {};
+      const mk = (arr, hostId) => {
+        const host = document.getElementById(hostId);
+        host.innerHTML = arr.map(w => `<button type="button" class="chip ${used[w] ? 'used' : ''}" data-word="${escapeHtml(w)}">${escapeHtml(w)}</button>`).join('');
+        host.querySelectorAll('.chip').forEach(btn => {
+          btn.addEventListener('click', () => insertChip(btn.getAttribute('data-word')));
+        });
+      };
+      mk(vocab.elements, 'chips-elements');
+      mk(vocab.principles, 'chips-principles');
+    }
+
+    function insertChip(word) {
+      const blank = state.lastBlankTarget && document.body.contains(state.lastBlankTarget)
+        ? state.lastBlankTarget
+        : document.querySelector('#step-content .scaffold-blank');
+      if (blank && blank.isContentEditable) {
+        blank.textContent = (blank.textContent || '') ? blank.textContent + word : word;
+        blank.focus();
+        persistScaffold();
+      } else {
+        const ta = document.querySelector('#step-content textarea');
+        if (ta) {
+          const start = ta.selectionStart || ta.value.length;
+          const end = ta.selectionEnd || ta.value.length;
+          ta.value = ta.value.slice(0, start) + word + ta.value.slice(end);
+          ta.focus();
+          ta.selectionStart = ta.selectionEnd = start + word.length;
+          persistOpenText();
+        } else {
+          toast('請先點選句式空格或書寫區');
+          return;
+        }
+      }
+      const key = answerKey('chips');
+      state.usedChips[key] = state.usedChips[key] || {};
+      state.usedChips[key][word] = true;
+      renderChips();
+      save();
+    }
+
+    function persistScaffold() {
+      const blanks = [...document.querySelectorAll('#step-content .scaffold-blank')];
+      state.answers[answerKey('scaffold')] = blanks.map(b => b.textContent || '');
+      save();
+    }
+
+    function persistOpenText() {
+      const ta = document.querySelector('#step-content textarea');
+      if (ta) {
+        state.answers[answerKey('open')] = ta.value;
+        save();
+      }
+    }
+
+    function renderStepContent() {
+      const panel = document.getElementById('step-content');
+      const step = STEPS[state.step];
+      const isKS1 = state.ks === 'ks1';
+      const useScaffold = isKS1 || state.level === 1;
+      let html = `<div class="${isKS1 ? 'ks1-control' : ''}">
+        <h2 class="text-lg font-bold text-va-blue flex items-center gap-2 comic">${step.emoji} ${step.title}</h2>`;
+
+      if (isKS1 && state.step === 0) {
+        const moodKey = answerKey('mood');
+        const selected = state.moods[moodKey] || '';
+        html += `<p class="text-sm text-va-muted mb-2">先選一個心情表情：</p>
+          <div class="flex flex-wrap gap-2 mb-3">` +
+          MOODS.map(m => `<button type="button" class="mood-btn ${selected === m.emoji ? 'selected' : ''}" data-mood="${m.emoji}" title="${m.label}">${m.emoji}<span class="block text-[10px] text-slate-600">${m.label}</span></button>`).join('') +
+          `</div>`;
+      }
+
+      if (state.source === 'peer' && state.step === 4) {
+        html += `<div class="bg-[#fff0f6] border border-va-line rounded-[18px] p-3 mb-2">
+          <p class="text-sm font-semibold text-va-blue mb-2 comic">同儕回饋句式（點選填入）</p>
+          <div class="flex flex-wrap gap-2">` +
+          PEER_STARTERS.map(s => `<button type="button" class="chip peer-starter" data-starter="${escapeHtml(s)}">${escapeHtml(s)}</button>`).join('') +
+          `</div></div>`;
+      }
+
+      if (useScaffold) {
+        const sk = answerKey('scaffold');
+        const saved = state.answers[sk] || [];
+        const template = SCAFFOLDS[step.id][state.ks];
+        html += `<div id="scaffold-box" class="bg-white border-2 border-va-line rounded-[18px] p-4 text-base leading-relaxed">${template}</div>
+          <p class="text-xs text-va-muted mt-1">點擊詞彙芯片可填入空格；亦可直接點空格輸入。</p>`;
+        panel.innerHTML = html + '</div>';
+        const blanks = panel.querySelectorAll('.scaffold-blank');
+        blanks.forEach((b, i) => {
+          if (saved[i]) b.textContent = saved[i];
+          b.addEventListener('focus', () => { state.lastBlankTarget = b; });
+          b.addEventListener('input', persistScaffold);
+          b.addEventListener('blur', persistScaffold);
+        });
+      } else {
+        const open = state.answers[answerKey('open')] || '';
+        html += `<textarea id="open-text" rows="6" class="w-full border-2 border-va-line rounded-[18px] p-3 text-base" placeholder="請以完整句子書寫你的${step.title}……">${escapeHtml(open)}</textarea>`;
+        html += `<div class="mt-3"><p class="text-sm font-bold text-va-blue mb-2">自評檢核（第二層）</p><div class="space-y-1">`;
+        const rk = answerKey('rubric');
+        const checked = state.rubrics[rk] || {};
+        (RUBRICS[step.id] || []).forEach((item, i) => {
+          html += `<label class="rubric-item flex items-center gap-2 bg-white border rounded-lg px-3 py-2 cursor-pointer">
+            <input type="checkbox" data-rubric="${i}" class="w-5 h-5 accent-[#ff6b9d]" ${checked[i] ? 'checked' : ''}/>
+            <span class="text-sm">${escapeHtml(item)}</span>
+          </label>`;
+        });
+        html += `</div></div>`;
+        panel.innerHTML = html + '</div>';
+        const ta = document.getElementById('open-text');
+        if (ta) {
+          ta.addEventListener('input', persistOpenText);
+          ta.addEventListener('focus', () => { state.lastBlankTarget = null; });
+        }
+        panel.querySelectorAll('[data-rubric]').forEach(cb => {
+          cb.addEventListener('change', () => {
+            const key = answerKey('rubric');
+            state.rubrics[key] = state.rubrics[key] || {};
+            state.rubrics[key][cb.getAttribute('data-rubric')] = cb.checked;
+            save();
+          });
+        });
+      }
+
+      // mood buttons
+      panel.querySelectorAll('[data-mood]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.moods[answerKey('mood')] = btn.getAttribute('data-mood');
+          renderStepContent();
+          save();
+        });
+      });
+
+      panel.querySelectorAll('.peer-starter').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const s = btn.getAttribute('data-starter');
+          if (useScaffold) {
+            const blank = document.querySelector('#step-content .scaffold-blank');
+            if (blank) { blank.textContent = s; state.lastBlankTarget = blank; persistScaffold(); }
+          } else {
+            const ta = document.getElementById('open-text');
+            if (ta) { ta.value = (ta.value ? ta.value + '\n' : '') + s; persistOpenText(); }
+          }
+        });
+      });
+    }
+
+    function renderModeChrome() {
+      document.querySelectorAll('.ks-toggle').forEach(btn => {
+        const on = btn.getAttribute('data-ks') === state.ks;
+        btn.classList.toggle('bg-va-blue', on);
+        btn.classList.toggle('text-white', on);
+        btn.classList.toggle('bg-white', !on);
+        btn.classList.toggle('text-va-blue', !on);
+      });
+      const lw = document.getElementById('level-wrap');
+      if (state.ks === 'ks2') {
+        lw.classList.remove('hidden');
+        lw.classList.add('flex');
+      } else {
+        lw.classList.add('hidden');
+        lw.classList.remove('flex');
+      }
+      document.querySelectorAll('.level-toggle').forEach(btn => {
+        const on = Number(btn.getAttribute('data-level')) === state.level;
+        btn.classList.toggle('bg-va-gold', on);
+        btn.classList.toggle('text-white', on);
+        btn.classList.toggle('text-va-blue', false);
+        btn.classList.toggle('bg-white', !on);
+        btn.classList.toggle('text-slate-700', !on);
+      });
+      document.querySelectorAll('.source-tab').forEach(btn => {
+        const on = btn.getAttribute('data-source') === state.source;
+        btn.classList.toggle('tab-active', on);
+        btn.classList.toggle('text-slate-600', !on);
+      });
+      document.querySelectorAll('.step-btn').forEach(btn => {
+        const n = Number(btn.getAttribute('data-step'));
+        const on = n === state.step;
+        btn.classList.toggle('active', on);
+        btn.classList.toggle('done', n < state.step);
+      });
+      document.getElementById('btn-prev').disabled = state.step === 0;
+      document.getElementById('btn-next').disabled = state.step === STEPS.length - 1;
+      document.getElementById('field-class').value = state.className;
+      document.getElementById('field-name').value = state.studentName;
+      document.getElementById('step-panel').classList.toggle('ks1-control', state.ks === 'ks1');
+    }
+
+    function renderAll() {
+      renderModeChrome();
+      renderSourcePicker();
+      renderCanvas();
+      renderStepContent();
+      renderChips();
+    }
+
+    function buildPrintCard() {
+      const meta = document.getElementById('print-meta');
+      meta.textContent = `班別：${state.className || '——'}　姓名：${state.studentName || '——'}　階段：${state.ks.toUpperCase()}${state.ks === 'ks2' ? ' · 第' + state.level + '層' : ''}　來源：${{ master: '大師名作館', self: '我的創作歷程', peer: '同儕藝廊' }[state.source]}`;
+      const art = document.getElementById('print-artwork-wrap');
+      art.innerHTML = `<div style="border:1px solid #ccc;border-radius:8px;overflow:hidden;max-height:180px;">${currentArtworkHtml()}</div>`;
+      const stepsEl = document.getElementById('print-steps');
+      const prevStep = state.step;
+      let blocks = '';
+      STEPS.forEach((st, i) => {
+        state.step = i;
+        const useScaffold = state.ks === 'ks1' || state.level === 1;
+        let body = '';
+        if (state.ks === 'ks1' && i === 0 && state.moods[answerKey('mood')]) {
+          body += `<div>心情：${state.moods[answerKey('mood')]}</div>`;
+        }
+        if (useScaffold) {
+          const parts = state.answers[answerKey('scaffold')] || [];
+          const filled = (SCAFFOLDS[st.id][state.ks] || '').replace(/<span class="scaffold-blank"[^>]*><\/span>/g, () => {
+            const t = parts.shift();
+            return '<u style="color:#e8437a;font-weight:600;">' + escapeHtml(t || '……') + '</u>';
+          });
+          // simpler: just show joined blanks
+          const saved = state.answers[answerKey('scaffold')] || [];
+          body += `<div style="line-height:1.6;">${escapeHtml(saved.filter(Boolean).join('／') || '（尚未填寫）')}</div>`;
+        } else {
+          body += `<div style="white-space:pre-wrap;">${escapeHtml(state.answers[answerKey('open')] || '（尚未填寫）')}</div>`;
+          const rub = state.rubrics[answerKey('rubric')] || {};
+          const items = RUBRICS[st.id] || [];
+          if (items.length) {
+            body += '<ul style="margin:6px 0 0;padding-left:18px;font-size:10pt;">' +
+              items.map((it, idx) => `<li>${rub[idx] ? '☑' : '☐'} ${escapeHtml(it)}</li>`).join('') + '</ul>';
+          }
+        }
+        blocks += `<section style="margin-bottom:10px;page-break-inside:avoid;">
+          <h3 style="margin:0 0 4px;color:#e8437a;font-size:12pt;border-left:4px solid #ff6b9d;padding-left:8px;">${st.emoji} ${i + 1}. ${st.title}</h3>
+          <div style="font-size:11pt;">${body}</div>
+        </section>`;
+      });
+      state.step = prevStep;
+      const pins = scopedPins().filter(p => p.note);
+      if (pins.length) {
+        blocks += `<section style="margin-top:8px;"><h3 style="color:#e8437a;font-size:12pt;">大頭針註記</h3><ol>` +
+          pins.map(p => `<li>${escapeHtml(p.note)}</li>`).join('') + `</ol></section>`;
+      }
+      stepsEl.innerHTML = blocks;
+    }
+
+    function openIdeaBank() {
+      const step = STEPS[state.step];
+      const ideas = IDEA_BANK[step.id] || [];
+      document.getElementById('idea-body').innerHTML =
+        `<p class="text-va-muted">與「${step.title}」相關的靈感（點選填入）：</p>` +
+        ideas.map(idea => `<button type="button" class="chip w-full text-left justify-start idea-item" style="border-radius:0.75rem;" data-idea="${escapeHtml(idea)}">${escapeHtml(idea)}</button>`).join('') +
+        (state.source === 'peer' ? `<hr class="my-2"/><p class="font-semibold text-va-blue">同儕回饋句式</p>` +
+          PEER_STARTERS.map(s => `<button type="button" class="chip w-full text-left idea-item" style="border-radius:0.75rem;" data-idea="${escapeHtml(s)}">${escapeHtml(s)}</button>`).join('') : '');
+      document.getElementById('idea-modal').classList.remove('hidden');
+      document.querySelectorAll('.idea-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          insertChip(btn.getAttribute('data-idea'));
+          document.getElementById('idea-modal').classList.add('hidden');
+          toast('已填入點子');
+        });
+      });
+    }
+
+    // Events
+    document.querySelectorAll('.ks-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.ks = btn.getAttribute('data-ks');
+        renderAll();
+        save();
+      });
+    });
+    document.querySelectorAll('.level-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.level = Number(btn.getAttribute('data-level'));
+        renderAll();
+        save();
+      });
+    });
+    document.querySelectorAll('.source-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.source = btn.getAttribute('data-source');
+        renderAll();
+        save();
+      });
+    });
+    document.querySelectorAll('.step-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.step = Number(btn.getAttribute('data-step'));
+        renderAll();
+        save();
+      });
+    });
+    document.getElementById('btn-prev').addEventListener('click', () => {
+      if (state.step > 0) { state.step--; renderAll(); save(); }
+    });
+    document.getElementById('btn-next').addEventListener('click', () => {
+      if (state.step < STEPS.length - 1) { state.step++; renderAll(); save(); }
+    });
+    document.getElementById('field-class').addEventListener('input', e => { state.className = e.target.value; save(); });
+    document.getElementById('field-name').addEventListener('input', e => { state.studentName = e.target.value; save(); });
+    document.getElementById('btn-idea-bank').addEventListener('click', openIdeaBank);
+    document.getElementById('idea-close').addEventListener('click', () => document.getElementById('idea-modal').classList.add('hidden'));
+    document.getElementById('idea-close-2').addEventListener('click', () => document.getElementById('idea-modal').classList.add('hidden'));
+    document.getElementById('idea-modal').addEventListener('click', e => {
+      if (e.target.id === 'idea-modal') e.currentTarget.classList.add('hidden');
+    });
+    document.getElementById('btn-export').addEventListener('click', () => {
+      buildPrintCard();
+      window.print();
+    });
+    document.getElementById('pin-pop-save').addEventListener('click', () => {
+      if (!popoverPin) return;
+      popoverPin.note = document.getElementById('pin-pop-text').value.trim();
+      closePinPopover();
+      renderPinList();
+      save();
+      toast('註記已儲存');
+    });
+    document.getElementById('pin-pop-del').addEventListener('click', () => {
+      if (!popoverPin) return;
+      state.pins = state.pins.filter(p => p.id !== popoverPin.id);
+      closePinPopover();
+      renderPinList();
+      save();
+    });
+    document.getElementById('pin-pop-close').addEventListener('click', closePinPopover);
+
+    // seed default pins for master on first visit
+    load();
+    document.getElementById('field-class').value = state.className;
+    document.getElementById('field-name').value = state.studentName;
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      state.pins = [
+        { id: 'seed1', scope: 'master:main', x: 42, y: 28, note: '高聳樓群——密度與垂直線' },
+        { id: 'seed2', scope: 'master:main', x: 55, y: 72, note: '水面／港灣——柔和橫向節奏' },
+        { id: 'seed3', scope: 'master:main', x: 78, y: 35, note: '遠景山影——空間層次' }
+      ];
+    }
+    renderAll();
+    save();
+  })();
+  </script>
+</body>
+</html>
