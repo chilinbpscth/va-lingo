@@ -49,6 +49,7 @@
       --ok: #1abc9c;
       --va-blue: #e8437a;
       --va-gold: #ff6b9d;
+      --app-header-h: 72px;
     }
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
     .comic {
@@ -266,6 +267,8 @@
       background: rgba(255,255,255,.92);
       border-bottom: 1.5px solid var(--line);
       backdrop-filter: blur(8px);
+      /* Matches measured sticky header; fallback 72px for desktop single-row */
+      top: var(--app-header-h, 72px) !important;
     }
     header.app-header {
       background: rgba(255,255,255,.95);
@@ -291,36 +294,45 @@
     /* Mobile / tablet (< lg): denser padding, usable steps + sticky nav */
     @media (max-width: 1023px) {
       .app-shell .max-w-7xl { padding-left: 0.65rem; padding-right: 0.65rem; }
-      header.app-header .max-w-7xl { padding-top: 0.65rem; padding-bottom: 0.65rem; }
-      .mode-bar .max-w-7xl { padding-top: 0.4rem; padding-bottom: 0.4rem; gap: 0.5rem; }
+      header.app-header .max-w-7xl { padding-top: 0.4rem; padding-bottom: 0.4rem; }
+      header.app-header .logo-badge { width: 2rem !important; height: 2rem !important; font-size: 0.85rem; }
+      header.app-header #app-title { font-size: 1rem; line-height: 1.2; }
+      header.app-header .header-subtitle { font-size: 0.65rem; line-height: 1.2; }
+      header.app-header .flex.flex-wrap.items-center.justify-between { gap: 0.4rem; }
+      .mode-bar .max-w-7xl { padding-top: 0.35rem; padding-bottom: 0.35rem; gap: 0.4rem; }
       .mode-bar .ks-toggle,
       .mode-bar .level-toggle {
-        padding-left: 0.65rem;
-        padding-right: 0.65rem;
-        font-size: 0.8rem;
+        padding-left: 0.55rem;
+        padding-right: 0.55rem;
+        font-size: 0.75rem;
+        min-height: 40px;
       }
       #canvas-stage {
         height: min(40dvh, 320px);
         max-height: 40dvh;
       }
+      /* Wrap step buttons so none are clipped on ~390px; still scroll if needed */
       #step-panel .step-nav {
         display: flex;
-        flex-wrap: nowrap;
-        gap: 0.5rem;
-        overflow-x: auto;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        overflow-x: visible;
         -webkit-overflow-scrolling: touch;
-        scroll-snap-type: x mandatory;
-        padding-bottom: 0.25rem;
-        margin-inline: -0.15rem;
-        padding-inline: 0.15rem;
+        scroll-snap-type: none;
+        padding-bottom: 0.15rem;
+        margin-inline: 0;
+        padding-inline: 0;
       }
       #step-panel .step-nav .step-btn {
-        flex: 0 0 auto;
-        scroll-snap-align: start;
-        min-height: 48px;
-        padding-left: 0.9rem;
-        padding-right: 0.9rem;
-        font-size: 0.875rem;
+        flex: 1 1 calc(33.333% - 0.35rem);
+        min-width: 5.5rem;
+        max-width: 100%;
+        scroll-snap-align: unset;
+        min-height: 40px;
+        padding-left: 0.45rem;
+        padding-right: 0.45rem;
+        font-size: 0.75rem;
+        white-space: nowrap;
       }
       #step-nav-actions {
         position: sticky;
@@ -330,18 +342,65 @@
         padding-top: 0.5rem;
         padding-bottom: 0.35rem;
         margin-top: auto;
+        transition: opacity .15s, transform .15s;
+      }
+      /* Hide sticky bottom actions while typing so keyboard does not fight chrome */
+      body.va-field-focused #step-nav-actions {
+        position: static;
+        opacity: 0;
+        pointer-events: none;
+        height: 0;
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
       }
       .header-fields {
         width: 100%;
+        gap: 0.35rem !important;
       }
+      /* Compact 2-col identity row instead of full-width stack (~330px) */
       .header-fields > label {
-        flex: 1 1 100%;
+        flex: 1 1 calc(50% - 0.35rem);
         min-width: 0;
+        font-size: 0.75rem;
+        gap: 0.35rem;
+      }
+      .header-fields > label > span.shrink-0 {
+        font-size: 0.7rem;
       }
       .header-fields select,
       .header-fields #field-student-id-display {
         width: 100%;
         min-width: 0 !important;
+        min-height: 36px;
+        padding-top: 0.35rem;
+        padding-bottom: 0.35rem;
+        font-size: 0.75rem;
+      }
+      .header-fields > .btn-pill {
+        flex: 1 1 calc(50% - 0.35rem);
+        min-height: 36px;
+        padding: 0.35rem 0.65rem;
+        font-size: 0.7rem;
+      }
+      .header-fields > #btn-cloud-settings {
+        flex: 0 0 auto;
+        min-width: 0;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+      }
+      .header-fields > #roster-load-note {
+        flex: 1 1 100%;
+      }
+    }
+    /* Phone-narrow: even tighter title row */
+    @media (max-width: 430px) {
+      header.app-header .max-w-7xl { padding-top: 0.3rem; padding-bottom: 0.3rem; }
+      header.app-header #app-title { font-size: 0.95rem; }
+      #step-panel .step-nav .step-btn {
+        flex: 1 1 calc(50% - 0.35rem);
+        font-size: 0.72rem;
+        min-height: 38px;
       }
     }
     @media (min-width: 1024px) {
@@ -457,7 +516,7 @@
           <div class="w-11 h-11 rounded-full logo-badge flex items-center justify-center font-bold shrink-0 text-lg comic">藝</div>
           <div class="min-w-0">
             <h1 id="app-title" class="text-xl sm:text-2xl font-bold leading-tight truncate title-bubble select-none" title="長按可開啟雲端設定">VA-Lingo 藝言堂</h1>
-            <p class="text-xs sm:text-sm text-va-muted truncate">單元：觀我香港：熱鬧的香港</p>
+            <p class="header-subtitle text-xs sm:text-sm text-va-muted truncate">單元：觀我香港：熱鬧的香港</p>
           </div>
         </div>
         <div class="header-fields flex flex-wrap items-center gap-2 w-full lg:w-auto">
@@ -499,7 +558,7 @@
   </header>
 
   <!-- Mode / Level bar -->
-  <div class="mode-bar no-print sticky top-[72px] z-30">
+  <div class="mode-bar no-print sticky z-30" style="top: var(--app-header-h, 72px);">
     <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-2.5 flex flex-wrap items-center gap-2 sm:gap-3 justify-between">
       <div class="flex items-center gap-2 flex-wrap min-w-0">
         <span class="text-xs sm:text-sm font-semibold text-va-blue comic shrink-0">學習階段</span>
@@ -563,7 +622,7 @@
 
         <!-- Right: Steps -->
         <section id="step-panel" class="p-3 sm:p-4 flex flex-col gap-3 bg-[#fff7fb]">
-          <nav class="step-nav flex flex-nowrap gap-1.5 overflow-x-auto lg:flex-wrap lg:overflow-visible snap-x snap-mandatory -mx-0.5 px-0.5 pb-1" aria-label="評賞五步驟">
+          <nav class="step-nav flex flex-wrap gap-1.5 overflow-x-auto lg:overflow-visible -mx-0.5 px-0.5 pb-1" aria-label="評賞五步驟">
             <button type="button" data-step="0" class="step-btn active snap-start shrink-0 px-3.5 py-2.5 text-sm font-medium">① 整體感受</button>
             <button type="button" data-step="1" class="step-btn snap-start shrink-0 px-3.5 py-2.5 text-sm font-medium">② 表象描述</button>
             <button type="button" data-step="2" class="step-btn snap-start shrink-0 px-3.5 py-2.5 text-sm font-medium">③ 形式分析</button>
@@ -1122,6 +1181,9 @@
       const ok = await initFirebaseOnce();
       if (!ok || !fbAuth || !fbAuth.currentUser) {
         toast('無法連接畫廊，請檢查網絡後再試');
+        setGalleryStatus(gallerySession
+          ? ('課堂 ' + gallerySession + ' · ' + galleryWorks.length + ' 件作品')
+          : '尚未加入課堂');
         return;
       }
       try {
@@ -1138,10 +1200,10 @@
         toast('已加入課堂畫廊：' + code);
         if (state.source !== 'peer') {
           state.source = 'peer';
-          renderAll();
+          withPreservedScroll(() => renderAll());
           save();
         } else {
-          renderSourcePicker();
+          renderLiveGalleryIfNeeded();
         }
       } catch (err) {
         console.warn(err);
@@ -1158,7 +1220,7 @@
       if (!state.selfImage) {
         toast('請先在「我的創作歷程」上傳作品照片');
         state.source = 'self';
-        renderAll();
+        withPreservedScroll(() => renderAll());
         save();
         return;
       }
@@ -1194,7 +1256,7 @@
         toast('已發佈到課堂畫廊');
         if (!galleryUnsub) startGalleryListener(classId);
         state.source = 'peer';
-        renderAll();
+        withPreservedScroll(() => renderAll());
         save();
       } catch (err) {
         console.warn(err);
@@ -2020,6 +2082,20 @@
       document.getElementById('step-panel').classList.toggle('ks1-control', state.ks === 'ks1');
     }
 
+    function withPreservedScroll(fn) {
+      const y = window.scrollY || document.documentElement.scrollTop || 0;
+      const vv = window.visualViewport;
+      const offsetTop = vv ? vv.offsetTop : 0;
+      try {
+        fn();
+      } finally {
+        requestAnimationFrame(() => {
+          window.scrollTo(0, y + offsetTop);
+          requestAnimationFrame(() => window.scrollTo(0, y));
+        });
+      }
+    }
+
     function renderAll() {
       renderModeChrome();
       renderSourcePicker();
@@ -2110,7 +2186,7 @@
       const input = document.getElementById('cloud-url-input');
       if (input) input.value = SUBMIT_URL || '';
       modal.classList.remove('hidden');
-      if (input) setTimeout(() => input.focus(), 50);
+      if (input) setTimeout(() => input.focus({ preventScroll: true }), 50);
     }
 
     function closeCloudSettings() {
@@ -2295,10 +2371,49 @@
     document.querySelectorAll('.source-tab').forEach(btn => {
       btn.addEventListener('click', () => {
         state.source = btn.getAttribute('data-source');
-        renderAll();
+        withPreservedScroll(() => renderAll());
         save();
       });
     });
+
+    function syncAppHeaderHeight() {
+      const hdr = document.querySelector('header.app-header');
+      if (!hdr) return;
+      const h = Math.ceil(hdr.getBoundingClientRect().height);
+      if (h > 0) document.documentElement.style.setProperty('--app-header-h', h + 'px');
+    }
+    syncAppHeaderHeight();
+    if (typeof ResizeObserver !== 'undefined') {
+      const hdr = document.querySelector('header.app-header');
+      if (hdr) new ResizeObserver(() => syncAppHeaderHeight()).observe(hdr);
+    }
+    window.addEventListener('resize', syncAppHeaderHeight, { passive: true });
+    window.addEventListener('orientationchange', () => setTimeout(syncAppHeaderHeight, 120));
+
+    // Mobile: hide sticky step-nav while an input/textarea is focused (Safari keyboard)
+    function isMobileChrome() {
+      return window.matchMedia && (
+        window.matchMedia('(max-width: 1023px)').matches ||
+        window.matchMedia('(pointer: coarse)').matches
+      );
+    }
+    function setFieldFocused(on) {
+      document.body.classList.toggle('va-field-focused', !!on && isMobileChrome());
+    }
+    document.addEventListener('focusin', (e) => {
+      const t = e.target;
+      if (!t) return;
+      const tag = (t.tagName || '').toLowerCase();
+      if (tag === 'textarea' || tag === 'input' || t.isContentEditable) setFieldFocused(true);
+    }, true);
+    document.addEventListener('focusout', () => {
+      setTimeout(() => {
+        const a = document.activeElement;
+        const tag = a && (a.tagName || '').toLowerCase();
+        const still = a && (tag === 'textarea' || tag === 'input' || a.isContentEditable);
+        if (!still) setFieldFocused(false);
+      }, 0);
+    }, true);
     document.querySelectorAll('.step-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         state.step = Number(btn.getAttribute('data-step'));
@@ -2426,6 +2541,8 @@
       ];
     }
     renderAll();
+    syncAppHeaderHeight();
+    requestAnimationFrame(syncAppHeaderHeight);
     save();
     loadRoster();
 
