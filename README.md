@@ -33,14 +33,14 @@ python3 -m http.server 8080
 
 ## 模擬／佔位
 
-- 示意圖像／無後端；Tailwind CDN 與 Google Fonts 需網絡
+- 示意圖像；Tailwind CDN、Google Fonts、Firebase CDN 需網絡（畫廊離線時仍可用示範同儕）
 
 > Student roster on public Pages is for school demo; for production load roster privately / restrict Pages.
 
 
-## Google Workspace 雲端提交（初步）
+## Google Workspace 雲端提交（歸檔）
 
-學校可先用 **Drive + Apps Script** 接收學生評賞（Firebase 可選、稍後再接）。
+學校可用 **Drive + Apps Script** 接收學生評賞作長期歸檔。
 
 1. 依 **[DEPLOY-GOOGLE.md](./DEPLOY-GOOGLE.md)** 建立根資料夾、貼上 `apps-script/Code.gs`、部署網頁應用程式
 2. 在網頁按「雲端設定」貼上 `/exec` 網址（存於瀏覽器 localStorage）
@@ -48,12 +48,24 @@ python3 -m http.server 8080
 
 本機 localStorage 自動儲存與「匯出評賞歷程卡」仍可離線使用。
 
+## Firebase 課堂同儕畫廊（即時）
+
+課堂用 **匿名 Auth + Firestore**（**不使用 Storage**，無需 billing）做近即時同儕作品牆：
+
+1. 老師給 4–6 碼課堂碼（例如 `A3B7`）
+2. 學生輸入課堂碼 →「加入課堂畫廊」
+3. 在「我的創作歷程」上傳作品後按「發佈到畫廊」（壓縮 JPEG data URL 寫入 Firestore）
+4. 「同儕藝廊」分頁即時列出同學作品，點圖可放大並「用此作品互評」
+
+詳見 `DEPLOY-GOOGLE.md` 末節。示範同儕 SVG 仍可離線使用。
+
 ## 檔案
 
-- `index.html` — 前端（含雲端提交）
-- `roster.json` — 示範名單
+- `index.html` — 前端（Drive 提交 + Firebase 課堂畫廊）
+- `roster.json` — 示範名單（`roster.school.json` 已 gitignore，勿提交）
 - `apps-script/Code.gs` — Apps Script 提交 API
 - `apps-script/appsscript.json` — 專案資訊清單
+- `firestore.rules` / `firebase.json` — Firestore 規則與專案設定
 - `DEPLOY-GOOGLE.md` — IT／老師部署步驟（zh-HK）
 - `README.md` / `RESTYLE.md`
 
@@ -63,8 +75,8 @@ python3 -m http.server 8080
 2. KS2 L1 大師名作館五步填空
 3. KS2 L2 開放書寫與檢核
 4. KS1 心情 emoji
-5. 同儕藝廊回饋
-6. 上傳作品加大頭針
-7. 匯出評賞歷程卡
+5. 同儕藝廊回饋（示範圖或課堂碼即時畫廊）
+6. 上傳作品加大頭針；可「發佈到畫廊」
+7. 匯出評賞歷程卡／提交到學校雲端
 
 *Phase-1 課堂演示原型 · 非正式教材定稿*

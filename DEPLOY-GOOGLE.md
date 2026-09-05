@@ -8,7 +8,7 @@
 
 # VA-Lingo — Google Workspace 提交部署指南（zh-HK）
 
-給老師／IT：用 Google Drive + Apps Script 接收學生評賞提交。前端（GitHub Pages）維持靜態，無需 Firebase。
+給老師／IT：用 Google Drive + Apps Script 接收學生評賞提交（長期歸檔）。前端（GitHub Pages）維持靜態；課堂即時同儕畫廊另用 Firebase（見文末）。
 
 ## 總覽
 
@@ -151,6 +151,35 @@ https://script.google.com/macros/s/XXXX/exec?ping=1
 
 ## 相關檔案
 
-- `apps-script/Code.gs` — 後端
+- `apps-script/Code.gs` — Drive 提交後端
 - `apps-script/appsscript.json` — clasp／專案資訊清單
-- `index.html` — 前端提交按鈕與雲端設定
+- `index.html` — 前端（Drive 提交 + Firebase 畫廊）
+- `firestore.rules` / `firebase.json` — Firestore 規則
+
+---
+
+## 十、Firebase 課堂同儕畫廊（即時、無 Storage）
+
+用途：同一課堂內近即時互看作品、互評。與上方 Drive 提交**並行**——Drive 作歸檔；Firestore 作課堂畫廊。
+
+### 已佈署要點
+
+- 專案：`va-lingo`（Firestore `asia-east2`）
+- **匿名 Auth** 已啟用；前端載入後 `signInAnonymously` 一次
+- **不使用 Cloud Storage**（帳號無 billing）；作品圖以壓縮 JPEG **data URL** 寫入 Firestore 文件（約 700KB 以下）
+- 規則大意：`sessions/{sessionId}/works/{workId}` — 已登入可讀；建立需含 `uid,classId,createdAt` 且 `uid==auth.uid`；只能改／刪自己的作品
+
+### 課堂流程
+
+1. 老師自訂 4–6 碼課堂碼（英數字，例如 `5A01`），寫在白板
+2. 學生在頁首「課堂畫廊」輸入課堂碼 → **加入課堂畫廊**
+3. 學生於「我的創作歷程」拍攝／上傳 → **發佈到畫廊**
+4. 「同儕藝廊」分頁即時出現縮圖；點選可放大，再 **用此作品互評**
+
+課堂碼會記在該裝置 `localStorage`（`vaGallerySession`），下次自動重連監聽。
+
+### 注意
+
+- Firestore 文件大小上限約 1MB；前端會再壓圖。過大請換較小照片
+- 畫廊資料屬課堂暫存／演示用途；正式長期保存請用「提交到學校雲端」（Drive）
+- 公開 Pages 上的 Firebase web config（apiKey 等）屬正常前端公開設定；安全靠 Auth + Security Rules

@@ -336,6 +336,44 @@
     @media (min-width: 1024px) {
       #canvas-stage { max-height: none; }
     }
+
+    /* Classroom live gallery */
+    .gallery-bar {
+      background: #fff;
+      border: 1.5px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 2px 0 #ffe3ef;
+    }
+    .gallery-thumb {
+      border: 1.5px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff7fb;
+      text-align: left;
+      min-height: 44px;
+      transition: box-shadow .15s, border-color .15s;
+    }
+    .gallery-thumb:hover, .gallery-thumb.selected {
+      border-color: var(--accent);
+      box-shadow: 0 3px 0 #ffd36b;
+    }
+    .gallery-thumb.selected { background: #fff0f6; }
+    .gallery-thumb img {
+      width: 100%; height: 4.5rem; object-fit: cover; display: block; background: #ffe3ef;
+    }
+    #gallery-lightbox {
+      position: fixed; inset: 0; z-index: 80;
+      background: rgba(59, 42, 85, .72);
+      display: flex; align-items: center; justify-content: center;
+      padding: 1rem;
+    }
+    #gallery-lightbox.hidden { display: none; }
+    #gallery-lightbox .lb-card {
+      background: #fff; border-radius: 22px; max-width: min(920px, 100%);
+      max-height: 90vh; overflow: auto; border: 1.5px solid var(--line);
+      box-shadow: var(--shadow); padding: 0.75rem;
+    }
+    #gallery-lightbox img { max-width: 100%; max-height: 70vh; object-fit: contain; display: block; margin: 0 auto; border-radius: 14px; }
   </style>
 
 </head>
@@ -479,6 +517,23 @@
     </div>
   </div>
 
+
+  <!-- Classroom peer gallery (Firebase Firestore) -->
+  <div class="max-w-7xl mx-auto px-3 sm:px-4 pt-2 no-print">
+    <div class="gallery-bar px-3 py-2.5 flex flex-wrap items-center gap-2">
+      <span class="text-sm font-bold text-va-blue comic shrink-0">課堂畫廊</span>
+      <label class="flex items-center gap-1.5 text-sm text-va-muted min-w-0">
+        <span class="shrink-0 font-semibold">課堂碼</span>
+        <input id="gallery-session-input" type="text" maxlength="6" inputmode="text" autocomplete="off"
+          placeholder="例如 A3B7" aria-label="課堂畫廊代碼"
+          class="rounded-full px-3 py-2 text-va-text min-h-touch text-sm border border-va-line bg-white w-[6.5rem] uppercase tracking-wider font-semibold" />
+      </label>
+      <button type="button" id="btn-gallery-join" class="btn-pill btn-ghost px-4 py-2 text-sm">加入課堂畫廊</button>
+      <button type="button" id="btn-gallery-publish" class="btn-pill btn-primary px-4 py-2 text-sm" title="需已加入課堂，並已上傳作品照片">發佈到畫廊</button>
+      <span id="gallery-status" class="text-xs text-va-muted flex-1 min-w-[8rem]">尚未加入課堂</span>
+    </div>
+  </div>
+
   <!-- Main split -->
   <main class="max-w-7xl mx-auto px-3 sm:px-4 pb-8 no-print">
     <div class="bg-white/95 rounded-b-[22px] shadow-soft border border-t-0 border-va-line overflow-hidden">
@@ -565,6 +620,25 @@
         <button type="button" id="cloud-url-clear" class="btn-pill btn-ghost px-3 py-2 text-sm">清除</button>
         <button type="button" id="cloud-modal-close" class="btn-pill btn-ghost px-3 py-2 text-sm">取消</button>
         <button type="button" id="cloud-url-save" class="btn-pill btn-primary px-4 py-2 text-sm">儲存</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Live gallery enlarge -->
+  <div id="gallery-lightbox" class="hidden no-print" role="dialog" aria-modal="true" aria-label="同儕作品放大">
+    <div class="lb-card w-full">
+      <div class="flex items-start justify-between gap-2 mb-2 px-1">
+        <div>
+          <div id="gallery-lb-title" class="font-bold text-va-blue"></div>
+          <div id="gallery-lb-meta" class="text-xs text-va-muted"></div>
+        </div>
+        <button type="button" id="gallery-lb-close" class="btn-pill btn-ghost px-3 py-2 text-sm min-h-touch" aria-label="關閉">關閉</button>
+      </div>
+      <img id="gallery-lb-img" alt="同儕作品" />
+      <p id="gallery-lb-caption" class="text-sm text-va-muted mt-2 px-1"></p>
+      <div class="flex flex-wrap gap-2 mt-3 px-1">
+        <button type="button" id="gallery-lb-use" class="btn-pill btn-primary px-4 py-2 text-sm">用此作品互評</button>
       </div>
     </div>
   </div>
@@ -865,6 +939,290 @@
     let SUBMIT_URL = (localStorage.getItem(SUBMIT_URL_KEY) || '').trim();
     const UNIT_TITLE = '觀我香港：熱鬧的香港';
 
+    /* —— Firebase classroom peer gallery (Auth anon + Firestore; no Storage) —— */
+    const FIREBASE_CONFIG = {
+      apiKey: 'AIzaSyD0OXjZO2tuhfPG-vZOuNcppuSy8wkdcwk',
+      authDomain: 'va-lingo.firebaseapp.com',
+      projectId: 'va-lingo',
+      storageBucket: 'va-lingo.firebasestorage.app',
+      messagingSenderId: '1052572479943',
+      appId: '1:1052572479943:web:f5607aab32460a000329e2',
+      measurementId: 'G-93903LBRDZ'
+    };
+    const GALLERY_SESSION_KEY = 'vaGallerySession';
+    const GALLERY_MAX_PHOTO_CHARS = 700000; // ~700KB data URL; Firestore doc limit ~1MiB
+
+    let fbApp = null;
+    let fbAuth = null;
+    let fbDb = null;
+    let fbMods = null; // modular firestore helpers
+    let fbReady = false;
+    let fbAuthReady = null; // Promise
+    let galleryUnsub = null;
+    let galleryWorks = []; // { id, ...data }
+    let gallerySession = (localStorage.getItem(GALLERY_SESSION_KEY) || '').trim().toUpperCase();
+    let lightboxWorkId = null;
+
+    function setGalleryStatus(msg) {
+      const el = document.getElementById('gallery-status');
+      if (el) el.textContent = msg;
+    }
+
+    function normalizeSessionCode(raw) {
+      return String(raw || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+    }
+
+    function isLivePeerId(id) {
+      return typeof id === 'string' && id.indexOf('live:') === 0;
+    }
+
+    function liveWorkIdFromPeer(id) {
+      return isLivePeerId(id) ? id.slice(5) : null;
+    }
+
+    function findLiveWork(workId) {
+      return galleryWorks.find(w => w.id === workId) || null;
+    }
+
+    function buildCaptionSummary() {
+      try {
+        const steps = buildStepsPayload();
+        const parts = [];
+        Object.keys(steps).forEach(k => {
+          const t = (steps[k] && steps[k].text) ? String(steps[k].text).trim() : '';
+          if (t) parts.push(steps[k].title + '：' + t);
+        });
+        let s = parts.join(' ｜ ');
+        if (s.length > 500) s = s.slice(0, 497) + '…';
+        return s;
+      } catch (e) {
+        return '';
+      }
+    }
+
+    async function ensurePhotoUnderLimit(dataUrl) {
+      let q = 0.7;
+      let maxW = 1600;
+      let out = await compressDataUrl(dataUrl, maxW, q);
+      let guard = 0;
+      while (out && out.length > GALLERY_MAX_PHOTO_CHARS && guard < 8) {
+        guard++;
+        if (q > 0.45) q = Math.round((q - 0.1) * 100) / 100;
+        else {
+          maxW = Math.max(640, Math.round(maxW * 0.75));
+          q = 0.65;
+        }
+        out = await compressDataUrl(dataUrl, maxW, q);
+      }
+      return out;
+    }
+
+    function initFirebaseOnce() {
+      if (fbAuthReady) return fbAuthReady;
+      fbAuthReady = (async () => {
+        try {
+          const appMod = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js');
+          const authMod = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js');
+          const fsMod = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+          fbApp = appMod.initializeApp(FIREBASE_CONFIG);
+          fbAuth = authMod.getAuth(fbApp);
+          fbDb = fsMod.getFirestore(fbApp);
+          fbMods = {
+            collection: fsMod.collection,
+            doc: fsMod.doc,
+            setDoc: fsMod.setDoc,
+            addDoc: fsMod.addDoc,
+            onSnapshot: fsMod.onSnapshot,
+            query: fsMod.query,
+            orderBy: fsMod.orderBy,
+            serverTimestamp: fsMod.serverTimestamp,
+            Timestamp: fsMod.Timestamp
+          };
+          if (!fbAuth.currentUser) {
+            await authMod.signInAnonymously(fbAuth);
+          }
+          fbReady = true;
+          setGalleryStatus(gallerySession
+            ? ('已就緒 · 課堂 ' + gallerySession)
+            : 'Firebase 已就緒 · 輸入課堂碼加入');
+          return true;
+        } catch (err) {
+          console.warn('[va-lingo] Firebase init failed', err);
+          fbReady = false;
+          setGalleryStatus('畫廊暫不可用（離線或被封鎖）');
+          return false;
+        }
+      })();
+      return fbAuthReady;
+    }
+
+    function stopGalleryListener() {
+      if (typeof galleryUnsub === 'function') {
+        try { galleryUnsub(); } catch (e) { /* ignore */ }
+      }
+      galleryUnsub = null;
+    }
+
+    function renderLiveGalleryIfNeeded() {
+      // Peer picker re-render when on peer tab
+      if (state.source === 'peer') renderSourcePicker();
+    }
+
+    function startGalleryListener(code) {
+      stopGalleryListener();
+      galleryWorks = [];
+      if (!fbReady || !fbDb || !fbMods || !code) {
+        renderLiveGalleryIfNeeded();
+        return;
+      }
+      const worksRef = fbMods.collection(fbDb, 'sessions', code, 'works');
+      const q = fbMods.query(worksRef, fbMods.orderBy('createdAt', 'desc'));
+      galleryUnsub = fbMods.onSnapshot(q, (snap) => {
+        galleryWorks = snap.docs.map(d => {
+          const data = d.data() || {};
+          return Object.assign({ id: d.id }, data);
+        });
+        setGalleryStatus('課堂 ' + code + ' · ' + galleryWorks.length + ' 件作品（即時）');
+        renderLiveGalleryIfNeeded();
+      }, (err) => {
+        console.warn('[va-lingo] gallery snapshot error', err);
+        setGalleryStatus('畫廊監聽失敗：' + (err && err.message ? err.message : 'error'));
+      });
+    }
+
+    async function joinGallerySession(fromInput) {
+      const input = document.getElementById('gallery-session-input');
+      const code = normalizeSessionCode(fromInput != null ? fromInput : (input && input.value));
+      if (input) input.value = code;
+      if (code.length < 4) {
+        toast('課堂碼請輸入 4–6 個英數字');
+        return;
+      }
+      setGalleryStatus('加入中…');
+      const ok = await initFirebaseOnce();
+      if (!ok || !fbAuth || !fbAuth.currentUser) {
+        toast('無法連接畫廊，請檢查網絡後再試');
+        return;
+      }
+      try {
+        // Touch session doc so teachers can see active codes (rules: create/update if authed)
+        const sessionRef = fbMods.doc(fbDb, 'sessions', code);
+        await fbMods.setDoc(sessionRef, {
+          classId: code,
+          updatedAt: fbMods.serverTimestamp(),
+          joinedBy: fbAuth.currentUser.uid
+        }, { merge: true });
+        gallerySession = code;
+        localStorage.setItem(GALLERY_SESSION_KEY, code);
+        startGalleryListener(code);
+        toast('已加入課堂畫廊：' + code);
+        if (state.source !== 'peer') {
+          state.source = 'peer';
+          renderAll();
+          save();
+        } else {
+          renderSourcePicker();
+        }
+      } catch (err) {
+        console.warn(err);
+        toast('加入失敗：' + (err && err.message ? err.message : String(err)));
+        setGalleryStatus('加入失敗');
+      }
+    }
+
+    async function publishToGallery() {
+      if (!gallerySession) {
+        toast('請先輸入課堂碼並加入畫廊');
+        return;
+      }
+      if (!state.selfImage) {
+        toast('請先在「我的創作歷程」上傳作品照片');
+        state.source = 'self';
+        renderAll();
+        save();
+        return;
+      }
+      if (!state.className && !state.studentName && !state.studentId) {
+        toast('請先選擇班別／學生（方便同學辨識）');
+        return;
+      }
+      const btn = document.getElementById('btn-gallery-publish');
+      if (btn) { btn.disabled = true; btn.textContent = '發佈中…'; }
+      setGalleryStatus('壓縮並發佈中…');
+      try {
+        const ok = await initFirebaseOnce();
+        if (!ok || !fbAuth.currentUser) throw new Error('尚未登入畫廊');
+        const photoData = await ensurePhotoUnderLimit(state.selfImage);
+        if (!photoData) throw new Error('無法處理圖片');
+        if (photoData.length > GALLERY_MAX_PHOTO_CHARS) {
+          throw new Error('圖片仍太大，請換較小照片再試');
+        }
+        const classId = gallerySession;
+        const payload = {
+          uid: fbAuth.currentUser.uid,
+          classId: classId,
+          createdAt: fbMods.serverTimestamp(),
+          displayName: state.studentName || '',
+          studentId: state.studentId || '',
+          classLabel: state.className || '',
+          photoData: photoData,
+          caption: buildCaptionSummary(),
+          ks: state.ks,
+          level: state.level
+        };
+        await fbMods.addDoc(fbMods.collection(fbDb, 'sessions', classId, 'works'), payload);
+        toast('已發佈到課堂畫廊');
+        if (!galleryUnsub) startGalleryListener(classId);
+        state.source = 'peer';
+        renderAll();
+        save();
+      } catch (err) {
+        console.warn(err);
+        toast('發佈失敗：' + (err && err.message ? err.message : String(err)));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '發佈到畫廊';
+        }
+        if (gallerySession) setGalleryStatus('課堂 ' + gallerySession + ' · ' + galleryWorks.length + ' 件作品');
+      }
+    }
+
+    function openGalleryLightbox(workId) {
+      const w = findLiveWork(workId);
+      if (!w || !w.photoData) return;
+      lightboxWorkId = workId;
+      const box = document.getElementById('gallery-lightbox');
+      const img = document.getElementById('gallery-lb-img');
+      const title = document.getElementById('gallery-lb-title');
+      const meta = document.getElementById('gallery-lb-meta');
+      const cap = document.getElementById('gallery-lb-caption');
+      if (img) img.src = w.photoData;
+      if (title) title.textContent = (w.displayName || '同學') + (w.classLabel ? ' · ' + w.classLabel : '');
+      if (meta) meta.textContent = (w.studentId ? ('學號 ' + w.studentId + ' · ') : '') + '點擊「用此作品互評」開始回饋';
+      if (cap) cap.textContent = w.caption || '';
+      if (box) box.classList.remove('hidden');
+    }
+
+    function closeGalleryLightbox() {
+      const box = document.getElementById('gallery-lightbox');
+      if (box) box.classList.add('hidden');
+      const img = document.getElementById('gallery-lb-img');
+      if (img) img.removeAttribute('src');
+      lightboxWorkId = null;
+    }
+
+    function selectLiveWorkForPeer(workId) {
+      const w = findLiveWork(workId);
+      if (!w) return;
+      state.source = 'peer';
+      state.selectedPeer = 'live:' + workId;
+      closeGalleryLightbox();
+      renderAll();
+      save();
+      toast('已選取同學作品，可開始互評');
+    }
+
 
     const state = {
       ks: 'ks2',
@@ -988,6 +1346,14 @@
     function currentArtworkHtml() {
       if (state.source === 'master') return masterArtworkHtml(false);
       if (state.source === 'peer') {
+        const liveId = liveWorkIdFromPeer(state.selectedPeer);
+        if (liveId) {
+          const w = findLiveWork(liveId);
+          if (w && w.photoData) {
+            return `<img src="${w.photoData}" alt="同儕作品" class="w-full h-full object-contain bg-slate-100" />`;
+          }
+          return `<div class="w-full h-full flex items-center justify-center text-va-muted text-sm bg-slate-100">作品載入中或不存在</div>`;
+        }
         const peer = PEERS.find(p => p.id === state.selectedPeer) || PEERS[0];
         return peer.svg;
       }
@@ -1005,6 +1371,12 @@
         return '📌 文化情境提示：樊楓以<strong>鳥瞰</strong>視角描繪都市，結合<strong>水墨</strong>筆墨層次表現香港的密度與節奏。試從「高處望城」想：你看見怎樣的香港？';
       }
       if (state.source === 'peer') {
+        const liveId = liveWorkIdFromPeer(state.selectedPeer);
+        if (liveId) {
+          const w = findLiveWork(liveId);
+          const who = w ? ((w.displayName || '同學') + (w.classLabel ? '（' + w.classLabel + '）' : '')) : '同學';
+          return '🤝 課堂畫廊作品：' + who + '。請用友善、具體的句子給予回饋（互評）。';
+        }
         const peer = PEERS.find(p => p.id === state.selectedPeer) || PEERS[0];
         return '🤝 同儕作品：' + peer.hint + ' 請用友善、具體的句子給予回饋。';
       }
@@ -1019,18 +1391,48 @@
           <div><div class="font-bold text-va-blue">樊楓《俯城之五》</div><div class="text-xs text-va-muted">大師名作 · 示範圖像（非真跡）· 待放入 assets/fufeng-fucheng.jpg</div></div>
         </div>`;
       } else if (state.source === 'peer') {
-        box.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">` + PEERS.map(p => `
+        const liveCards = galleryWorks.length
+          ? (`<div class="mb-2"><div class="text-xs font-bold text-va-blue mb-1.5">課堂即時作品${gallerySession ? ' · ' + gallerySession : ''}</div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">` +
+             galleryWorks.map(w => {
+               const pid = 'live:' + w.id;
+               const label = escapeHtml(w.displayName || '同學');
+               const sub = escapeHtml((w.classLabel || '') + (w.studentId ? ' · ' + w.studentId : ''));
+               const src = (w.photoData || '').replace(/"/g, '&quot;');
+               return `<button type="button" class="gallery-thumb p-1.5 ${state.selectedPeer === pid ? 'selected' : ''}" data-live-work="${escapeHtml(w.id)}">
+                  <img src="${src}" alt="${label}" loading="lazy" />
+                  <div class="text-xs font-bold truncate mt-1 px-0.5">${label}</div>
+                  <div class="text-[10px] text-va-muted truncate px-0.5">${sub || '點擊放大／互評'}</div>
+                </button>`;
+             }).join('') + `</div></div>`)
+          : (`<div class="mb-2 text-xs text-va-muted rounded-[14px] border border-dashed border-va-line px-3 py-2">${
+               gallerySession
+                 ? '課堂 ' + escapeHtml(gallerySession) + ' 尚無同學發佈作品。可先用下方示範圖練習互評。'
+                 : '輸入課堂碼並按「加入課堂畫廊」，即可看到同學即時作品。'
+             }</div>`);
+        const demoCards = `<div class="text-xs font-bold text-va-muted mb-1.5">示範同儕（離線）</div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">` + PEERS.map(p => `
           <button type="button" class="src-card p-2 text-left ${state.selectedPeer === p.id ? 'selected' : ''}" data-peer="${p.id}">
             <div class="h-16 rounded overflow-hidden mb-1">${p.svg}</div>
             <div class="text-xs font-bold truncate">${p.title}</div>
             <div class="text-[10px] text-va-muted truncate">${p.name}</div>
           </button>`).join('') + `</div>`;
+        box.innerHTML = liveCards + demoCards;
         box.querySelectorAll('[data-peer]').forEach(btn => {
           btn.addEventListener('click', () => {
             state.selectedPeer = btn.getAttribute('data-peer');
-            state.pins = state.pins.filter(p => p.scope === pinScope());
             renderAll();
             save();
+          });
+        });
+        box.querySelectorAll('[data-live-work]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const wid = btn.getAttribute('data-live-work');
+            openGalleryLightbox(wid);
+          });
+          btn.addEventListener('dblclick', () => {
+            const wid = btn.getAttribute('data-live-work');
+            selectLiveWorkForPeer(wid);
           });
         });
       } else {
@@ -1933,6 +2335,40 @@
       title.addEventListener('pointercancel', clear);
     })();
     refreshSubmitButton();
+
+    // Classroom gallery controls
+    (function bindGalleryUi() {
+      const input = document.getElementById('gallery-session-input');
+      if (input && gallerySession) input.value = gallerySession;
+      const joinBtn = document.getElementById('btn-gallery-join');
+      const pubBtn = document.getElementById('btn-gallery-publish');
+      if (joinBtn) joinBtn.addEventListener('click', () => joinGallerySession());
+      if (pubBtn) pubBtn.addEventListener('click', () => publishToGallery());
+      if (input) {
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            joinGallerySession();
+          }
+        });
+        input.addEventListener('input', () => {
+          const cur = input.selectionStart;
+          input.value = normalizeSessionCode(input.value);
+          try { input.setSelectionRange(cur, cur); } catch (err) { /* ignore */ }
+        });
+      }
+      const lbClose = document.getElementById('gallery-lb-close');
+      const lbUse = document.getElementById('gallery-lb-use');
+      const lb = document.getElementById('gallery-lightbox');
+      if (lbClose) lbClose.addEventListener('click', closeGalleryLightbox);
+      if (lbUse) lbUse.addEventListener('click', () => {
+        if (lightboxWorkId) selectLiveWorkForPeer(lightboxWorkId);
+      });
+      if (lb) lb.addEventListener('click', (e) => {
+        if (e.target.id === 'gallery-lightbox') closeGalleryLightbox();
+      });
+    })();
+
     document.getElementById('pin-pop-save').addEventListener('click', () => {
       if (!popoverPin) return;
       popoverPin.note = document.getElementById('pin-pop-text').value.trim();
@@ -1962,6 +2398,16 @@
     renderAll();
     save();
     loadRoster();
+
+    // Firebase anon auth once; rejoin saved classroom session if any
+    initFirebaseOnce().then((ok) => {
+      if (!ok) return;
+      if (gallerySession) {
+        const input = document.getElementById('gallery-session-input');
+        if (input) input.value = gallerySession;
+        startGalleryListener(gallerySession);
+      }
+    });
   })();
   </script>
 </body>
