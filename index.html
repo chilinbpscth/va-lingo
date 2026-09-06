@@ -1105,7 +1105,12 @@
     const SUBMIT_URL_KEY = 'vaSubmitUrl';
     /** 學校 Apps Script /exec；由「雲端設定」寫入 localStorage，勿把密鑰寫死在程式 */
     let SUBMIT_URL = (localStorage.getItem(SUBMIT_URL_KEY) || '').trim();
-    const UNIT_TITLE = '觀我香港：熱鬧的香港';
+    const UNIT_TITLE_FALLBACK = '佛教志蓮小學視覺藝術';
+    function currentUnitTitle() {
+      const topic = (typeof currentTopic === 'function') ? currentTopic() : null;
+      const u = topic && String(topic.unit || '').trim();
+      return u || UNIT_TITLE_FALLBACK;
+    }
 
     /* —— Firebase classroom peer gallery (Auth anon + Firestore; no Storage) —— */
     const FIREBASE_CONFIG = {
@@ -1747,10 +1752,13 @@
       const g = findGrade(state.grade);
       const s = findStage(state.stage);
       if (!topic) {
-        el.textContent = '單元：' + UNIT_TITLE;
+        el.textContent = '單元：' + currentUnitTitle();
         return;
       }
-      el.textContent = (g ? g.label : state.grade) + ' · ' + (s ? s.label : state.stage) + ' · ' + topic.title + '（' + formLabel(topic.form) + '）';
+      const unit = String(topic.unit || '').trim();
+      const head = (g ? g.label : state.grade) + ' · ' + (s ? s.label : state.stage);
+      const mid = unit ? (' · ' + unit) : '';
+      el.textContent = head + mid + ' · ' + topic.title + '（' + formLabel(topic.form) + '）';
     }
 
     function fillCurriculumSelects() {
@@ -1834,13 +1842,14 @@
                 const sid = s.id.replace('stage', 's');
                 curriculum.topics.push({
                   id: g.id + '-' + sid + '-' + form,
-                  title: form === '3d' ? '立體課題（待進度表）' : '平面課題（待進度表）',
+                  title: form === '3d' ? '立體課題' : '平面課題',
+                  unit: '',
                   grade: g.id,
                   stage: s.id,
                   form: form,
                   artists: [
-                    { name: '', workTitle: '', image: null, note: '' },
-                    { name: '', workTitle: '', image: null, note: '' }
+                    { name: '', workTitle: '', image: null, note: '待補圖' },
+                    { name: '', workTitle: '', image: null, note: '待補圖' }
                   ]
                 });
               });
@@ -1971,7 +1980,7 @@
           </button>`;
         }).join('');
         const emptyBanner = slots.every(a => !artistFilled(a))
-          ? '<div class="master-empty-note">待進度表補藝術家／畫作 — 課題：「' + escapeHtml(topic ? topic.title : '') + '」</div>'
+          ? '<div class="master-empty-note">待補圖 — 課題：「' + escapeHtml(topic ? topic.title : '') + '」' + (topic && topic.unit ? ' · 單元「' + escapeHtml(topic.unit) + '」' : '') + '</div>'
           : '';
         box.innerHTML = `<div class="space-y-2">
           <div class="text-sm font-bold text-va-blue comic">大師名作館${topic ? ' · ' + escapeHtml(topic.title) : ''}</div>
@@ -2660,7 +2669,8 @@
       const gLab = (findGrade(state.grade) || {}).label || state.grade || '——';
       const sLab = (findStage(state.stage) || {}).label || state.stage || '——';
       const tLab = topic ? (topic.title + '（' + formLabel(topic.form) + '）') : '——';
-      meta.textContent = `班別：${state.className || '——'}　姓名：${state.studentName || '——'}　學號：${state.studentId || '——'}　年級：${gLab}　學段：${sLab}　課題：${tLab}　階段：${state.ks.toUpperCase()}${state.ks === 'ks2' ? ' · 第' + state.level + '層' : ''}　來源：${{ master: '大師名作館', self: '我的創作歷程', peer: '同儕藝廊' }[state.source]}`;
+      const uLab = (topic && topic.unit) ? topic.unit : currentUnitTitle();
+      meta.textContent = `班別：${state.className || '——'}　姓名：${state.studentName || '——'}　學號：${state.studentId || '——'}　年級：${gLab}　學段：${sLab}　單元：${uLab}　課題：${tLab}　階段：${state.ks.toUpperCase()}${state.ks === 'ks2' ? ' · 第' + state.level + '層' : ''}　來源：${{ master: '大師名作館', self: '我的創作歷程', peer: '同儕藝廊' }[state.source]}`;
       const art = document.getElementById('print-artwork-wrap');
       art.innerHTML = `<div style="border:1px solid #ccc;border-radius:8px;overflow:hidden;max-height:180px;">${currentArtworkHtml()}</div>`;
       const stepsEl = document.getElementById('print-steps');
@@ -2944,7 +2954,7 @@
           ks: state.ks,
           level: state.level,
           source: state.source,
-          unit: UNIT_TITLE,
+          unit: currentUnitTitle(),
           steps: buildStepsPayload(),
           pins: state.pins,
           answers: state.answers,

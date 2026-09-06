@@ -1,6 +1,6 @@
 # VA-Lingo 藝言堂 — Phase-1 原型
 
-香港小學視覺藝術 (Visual Arts)
+香港小學視覺藝術 (Visual Arts) · 佛教志蓮小學 2026–27
 
 介面為繁體中文 (zh-HK)
 
@@ -28,14 +28,14 @@ python3 -m http.server 8080
 
 ## 課程選取（年級／學段／課題）
 
-假設（進度表到位前可改 `curriculum.json`）：
+資料來源：**佛教志蓮小學 2026–27** 視覺藝術進度表（`curriculum.json`）：
 
 - **年級**：小一至小六（ids `p1`–`p6`）
-- **學段**：第一／第二／第三學段（ids `stage1`–`stage3`）— **不是**上／下學期
-- 每學段 **2 課題**：一個**平面**（`form: "2d"`）、一個**立體**（`form: "3d"`）→ 每級共 **6** 課題
-- 課題物件：`{ id, title, grade, stage, form, artists: [{ name, workTitle, image?, note? }] }`（每位 1–2 個大師名作館空位）
-- 佔位標題：`平面課題（待進度表）`／`立體課題（待進度表）`；名作未補時顯示「待進度表補藝術家／畫作」，畫布退回 `assets/demo-master-urban.png`
-- 頁首模式列有級聯下拉（改年級會重設學段／課題）；p1–p3 建議 KS1、p4–p6 建議 KS2（可覆寫）；選取寫入 localStorage
+- **學段**：第一／第二／第三學段（ids `stage1`–`stage3`）— **不是**上／下學期；對應單元見課題 `unit`
+- 每學段 **2 課題**：優先一個**平面**（`form: "2d"`）＋一個**立體**（`form: "3d"`）；若該學段兩項計分皆為平面，則兩槽均標 `2d` → 每級共 **6** 課題
+- 課題物件：`{ id, title, unit, grade, stage, form, artists: [{ name, workTitle, image?, note? }], note? }`（每位 1–2 個大師名作館空位）
+- 大師名作館：考試溫習紙／進度表已知藝術家已填名；圖像未備時 `image: null`、`note: 待補圖`（或「溫習／名作館待補圖」），畫布退回 `assets/demo-master-urban.png`
+- 頁首模式列有級聯下拉（課題標題來自進度表；改年級會重設學段／課題）；p1–p3 建議 KS1、p4–p6 建議 KS2（可覆寫）；選取寫入 localStorage
 
 ## 已可演示功能
 
@@ -77,7 +77,7 @@ python3 -m http.server 8080
 ## 檔案
 
 - `index.html` — 前端（Drive 提交 + Firebase 課堂畫廊）
-- `curriculum.json` — 年級／學段／課題與大師名作館佔位（唯一資料檔）
+- `curriculum.json` — 佛教志蓮小學 2026–27 年級／學段／單元／課題與大師名作館（唯一資料檔）
 - `roster.json` — 示範名單（`roster.school.json` 已 gitignore，勿提交）
 - `apps-script/Code.gs` — Apps Script 提交 API
 - `apps-script/appsscript.json` — 專案資訊清單
