@@ -166,20 +166,23 @@ https://script.google.com/macros/s/XXXX/exec?ping=1
 
 - 專案：`va-lingo`（Firestore `asia-east2`）
 - **匿名 Auth** 已啟用；前端載入後 `signInAnonymously` 一次
-- **不使用 Cloud Storage**（帳號無 billing）；作品圖以壓縮 JPEG **data URL** 寫入 Firestore 文件（約 700KB 以下）
-- 規則大意：`sessions/{sessionId}/works/{workId}` — 已登入可讀；建立需含 `uid,classId,createdAt` 且 `uid==auth.uid`；只能改／刪自己的作品
+- **不使用 Cloud Storage**（帳號無 billing）；作品圖以壓縮 JPEG **data URL** 寫入 Firestore（前端目標 **≤約 200KB**；規則上限字串長度約 220000）
+- 規則大意：`sessions/{sessionId}/works/{workId}` — 已登入可讀；建立僅允許必要欄位（`uid,classId,createdAt,displayLabel,photoData` 及選填 `caption,ks,level`），`photoData` 長度受限，`uid==auth.uid`；只能改／刪自己的作品。Session 文件只允許 `classId/updatedAt/joinedBy`
 
 ### 課堂流程
 
 1. 老師自訂 4–6 碼課堂碼（英數字，例如 `5A01`），寫在白板
-2. 學生在頁首「課堂畫廊」輸入課堂碼 → **加入課堂畫廊**
-3. 學生於「我的創作歷程」拍攝／上傳 → **發佈到畫廊**
-4. 「同儕藝廊」分頁即時出現縮圖；點選可放大，再 **用此作品互評**
+2. 學生在頁首「課堂畫廊」輸入課堂碼 → **加入課堂畫廊**（失敗會顯示 **重試**，並清掉卡住的「加入中…」；離線時仍可本機自評／用示範同儕）
+3. 學生於「我的創作歷程」拍攝／上傳 → **發佈到畫廊**（有確認步驟；過大會 toast）
+4. 「同儕藝廊」分頁即時出現縮圖；點選可放大，再 **用此作品互評**；作者可 **從畫廊刪除** 自己的作品
 
 課堂碼會記在該裝置 `localStorage`（`vaGallerySession`），下次自動重連監聽。
 
-### 注意
+### 畫廊私隱與容量
 
-- Firestore 文件大小上限約 1MB；前端會再壓圖。過大請換較小照片
-- 畫廊資料屬課堂暫存／演示用途；正式長期保存請用「提交到學校雲端」（Drive）
+- 畫廊文件**不寫**學生真實全名／獨立學號欄；只寫 `displayLabel`（例如 `5A・12號` 或 `5A・同學`）
+- 頁首班別／姓名／學號仍供 **Drive 雲端提交** 使用，與畫廊 payload 分開
+- 發佈前會加強壓縮；若仍超過約 200KB 會拒絕並提示換圖
+- 畫廊屬課堂暫存／演示；正式長期保存請用「提交到學校雲端」（Drive）
 - 公開 Pages 上的 Firebase web config（apiKey 等）屬正常前端公開設定；安全靠 Auth + Security Rules
+- 更新規則後部署：`npx -y firebase-tools@latest deploy --only firestore:rules --project va-lingo --non-interactive`

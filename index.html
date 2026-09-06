@@ -627,6 +627,7 @@
       </label>
       <button type="button" id="btn-gallery-join" class="btn-pill btn-ghost px-4 py-2 text-sm">加入課堂畫廊</button>
       <button type="button" id="btn-gallery-publish" class="btn-pill btn-primary px-4 py-2 text-sm" title="需已加入課堂，並已上傳作品照片">發佈到畫廊</button>
+      <button type="button" id="btn-gallery-retry" class="btn-pill btn-ghost px-3 py-2 text-sm hidden" aria-label="重試畫廊連線">重試</button>
       <span id="gallery-status" class="text-xs text-va-muted flex-1 min-w-[8rem]">尚未加入課堂</span>
     </div>
   </div>
@@ -661,6 +662,7 @@
 
           <!-- Vocab -->
           <div class="border-t border-va-line pt-3 space-y-2">
+            <p id="chip-hint" class="text-xs text-va-muted">詞彙：可拖放到空格；iPhone／觸控亦可先點選詞彙，再點空格插入。</p>
             <div>
               <h3 class="text-sm font-bold text-va-blue mb-1.5 comic">視覺元素</h3>
               <div id="chips-elements" class="flex flex-wrap gap-2"></div>
@@ -695,7 +697,7 @@
   </div>
 
   <!-- Pin note popover -->
-  <div id="pin-popover" class="hidden fixed z-50 bg-white rounded-[18px] shadow-soft border-2 border-va-line p-3 w-64 no-print">
+  <div id="pin-popover" class="hidden fixed z-50 bg-white rounded-[18px] shadow-soft border-2 border-va-line p-3 w-64 no-print" role="dialog" aria-modal="true" aria-label="大頭針註記">
     <label class="text-xs font-semibold text-va-blue">大頭針註記 #<span id="pin-pop-num"></span></label>
     <textarea id="pin-pop-text" rows="3" class="w-full mt-1 border border-va-line rounded-[14px] p-2 text-sm" placeholder="寫下你看到的細節……"></textarea>
     <div class="flex gap-2 mt-2">
@@ -736,6 +738,7 @@
       <p id="gallery-lb-caption" class="text-sm text-va-muted mt-2 px-1"></p>
       <div class="flex flex-wrap gap-2 mt-3 px-1">
         <button type="button" id="gallery-lb-use" class="btn-pill btn-primary px-4 py-2 text-sm">用此作品互評</button>
+        <button type="button" id="gallery-lb-delete" class="btn-pill btn-ghost px-4 py-2 text-sm text-red-600 hidden" title="僅可刪除自己發佈的作品">從畫廊刪除</button>
       </div>
     </div>
   </div>
@@ -1047,7 +1050,8 @@
       measurementId: 'G-93903LBRDZ'
     };
     const GALLERY_SESSION_KEY = 'vaGallerySession';
-    const GALLERY_MAX_PHOTO_CHARS = 700000; // ~700KB data URL; Firestore doc limit ~1MiB
+    // Cap photoData ~≤200KB (data URL chars). Firestore doc limit ~1MiB; keep headroom for caption/meta.
+    const GALLERY_MAX_PHOTO_CHARS = 200000;
 
     let fbApp = null;
     let fbAuth = null;
@@ -1059,10 +1063,37 @@
     let galleryWorks = []; // { id, ...data }
     let gallerySession = (localStorage.getItem(GALLERY_SESSION_KEY) || '').trim().toUpperCase();
     let lightboxWorkId = null;
+    let galleryBusy = false;
 
     function setGalleryStatus(msg) {
       const el = document.getElementById('gallery-status');
       if (el) el.textContent = msg;
+    }
+
+    function setGalleryRetryVisible(show) {
+      const btn = document.getElementById('btn-gallery-retry');
+      if (!btn) return;
+      btn.classList.toggle('hidden', !show);
+    }
+
+    function clearGalleryBusyUi(fallbackStatus) {
+      galleryBusy = false;
+      const joinBtn = document.getElementById('btn-gallery-join');
+      const pubBtn = document.getElementById('btn-gallery-publish');
+      if (joinBtn) {
+        joinBtn.disabled = false;
+        joinBtn.textContent = '加入課堂畫廊';
+      }
+      if (pubBtn) {
+        pubBtn.disabled = false;
+        pubBtn.textContent = '發佈到畫廊';
+      }
+      if (fallbackStatus != null) setGalleryStatus(fallbackStatus);
+    }
+
+    function galleryStatusSummary() {
+      if (!gallerySession) return '尚未加入課堂（離線仍可自評／示範同儕）';
+      return '課堂 ' + gallerySession + ' · ' + galleryWorks.length + ' 件作品';
     }
 
     function normalizeSessionCode(raw) {
@@ -1079,6 +1110,27 @@
 
     function findLiveWork(workId) {
       return galleryWorks.find(w => w.id === workId) || null;
+    }
+
+    /** Public gallery label only — never write full student name into Firestore. */
+    function buildGalleryDisplayLabel() {
+      const cls = String(state.className || '').trim();
+      const seat = String(state.studentId || '').trim().replace(/[^\dA-Za-z]/g, '').slice(0, 4);
+      if (cls && seat) return cls + '・' + seat + '號';
+      if (cls) return cls + '・同學';
+      if (seat) return seat + '號・同學';
+      return '同學';
+    }
+
+    function workDisplayLabel(w) {
+      if (!w) return '同學';
+      if (w.displayLabel) return String(w.displayLabel);
+      // Legacy docs may still have displayName / classLabel / studentId
+      const cls = w.classLabel || '';
+      const name = w.displayName || '';
+      if (cls && name) return cls + '・同學';
+      if (cls) return cls + '・同學';
+      return '同學';
     }
 
     function buildCaptionSummary() {
@@ -1098,16 +1150,16 @@
     }
 
     async function ensurePhotoUnderLimit(dataUrl) {
-      let q = 0.7;
-      let maxW = 1600;
+      let q = 0.62;
+      let maxW = 1280;
       let out = await compressDataUrl(dataUrl, maxW, q);
       let guard = 0;
-      while (out && out.length > GALLERY_MAX_PHOTO_CHARS && guard < 8) {
+      while (out && out.length > GALLERY_MAX_PHOTO_CHARS && guard < 12) {
         guard++;
-        if (q > 0.45) q = Math.round((q - 0.1) * 100) / 100;
+        if (q > 0.35) q = Math.round((q - 0.08) * 100) / 100;
         else {
-          maxW = Math.max(640, Math.round(maxW * 0.75));
-          q = 0.65;
+          maxW = Math.max(480, Math.round(maxW * 0.72));
+          q = 0.5;
         }
         out = await compressDataUrl(dataUrl, maxW, q);
       }
@@ -1129,6 +1181,7 @@
             doc: fsMod.doc,
             setDoc: fsMod.setDoc,
             addDoc: fsMod.addDoc,
+            deleteDoc: fsMod.deleteDoc,
             onSnapshot: fsMod.onSnapshot,
             query: fsMod.query,
             orderBy: fsMod.orderBy,
@@ -1139,6 +1192,7 @@
             await authMod.signInAnonymously(fbAuth);
           }
           fbReady = true;
+          setGalleryRetryVisible(false);
           setGalleryStatus(gallerySession
             ? ('已就緒 · 課堂 ' + gallerySession)
             : 'Firebase 已就緒 · 輸入課堂碼加入');
@@ -1146,7 +1200,9 @@
         } catch (err) {
           console.warn('[va-lingo] Firebase init failed', err);
           fbReady = false;
-          setGalleryStatus('畫廊暫不可用（離線或被封鎖）');
+          fbAuthReady = null; // allow retry
+          setGalleryStatus('畫廊暫不可用（離線或被封鎖）— 本機自評仍可用');
+          setGalleryRetryVisible(true);
           return false;
         }
       })();
@@ -1188,11 +1244,13 @@
           const data = d.data() || {};
           return Object.assign({ id: d.id }, data);
         });
+        setGalleryRetryVisible(false);
         setGalleryStatus('課堂 ' + code + ' · ' + galleryWorks.length + ' 件作品（即時）');
         renderLiveGalleryIfNeeded();
       }, (err) => {
         console.warn('[va-lingo] gallery snapshot error', err);
-        setGalleryStatus('畫廊監聽失敗：' + (err && err.message ? err.message : 'error'));
+        setGalleryStatus('畫廊監聽失敗 — 可重試；本機自評仍可用');
+        setGalleryRetryVisible(true);
       });
     }
 
@@ -1202,18 +1260,24 @@
       if (input) input.value = code;
       if (code.length < 4) {
         toast('課堂碼請輸入 4–6 個英數字');
+        clearGalleryBusyUi(galleryStatusSummary());
+        setGalleryRetryVisible(false);
         return;
       }
+      if (galleryBusy) return;
+      galleryBusy = true;
+      setGalleryRetryVisible(false);
+      const joinBtn = document.getElementById('btn-gallery-join');
+      if (joinBtn) { joinBtn.disabled = true; joinBtn.textContent = '加入中…'; }
       setGalleryStatus('加入中…');
-      const ok = await initFirebaseOnce();
-      if (!ok || !fbAuth || !fbAuth.currentUser) {
-        toast('無法連接畫廊，請檢查網絡後再試');
-        setGalleryStatus(gallerySession
-          ? ('課堂 ' + gallerySession + ' · ' + galleryWorks.length + ' 件作品')
-          : '尚未加入課堂');
-        return;
-      }
       try {
+        const ok = await initFirebaseOnce();
+        if (!ok || !fbAuth || !fbAuth.currentUser) {
+          toast('無法連接畫廊，請檢查網絡後按「重試」— 本機自評仍可用');
+          clearGalleryBusyUi('尚未加入課堂（畫廊離線）');
+          setGalleryRetryVisible(true);
+          return;
+        }
         // Touch session doc so teachers can see active codes (rules: create/update if authed)
         const sessionRef = fbMods.doc(fbDb, 'sessions', code);
         await fbMods.setDoc(sessionRef, {
@@ -1225,6 +1289,8 @@
         localStorage.setItem(GALLERY_SESSION_KEY, code);
         startGalleryListener(code);
         toast('已加入課堂畫廊：' + code);
+        clearGalleryBusyUi('課堂 ' + code + ' · 連接中…');
+        setGalleryRetryVisible(false);
         if (state.source !== 'peer') {
           state.source = 'peer';
           withPreservedScroll(() => renderAll());
@@ -1235,7 +1301,8 @@
       } catch (err) {
         console.warn(err);
         toast('加入失敗：' + (err && err.message ? err.message : String(err)));
-        setGalleryStatus('加入失敗');
+        clearGalleryBusyUi('加入失敗 — 可重試；本機自評仍可用');
+        setGalleryRetryVisible(true);
       }
     }
 
@@ -1251,49 +1318,56 @@
         save();
         return;
       }
-      if (!state.className && !state.studentName && !state.studentId) {
-        toast('請先選擇班別／學生（方便同學辨識）');
+      if (!state.className) {
+        toast('請先選擇班別（畫廊只顯示班別／座位標籤，不含全名）');
         return;
       }
+      const label = buildGalleryDisplayLabel();
+      if (!window.confirm('確定發佈到課堂畫廊？\n\n標籤：' + label + '\n同學將可即時看到作品圖（不含真實姓名）。\n圖片會壓縮至約 200KB 以內。')) {
+        return;
+      }
+      if (galleryBusy) return;
+      galleryBusy = true;
       const btn = document.getElementById('btn-gallery-publish');
       if (btn) { btn.disabled = true; btn.textContent = '發佈中…'; }
       setGalleryStatus('壓縮並發佈中…');
+      setGalleryRetryVisible(false);
       try {
         const ok = await initFirebaseOnce();
         if (!ok || !fbAuth.currentUser) throw new Error('尚未登入畫廊');
         const photoData = await ensurePhotoUnderLimit(state.selfImage);
         if (!photoData) throw new Error('無法處理圖片');
         if (photoData.length > GALLERY_MAX_PHOTO_CHARS) {
-          throw new Error('圖片仍太大，請換較小照片再試');
+          toast('圖片仍超過約 200KB，請換較小照片或降低解析度後再試');
+          throw new Error('圖片仍太大（>' + GALLERY_MAX_PHOTO_CHARS + '）');
         }
         const classId = gallerySession;
         const payload = {
           uid: fbAuth.currentUser.uid,
           classId: classId,
           createdAt: fbMods.serverTimestamp(),
-          displayName: state.studentName || '',
-          studentId: state.studentId || '',
-          classLabel: state.className || '',
+          displayLabel: label,
           photoData: photoData,
           caption: buildCaptionSummary(),
           ks: state.ks,
           level: state.level
         };
         await fbMods.addDoc(fbMods.collection(fbDb, 'sessions', classId, 'works'), payload);
-        toast('已發佈到課堂畫廊');
+        toast('已發佈到課堂畫廊（' + label + '）');
         if (!galleryUnsub) startGalleryListener(classId);
         state.source = 'peer';
         withPreservedScroll(() => renderAll());
         save();
+        clearGalleryBusyUi(galleryStatusSummary());
+        setGalleryRetryVisible(false);
       } catch (err) {
         console.warn(err);
-        toast('發佈失敗：' + (err && err.message ? err.message : String(err)));
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.textContent = '發佈到畫廊';
+        const msg = (err && err.message) ? err.message : String(err);
+        if (msg.indexOf('圖片仍太大') === -1) {
+          toast('發佈失敗：' + msg + ' — 可重試；本機自評仍可用');
         }
-        if (gallerySession) setGalleryStatus('課堂 ' + gallerySession + ' · ' + galleryWorks.length + ' 件作品');
+        clearGalleryBusyUi(galleryStatusSummary() + '（發佈失敗）');
+        setGalleryRetryVisible(true);
       }
     }
 
@@ -1306,19 +1380,51 @@
       const title = document.getElementById('gallery-lb-title');
       const meta = document.getElementById('gallery-lb-meta');
       const cap = document.getElementById('gallery-lb-caption');
+      const delBtn = document.getElementById('gallery-lb-delete');
       if (img) img.src = w.photoData;
-      if (title) title.textContent = (w.displayName || '同學') + (w.classLabel ? ' · ' + w.classLabel : '');
-      if (meta) meta.textContent = (w.studentId ? ('學號 ' + w.studentId + ' · ') : '') + '點擊「用此作品互評」開始回饋';
+      if (title) title.textContent = workDisplayLabel(w);
+      if (meta) meta.textContent = '點擊「用此作品互評」開始回饋';
       if (cap) cap.textContent = w.caption || '';
-      if (box) box.classList.remove('hidden');
+      const isOwn = !!(fbAuth && fbAuth.currentUser && w.uid === fbAuth.currentUser.uid);
+      if (delBtn) delBtn.classList.toggle('hidden', !isOwn);
+      if (box) {
+        box.classList.remove('hidden');
+        activateFocusTrap(box, { onEscape: closeGalleryLightbox });
+      }
     }
 
     function closeGalleryLightbox() {
       const box = document.getElementById('gallery-lightbox');
+      deactivateFocusTrap(box);
       if (box) box.classList.add('hidden');
       const img = document.getElementById('gallery-lb-img');
       if (img) img.removeAttribute('src');
       lightboxWorkId = null;
+      const delBtn = document.getElementById('gallery-lb-delete');
+      if (delBtn) delBtn.classList.add('hidden');
+    }
+
+    async function deleteOwnGalleryWork(workId) {
+      const w = findLiveWork(workId);
+      if (!w) return;
+      if (!fbAuth || !fbAuth.currentUser || w.uid !== fbAuth.currentUser.uid) {
+        toast('只能刪除自己發佈的作品');
+        return;
+      }
+      if (!gallerySession) return;
+      if (!window.confirm('確定從本課堂畫廊刪除這件作品？')) return;
+      try {
+        const ok = await initFirebaseOnce();
+        if (!ok) throw new Error('畫廊未連線');
+        await fbMods.deleteDoc(fbMods.doc(fbDb, 'sessions', gallerySession, 'works', workId));
+        if (state.selectedPeer === 'live:' + workId) state.selectedPeer = 'peer1';
+        closeGalleryLightbox();
+        toast('已從畫廊刪除');
+        save();
+      } catch (err) {
+        console.warn(err);
+        toast('刪除失敗：' + (err && err.message ? err.message : String(err)));
+      }
     }
 
     function selectLiveWorkForPeer(workId) {
@@ -1505,13 +1611,14 @@
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" style="min-height:${Math.max(120, Math.ceil(galleryWorks.length / 2) * 96)}px">` +
              galleryWorks.map(w => {
                const pid = 'live:' + w.id;
-               const label = escapeHtml(w.displayName || '同學');
-               const sub = escapeHtml((w.classLabel || '') + (w.studentId ? ' · ' + w.studentId : ''));
+               const label = escapeHtml(workDisplayLabel(w));
+               const own = (fbAuth && fbAuth.currentUser && w.uid === fbAuth.currentUser.uid);
+               const sub = own ? '我的作品 · 點擊可刪除' : '點擊放大／互評';
                const src = (w.photoData || '').replace(/"/g, '&quot;');
                return `<button type="button" class="gallery-thumb p-1.5 ${state.selectedPeer === pid ? 'selected' : ''}" data-live-work="${escapeHtml(w.id)}">
                   <img src="${src}" alt="${label}" loading="lazy" />
                   <div class="text-xs font-bold truncate mt-1 px-0.5">${label}</div>
-                  <div class="text-[10px] text-va-muted truncate px-0.5">${sub || '點擊放大／互評'}</div>
+                  <div class="text-[10px] text-va-muted truncate px-0.5">${sub}</div>
                 </button>`;
              }).join('') + `</div></div>`)
           : (`<div class="mb-2 text-xs text-va-muted rounded-[14px] border border-dashed border-va-line px-3 py-2">${
@@ -1657,11 +1764,17 @@
       // Avoid auto-focus on coarse pointers / narrow viewports (iPhone keyboard jump)
       const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
       const narrow = Math.min(window.innerWidth, (window.visualViewport && window.visualViewport.width) || window.innerWidth) < 768;
-      if (pinTa && !(coarse || narrow)) pinTa.focus({ preventScroll: true });
+      activateFocusTrap(pop, {
+        onEscape: closePinPopover,
+        initialFocus: coarse || narrow ? document.getElementById('pin-pop-close') : pinTa,
+        skipInitialFocus: false
+      });
     }
 
     function closePinPopover() {
-      document.getElementById('pin-popover').classList.add('hidden');
+      const pop = document.getElementById('pin-popover');
+      deactivateFocusTrap(pop);
+      if (pop) pop.classList.add('hidden');
       state.activePin = null;
       popoverPin = null;
       renderCanvas();
@@ -1685,6 +1798,10 @@
       state.selectedChipWord = null;
       document.querySelectorAll('#chips-elements .chip.selected, #chips-principles .chip.selected')
         .forEach(el => el.classList.remove('selected'));
+      const hint = document.getElementById('chip-hint');
+      if (hint && hint.textContent.indexOf('已選') === 0) {
+        hint.textContent = '詞彙：可拖放到空格；iPhone／觸控亦可先點選詞彙，再點空格插入。';
+      }
     }
 
     function setChipSelection(word, btn) {
@@ -1849,9 +1966,17 @@
           if (target) placeChipOnBlank(w, target);
           else toast('請拖到句式空格上');
         } else {
-          // Tap: select / deselect — does NOT auto-paste into next blank
-          if (state.selectedChipWord === w) clearChipSelection();
-          else setChipSelection(w, b);
+          // Tap: select / deselect — then tap blank (or open text) to insert (iPhone-friendly)
+          if (state.selectedChipWord === w) {
+            clearChipSelection();
+            const hint = document.getElementById('chip-hint');
+            if (hint) hint.textContent = '詞彙：可拖放到空格；iPhone／觸控亦可先點選詞彙，再點空格插入。';
+          } else {
+            setChipSelection(w, b);
+            const hint = document.getElementById('chip-hint');
+            if (hint) hint.textContent = '已選「' + w + '」— 再點句式空格或書寫區插入。';
+            toast('已選「' + w + '」— 再點空格插入');
+          }
         }
         try { b.releasePointerCapture(e.pointerId); } catch (_) {}
         b.classList.remove('dragging');
@@ -2024,6 +2149,19 @@
         if (ta) {
           ta.addEventListener('input', persistOpenText);
           ta.addEventListener('focus', () => { state.lastBlankTarget = null; });
+          ta.addEventListener('pointerdown', (e) => {
+            if (!state.selectedChipWord) return;
+            // Insert selected vocab into open writing (click-to-insert)
+            e.preventDefault();
+            const word = state.selectedChipWord;
+            const start = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
+            const end = ta.selectionEnd != null ? ta.selectionEnd : ta.value.length;
+            ta.value = ta.value.slice(0, start) + word + ta.value.slice(end);
+            try { ta.selectionStart = ta.selectionEnd = start + word.length; } catch (_) {}
+            clearChipSelection();
+            persistOpenText();
+            toast('已插入「' + word + '」');
+          });
         }
         panel.querySelectorAll('[data-rubric]').forEach(cb => {
           cb.addEventListener('change', () => {
@@ -2178,6 +2316,87 @@
       stepsEl.innerHTML = blocks;
     }
 
+    /* —— Modal / popover a11y: focus trap + Escape + restore focus —— */
+    let activeFocusTrap = null; // { root, previouslyFocused, keyHandler, onEscape }
+
+    function getFocusableElements(root) {
+      if (!root) return [];
+      const sel = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      return Array.prototype.filter.call(root.querySelectorAll(sel), (el) => {
+        if (el.hasAttribute('disabled') || el.getAttribute('aria-hidden') === 'true') return false;
+        if (el.classList && el.classList.contains('hidden')) return false;
+        const style = window.getComputedStyle(el);
+        if (style.display === 'none' || style.visibility === 'hidden') return false;
+        return true;
+      });
+    }
+
+    function deactivateFocusTrap(expectedRoot) {
+      if (!activeFocusTrap) return;
+      if (expectedRoot && activeFocusTrap.root !== expectedRoot) return;
+      const prev = activeFocusTrap.previouslyFocused;
+      document.removeEventListener('keydown', activeFocusTrap.keyHandler, true);
+      activeFocusTrap = null;
+      if (prev && typeof prev.focus === 'function') {
+        try { prev.focus({ preventScroll: true }); } catch (_) {
+          try { prev.focus(); } catch (__) {}
+        }
+      }
+    }
+
+    function activateFocusTrap(root, opts) {
+      const o = opts || {};
+      if (!root) return;
+      // Replace any existing trap (nested dialogs uncommon)
+      if (activeFocusTrap) deactivateFocusTrap(activeFocusTrap.root);
+      const previouslyFocused = document.activeElement;
+      const onEscape = o.onEscape || (() => {});
+      const keyHandler = (e) => {
+        if (!activeFocusTrap || activeFocusTrap.root !== root) return;
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          onEscape();
+          return;
+        }
+        if (e.key !== 'Tab') return;
+        const list = getFocusableElements(root);
+        if (!list.length) {
+          e.preventDefault();
+          return;
+        }
+        const first = list[0];
+        const last = list[list.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first || !root.contains(document.activeElement)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last || !root.contains(document.activeElement)) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      };
+      activeFocusTrap = { root, previouslyFocused, keyHandler, onEscape };
+      document.addEventListener('keydown', keyHandler, true);
+      const prefer = o.initialFocus || getFocusableElements(root)[0];
+      if (prefer && !(o.skipInitialFocus)) {
+        setTimeout(() => {
+          try { prefer.focus({ preventScroll: true }); } catch (_) {
+            try { prefer.focus(); } catch (__) {}
+          }
+        }, 10);
+      }
+    }
+
+    function closeIdeaBank() {
+      const modal = document.getElementById('idea-modal');
+      deactivateFocusTrap(modal);
+      if (modal) modal.classList.add('hidden');
+    }
+
     function openIdeaBank() {
       const step = STEPS[state.step];
       const ideas = IDEA_BANK[step.id] || [];
@@ -2186,14 +2405,16 @@
         ideas.map(idea => `<button type="button" class="chip w-full text-left justify-start idea-item" style="border-radius:0.75rem;" data-idea="${escapeHtml(idea)}">${escapeHtml(idea)}</button>`).join('') +
         (state.source === 'peer' ? `<hr class="my-2"/><p class="font-semibold text-va-blue">同儕回饋句式</p>` +
           PEER_STARTERS.map(s => `<button type="button" class="chip w-full text-left idea-item" style="border-radius:0.75rem;" data-idea="${escapeHtml(s)}">${escapeHtml(s)}</button>`).join('') : '');
-      document.getElementById('idea-modal').classList.remove('hidden');
+      const modal = document.getElementById('idea-modal');
+      modal.classList.remove('hidden');
       document.querySelectorAll('.idea-item').forEach(btn => {
         btn.addEventListener('click', () => {
           insertChip(btn.getAttribute('data-idea'));
-          document.getElementById('idea-modal').classList.add('hidden');
+          closeIdeaBank();
           toast('已填入點子');
         });
       });
+      activateFocusTrap(modal, { onEscape: closeIdeaBank, initialFocus: document.getElementById('idea-close') });
     }
 
     // ----- Google Workspace 雲端提交 -----
@@ -2213,11 +2434,17 @@
       const input = document.getElementById('cloud-url-input');
       if (input) input.value = SUBMIT_URL || '';
       modal.classList.remove('hidden');
-      if (input) setTimeout(() => input.focus({ preventScroll: true }), 50);
+      activateFocusTrap(modal, {
+        onEscape: closeCloudSettings,
+        initialFocus: input || document.getElementById('cloud-modal-close'),
+        skipInitialFocus: false
+      });
     }
 
     function closeCloudSettings() {
-      document.getElementById('cloud-modal').classList.add('hidden');
+      const modal = document.getElementById('cloud-modal');
+      deactivateFocusTrap(modal);
+      if (modal) modal.classList.add('hidden');
     }
 
     function saveCloudUrl() {
@@ -2466,10 +2693,10 @@
       applyStudentFromSelect();
     });
     document.getElementById('btn-idea-bank').addEventListener('click', openIdeaBank);
-    document.getElementById('idea-close').addEventListener('click', () => document.getElementById('idea-modal').classList.add('hidden'));
-    document.getElementById('idea-close-2').addEventListener('click', () => document.getElementById('idea-modal').classList.add('hidden'));
+    document.getElementById('idea-close').addEventListener('click', closeIdeaBank);
+    document.getElementById('idea-close-2').addEventListener('click', closeIdeaBank);
     document.getElementById('idea-modal').addEventListener('click', e => {
-      if (e.target.id === 'idea-modal') e.currentTarget.classList.add('hidden');
+      if (e.target.id === 'idea-modal') closeIdeaBank();
     });
     document.getElementById('btn-export').addEventListener('click', () => {
       buildPrintCard();
@@ -2531,13 +2758,23 @@
       }
       const lbClose = document.getElementById('gallery-lb-close');
       const lbUse = document.getElementById('gallery-lb-use');
+      const lbDel = document.getElementById('gallery-lb-delete');
       const lb = document.getElementById('gallery-lightbox');
+      const retryBtn = document.getElementById('btn-gallery-retry');
       if (lbClose) lbClose.addEventListener('click', closeGalleryLightbox);
       if (lbUse) lbUse.addEventListener('click', () => {
         if (lightboxWorkId) selectLiveWorkForPeer(lightboxWorkId);
       });
+      if (lbDel) lbDel.addEventListener('click', () => {
+        if (lightboxWorkId) deleteOwnGalleryWork(lightboxWorkId);
+      });
       if (lb) lb.addEventListener('click', (e) => {
         if (e.target.id === 'gallery-lightbox') closeGalleryLightbox();
+      });
+      if (retryBtn) retryBtn.addEventListener('click', () => {
+        setGalleryRetryVisible(false);
+        if (gallerySession) joinGallerySession(gallerySession);
+        else joinGallerySession();
       });
     })();
 
