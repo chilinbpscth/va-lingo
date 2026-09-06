@@ -890,22 +890,25 @@
       {
         id: 'peer1',
         name: '同學 A · 陳同學',
-        title: '維港夜色拼貼',
-        hint: '同學以色紙拼貼表現維港兩岸霓虹與倒影。',
+        title: '維港水彩示意',
+        hint: '示範圖像／非真跡：水彩風格表現維港兩岸與水面倒影。',
+        img: 'assets/demo-peer-harbor.png',
         svg: `<svg viewBox="0 0 400 260" class="w-full h-full" preserveAspectRatio="xMidYMid slice"><rect width="400" height="260" fill="#0b1a2b"/><rect x="20" y="80" width="40" height="100" fill="#f39c12"/><rect x="70" y="60" width="50" height="120" fill="#e74c3c"/><rect x="130" y="90" width="35" height="90" fill="#3498db"/><rect x="180" y="50" width="55" height="130" fill="#9b59b6"/><rect x="250" y="75" width="45" height="105" fill="#0f766e"/><rect x="310" y="55" width="60" height="125" fill="#e67e22"/><ellipse cx="200" cy="220" rx="160" ry="30" fill="#1a5276" opacity=".6"/><text x="12" y="24" fill="#e8d4a8" font-size="12" font-family="sans-serif">示範圖像</text></svg>`
       },
       {
         id: 'peer2',
         name: '同學 B · 李同學',
-        title: '街上的小巴',
-        hint: '線描與水彩：熱鬧街景中的紅色小巴。',
+        title: '桌上靜物示意',
+        hint: '示範圖像／非真跡：桌上靜物與光影層次示意。',
+        img: 'assets/demo-peer-stilllife.png',
         svg: `<svg viewBox="0 0 400 260" class="w-full h-full" preserveAspectRatio="xMidYMid slice"><rect width="400" height="260" fill="#f5e6d3"/><rect x="0" y="160" width="400" height="100" fill="#bfbfbf"/><rect x="80" y="100" width="140" height="80" rx="8" fill="#c0392b"/><circle cx="110" cy="185" r="16" fill="#2c3e50"/><circle cx="190" cy="185" r="16" fill="#2c3e50"/><rect x="95" y="115" width="30" height="28" fill="#85c1e9"/><rect x="140" y="115" width="50" height="28" fill="#85c1e9"/><rect x="260" y="40" width="50" height="120" fill="#7f8c8d"/><rect x="320" y="60" width="40" height="100" fill="#95a5a6"/><text x="12" y="24" fill="#134e4a" font-size="12" font-family="sans-serif">示範圖像</text></svg>`
       },
       {
         id: 'peer3',
         name: '同學 C · 黃同學',
-        title: '天台看飛機',
-        hint: '粉彩：從天台望向起飛的飛機與密集樓宇。',
+        title: '剪紙紋樣示意',
+        hint: '示範圖像／非真跡：剪紙紋樣與平面構成示意。',
+        img: 'assets/demo-peer-papercut.png',
         svg: `<svg viewBox="0 0 400 260" class="w-full h-full" preserveAspectRatio="xMidYMid slice"><rect width="400" height="140" fill="#aed6f1"/><rect y="140" width="400" height="120" fill="#85929e"/><polygon points="40,140 40,90 70,90 70,140" fill="#5d6d7e"/><polygon points="90,140 90,70 130,70 130,140" fill="#566573"/><polygon points="150,140 150,50 200,50 200,140" fill="#2c3e50"/><polygon points="220,140 220,80 270,80 270,140" fill="#34495e"/><polygon points="300,100 340,90 360,110 320,120" fill="#fff" opacity=".9"/><line x1="300" y1="100" x2="280" y2="130" stroke="#fff" stroke-width="2"/><text x="12" y="24" fill="#134e4a" font-size="12" font-family="sans-serif">示範圖像</text></svg>`
       }
     ];
@@ -1538,22 +1541,40 @@
       } catch (e) { /* ignore */ }
     }
 
-    const MASTER_ART_SRC = 'assets/fufeng-fucheng.jpg';
+    const MASTER_ART_SRC = 'assets/demo-master-urban.png';
+
+    function peerArtworkHtml(peer, compact) {
+      if (peer && peer.img) {
+        const cls = compact
+          ? 'w-full h-full object-cover'
+          : 'w-full h-full object-contain bg-[#ecf5f4]';
+        return `<div class="relative w-full h-full overflow-hidden bg-[#ecf5f4]">
+  <img src="${peer.img}" alt="${peer.title || '示範同儕作品'}（示範圖像／非真跡）" class="${cls}"
+    onerror="this.style.display='none'; var fb=this.nextElementSibling; if(fb) fb.style.display='';" />
+  <div class="absolute inset-0 w-full h-full" style="display:none">${peer.svg || ''}</div>
+  <div class="absolute top-1 left-1 z-[2] pointer-events-none">
+    <span class="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold text-white" style="background:linear-gradient(90deg,#0f766e,#134e4a);">示範圖像／非真跡</span>
+  </div>
+</div>`;
+      }
+      return peer && peer.svg ? peer.svg : '';
+    }
+
 
     function masterArtworkHtml(compact) {
       const thumbCls = compact ? 'w-full h-full object-contain' : 'absolute inset-0 w-full h-full object-contain';
       const wrapCls = compact
         ? 'relative w-full h-full bg-[#ecf5f4] overflow-hidden'
         : 'relative w-full h-full bg-[#ecf5f4]';
-      // Image hook ready for later download; onerror keeps 示範圖像 SVG visible.
+      // AI demo urban master artwork; onerror keeps 示範圖像 SVG visible. Label stays on (非真跡).
       return `<div class="${wrapCls}" data-master-art="1">
-  <img id="master-art" src="${MASTER_ART_SRC}" alt="樊楓《俯城之五》" class="${thumbCls} z-[1]"
+  <img id="master-art" src="${MASTER_ART_SRC}" alt="都市鳥瞰示意（示範圖像／非真跡，非樊楓真跡）" class="${thumbCls} z-[1]"
     style="object-fit:contain;"
-    onload="this.dataset.loaded='1'; var fb=this.parentElement.querySelector('[data-master-fallback]'); if(fb) fb.style.display='none'; var lb=this.parentElement.querySelector('[data-demo-label]'); if(lb) lb.style.display='none';"
-    onerror="this.style.display='none'; var fb=this.parentElement.querySelector('[data-master-fallback]'); if(fb) fb.style.display=''; var lb=this.parentElement.querySelector('[data-demo-label]'); if(lb) lb.style.display='';" />
+    onload="this.dataset.loaded='1'; var fb=this.parentElement.querySelector('[data-master-fallback]'); if(fb) fb.style.display='none';"
+    onerror="this.style.display='none'; var fb=this.parentElement.querySelector('[data-master-fallback]'); if(fb) fb.style.display='';" />
   <div data-master-fallback class="absolute inset-0 w-full h-full">${MASTER_SVG}</div>
   <div data-demo-label class="absolute top-2 left-2 z-[2] pointer-events-none">
-    <span class="inline-block rounded-full px-2.5 py-1 text-[11px] font-bold text-white" style="background:linear-gradient(90deg,#0f766e,#134e4a);box-shadow:0 2px 0 #c4b5a0;">示範圖像／待載入真跡圖</span>
+    <span class="inline-block rounded-full px-2.5 py-1 text-[11px] font-bold text-white" style="background:linear-gradient(90deg,#0f766e,#134e4a);box-shadow:0 2px 0 #c4b5a0;">示範圖像／非真跡</span>
   </div>
 </div>`;
     }
@@ -1570,7 +1591,7 @@
           return `<div class="w-full h-full flex items-center justify-center text-va-muted text-sm bg-slate-100">作品載入中或不存在</div>`;
         }
         const peer = PEERS.find(p => p.id === state.selectedPeer) || PEERS[0];
-        return peer.svg;
+        return peerArtworkHtml(peer, false);
       }
       if (state.selfImage) {
         return `<img src="${state.selfImage}" alt="我的創作" class="w-full h-full object-contain bg-slate-100" />`;
@@ -1603,7 +1624,7 @@
       if (state.source === 'master') {
         box.innerHTML = `<div class="src-card selected p-3 flex gap-3 items-center">
           <div class="w-16 h-12 rounded bg-slate-200 overflow-hidden shrink-0">${masterArtworkHtml(true).replace('id="master-art"', 'id="master-art-thumb"').replace('class="w-full h-full"', 'class="w-full h-full" style="pointer-events:none"')}</div>
-          <div><div class="font-bold text-va-blue">樊楓《俯城之五》</div><div class="text-xs text-va-muted">大師名作 · 示範圖像（非真跡）· 待放入 assets/fufeng-fucheng.jpg</div></div>
+          <div><div class="font-bold text-va-blue">樊楓《俯城之五》</div><div class="text-xs text-va-muted">大師課題示意 · 示範圖像／非真跡（AI 都市鳥瞰，非樊楓真跡）</div></div>
         </div>`;
       } else if (state.source === 'peer') {
         const liveCards = galleryWorks.length
@@ -1629,9 +1650,9 @@
         const demoCards = `<div class="text-xs font-bold text-va-muted mb-1.5">示範同儕（離線）</div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">` + PEERS.map(p => `
           <button type="button" class="src-card p-2 text-left ${state.selectedPeer === p.id ? 'selected' : ''}" data-peer="${p.id}">
-            <div class="h-16 rounded overflow-hidden mb-1">${p.svg}</div>
+            <div class="h-16 rounded overflow-hidden mb-1">${peerArtworkHtml(p, true)}</div>
             <div class="text-xs font-bold truncate">${p.title}</div>
-            <div class="text-[10px] text-va-muted truncate">${p.name}</div>
+            <div class="text-[10px] text-va-muted truncate">${p.name} · 示範圖像／非真跡</div>
           </button>`).join('') + `</div>`;
         box.innerHTML = liveCards + demoCards;
         box.querySelectorAll('[data-peer]').forEach(btn => {
