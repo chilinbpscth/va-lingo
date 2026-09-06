@@ -663,6 +663,7 @@
           <!-- Vocab -->
           <div class="border-t border-va-line pt-3 space-y-2">
             <p id="chip-hint" class="text-xs text-va-muted">詞彙：可拖放到空格；iPhone／觸控亦可先點選詞彙，再點空格插入。</p>
+            <p class="text-[11px] text-va-muted">詞彙依教育局《視覺藝術科課程指引》（2024）</p>
             <div>
               <h3 class="text-sm font-bold text-va-blue mb-1.5 comic">視覺元素</h3>
               <div id="chips-elements" class="flex flex-wrap gap-2"></div>
@@ -774,13 +775,14 @@
     ];
 
     const VOCAB = {
+      // EDB《視覺藝術科課程指引（小一至中六）（2024）》視覺語言
       ks1: {
-        elements: ['線條', '顏色', '形狀', '空間', '質感'],
-        principles: ['重複', '對比', '節奏', '均衡']
+        elements: ['線條', '形狀', '形體', '空間', '色彩', '明暗', '質感'],
+        principles: ['均衡', '重複', '統一與變化', '節奏', '比例', '重點', '動感']
       },
       ks2: {
-        elements: ['線條', '色彩', '形狀', '空間', '質感', '明暗', '體積'],
-        principles: ['對比', '節奏', '均衡', '統一', '強調', '比例', '漸變']
+        elements: ['線條', '形狀', '形體', '空間', '色彩', '明暗', '質感'],
+        principles: ['均衡', '重複', '統一與變化', '節奏', '比例', '重點', '動感']
       }
     };
 
@@ -803,8 +805,8 @@
         ks2: '畫面前景可見<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>；中景有<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>；遠景則是<span class="scaffold-blank" contenteditable="true" data-blank="2"></span>。'
       },
       form: {
-        ks1: '畫家用了<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>的顏色，線條看起來<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>。',
-        ks2: '在視覺元素方面，作品運用<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>與<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>；組織原理上可見<span class="scaffold-blank" contenteditable="true" data-blank="2"></span>，令畫面產生<span class="scaffold-blank" contenteditable="true" data-blank="3"></span>的效果。'
+        ks1: '畫家運用視覺元素<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>，組織原理上可見<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>。',
+        ks2: '在視覺元素方面，作品運用<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>與<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>；組織原理上可見<span class="scaffold-blank" contenteditable="true" data-blank="2"></span>（如均衡、重複、重點、動感），令畫面產生<span class="scaffold-blank" contenteditable="true" data-blank="3"></span>的效果。'
       },
       meaning: {
         ks1: '我想畫家想說香港很<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>。這讓我想到<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>。',
@@ -817,24 +819,40 @@
     };
 
     const RUBRICS = {
-      feel: ['能清楚表達個人感受', '感受與畫面有具體連結'],
-      describe: ['能指出前景／中景／遠景細節', '描述客觀、用詞準確'],
-      form: ['能運用視覺元素詞彙', '能指出至少一項組織原理', '分析與畫面證據呼應'],
-      meaning: ['詮釋有文化／生活連結', '能提出合理推論（非空想）'],
-      judge: ['判斷有理據', '能提出欣賞或改善建議', '展現個人觀點']
+      // 對齊 EDB 評賞目標：感受→描述→形式（視覺元素／組織原理）→詮釋→價值判斷
+      feel: {
+        ks1: ['能說出對作品的整體感受', '感受能連到畫面所見'],
+        ks2: ['能清楚表達個人感受與氣氛', '感受與畫面有具體、可指證的連結']
+      },
+      describe: {
+        ks1: ['能說出畫面裏看見甚麼', '描述具體、少空泛用詞'],
+        ks2: ['能指出前景／中景／遠景等細節', '描述客觀、用詞準確']
+      },
+      form: {
+        ks1: ['能說出至少一項視覺元素（如線條、色彩、形狀）', '能說出至少一項組織原理（如重複、均衡、重點）'],
+        ks2: ['能運用視覺元素詞彙（線條、形狀、形體、空間、色彩、明暗、質感）', '能指出組織原理（均衡、重複、統一與變化、節奏、比例、重點、動感）', '形式分析與畫面證據呼應']
+      },
+      meaning: {
+        ks1: ['能說說作品可能想表達甚麼', '詮釋能連到生活或經驗'],
+        ks2: ['詮釋有文化／生活／情境連結', '能提出合理推論（非空想）']
+      },
+      judge: {
+        ks1: ['能說出喜歡／欣賞的理由', '能提出一點欣賞或改善想法'],
+        ks2: ['價值判斷有理據', '能提出欣賞或改善建議', '展現個人觀點與審美判斷']
+      }
     };
 
     const PEER_STARTERS = [
-      '我最欣賞你作品中的……',
-      '你用……令畫面看起來很……',
-      '如果再改一點……可能會更……',
+      '我最欣賞你作品中的視覺元素……',
+      '你運用的組織原理……令畫面看起來很……',
+      '如果再改一點視覺元素／組織原理……可能會更……',
       '這幅畫令我想起……'
     ];
 
     const IDEA_BANK = {
       feel: ['熱鬧而有秩序', '像從飛機望香港', '墨色城市很特別', '既熟悉又陌生'],
       describe: ['密密麻麻的樓宇', '彎曲的海岸線', '交錯的道路', '淡墨遠山與濃墨高樓'],
-      form: ['疏密對比', '鳥瞰透視', '水墨層次', '線條節奏如脈絡'],
+      form: ['重複與節奏', '明暗與形體', '重點與動感', '均衡的構圖', '統一與變化', '鳥瞰空間層次', '疏密帶來節奏（輔助觀察）'],
       meaning: ['都市人的生活節奏', '傳統媒材與現代城市對話', '從高處俯瞰「家」的感覺'],
       judge: ['成功融合水墨與都市景觀', '視角獨特，引人思考身份與地方', '適合用來討論「我的香港」']
     };
@@ -2158,7 +2176,8 @@
         html += `<div class="mt-3"><p class="text-sm font-bold text-va-blue mb-2">自評檢核（第二層）</p><div class="space-y-1">`;
         const rk = answerKey('rubric');
         const checked = state.rubrics[rk] || {};
-        (RUBRICS[step.id] || []).forEach((item, i) => {
+        const rubricItems = (RUBRICS[step.id] && (RUBRICS[step.id][state.ks] || RUBRICS[step.id].ks2)) || [];
+        rubricItems.forEach((item, i) => {
           html += `<label class="rubric-item flex items-center gap-2 bg-white border rounded-lg px-3 py-2 cursor-pointer">
             <input type="checkbox" data-rubric="${i}" class="w-5 h-5 accent-[#0f766e]" ${checked[i] ? 'checked' : ''}/>
             <span class="text-sm">${escapeHtml(item)}</span>
@@ -2317,7 +2336,7 @@
         } else {
           body += `<div style="white-space:pre-wrap;">${escapeHtml(state.answers[answerKey('open')] || '（尚未填寫）')}</div>`;
           const rub = state.rubrics[answerKey('rubric')] || {};
-          const items = RUBRICS[st.id] || [];
+          const items = (RUBRICS[st.id] && (RUBRICS[st.id][state.ks] || RUBRICS[st.id].ks2)) || [];
           if (items.length) {
             body += '<ul style="margin:6px 0 0;padding-left:18px;font-size:10pt;">' +
               items.map((it, idx) => `<li>${rub[idx] ? '☑' : '☐'} ${escapeHtml(it)}</li>`).join('') + '</ul>';
