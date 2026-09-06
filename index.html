@@ -290,6 +290,37 @@
       font-weight: 800;
       letter-spacing: 0.01em;
     }
+
+    .curriculum-bar {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem;
+      width: 100%;
+    }
+    .curriculum-bar label {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.8rem; color: var(--muted, #6b5e55); font-weight: 600;
+      min-width: 0;
+    }
+    .curriculum-bar select {
+      border-radius: 999px; border: 1.5px solid var(--line);
+      background: #fff; padding: 0.4rem 0.75rem; min-height: 40px;
+      font-size: 0.8rem; color: var(--text, #2c2420); max-width: 100%;
+    }
+    .form-badge {
+      display: inline-block; border-radius: 999px; padding: 0.1rem 0.45rem;
+      font-size: 0.65rem; font-weight: 800; letter-spacing: 0.02em;
+      vertical-align: middle; margin-left: 0.25rem;
+    }
+    .form-badge.form-2d { background: #ecf5f4; color: #0f766e; border: 1px solid #c5ddd9; }
+    .form-badge.form-3d { background: #f7efe2; color: #9a3412; border: 1px solid #e8d4a8; }
+    .master-gallery-label {
+      font-size: 0.7rem; font-weight: 800; color: #0f766e;
+      letter-spacing: 0.04em; text-transform: none;
+    }
+    .master-empty-note {
+      font-size: 0.75rem; color: #9a3412; background: #f7efe2;
+      border: 1px dashed #e8d4a8; border-radius: 12px; padding: 0.5rem 0.75rem;
+    }
+
     .mode-bar {
       background: rgba(255,255,255,.92);
       border-bottom: 1.5px solid var(--line);
@@ -584,24 +615,40 @@
     </div>
   </header>
 
-  <!-- Mode / Level bar -->
+  <!-- Mode / Level bar + curriculum selectors -->
   <div class="mode-bar no-print sticky z-30" style="top: var(--app-header-h, 72px);">
-    <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-2.5 flex flex-wrap items-center gap-2 sm:gap-3 justify-between">
-      <div class="flex items-center gap-2 flex-wrap min-w-0">
-        <span class="text-xs sm:text-sm font-semibold text-va-blue comic shrink-0">學習階段</span>
-        <div class="inline-flex seg-toggle flex-wrap max-w-full">
-          <button type="button" data-ks="ks1" class="ks-toggle px-2.5 sm:px-4 py-2 min-h-touch text-xs sm:text-sm font-semibold bg-va-blue text-white">KS1（小一至小三）</button>
-          <button type="button" data-ks="ks2" class="ks-toggle px-2.5 sm:px-4 py-2 min-h-touch text-xs sm:text-sm font-semibold bg-white text-va-blue">KS2（小四至小六）</button>
-        </div>
+    <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-2.5 flex flex-col gap-2">
+      <div class="curriculum-bar" id="curriculum-bar" aria-label="課程選取">
+        <label>
+          <span class="shrink-0">年級</span>
+          <select id="sel-grade" aria-label="年級"></select>
+        </label>
+        <label>
+          <span class="shrink-0">學段</span>
+          <select id="sel-stage" aria-label="學段"></select>
+        </label>
+        <label class="min-w-0 flex-1 sm:flex-none">
+          <span class="shrink-0">課題</span>
+          <select id="sel-topic" aria-label="課題" class="max-w-[min(100%,18rem)]"></select>
+        </label>
       </div>
-      <div id="level-wrap" class="hidden items-center gap-2 flex-wrap">
-        <span class="text-sm font-semibold text-va-blue comic">鷹架層級</span>
-        <div class="inline-flex seg-toggle">
-          <button type="button" data-level="1" class="level-toggle px-2.5 sm:px-4 py-2 min-h-touch text-xs sm:text-sm font-semibold bg-va-gold text-white">第一層：句式提示</button>
-          <button type="button" data-level="2" class="level-toggle px-2.5 sm:px-4 py-2 min-h-touch text-xs sm:text-sm font-semibold bg-white text-slate-700">第二層：開放書寫</button>
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 justify-between">
+        <div class="flex items-center gap-2 flex-wrap min-w-0">
+          <span class="text-xs sm:text-sm font-semibold text-va-blue comic shrink-0">學習階段</span>
+          <div class="inline-flex seg-toggle flex-wrap max-w-full">
+            <button type="button" data-ks="ks1" class="ks-toggle px-2.5 sm:px-4 py-2 min-h-touch text-xs sm:text-sm font-semibold bg-va-blue text-white">KS1（小一至小三）</button>
+            <button type="button" data-ks="ks2" class="ks-toggle px-2.5 sm:px-4 py-2 min-h-touch text-xs sm:text-sm font-semibold bg-white text-va-blue">KS2（小四至小六）</button>
+          </div>
         </div>
+        <div id="level-wrap" class="hidden items-center gap-2 flex-wrap">
+          <span class="text-sm font-semibold text-va-blue comic">鷹架層級</span>
+          <div class="inline-flex seg-toggle">
+            <button type="button" data-level="1" class="level-toggle px-2.5 sm:px-4 py-2 min-h-touch text-xs sm:text-sm font-semibold bg-va-gold text-white">第一層：句式提示</button>
+            <button type="button" data-level="2" class="level-toggle px-2.5 sm:px-4 py-2 min-h-touch text-xs sm:text-sm font-semibold bg-white text-slate-700">第二層：開放書寫</button>
+          </div>
+        </div>
+        <div class="text-xs text-va-muted" id="save-status">尚未儲存</div>
       </div>
-      <div class="text-xs text-va-muted" id="save-status">尚未儲存</div>
     </div>
   </div>
 
@@ -1469,6 +1516,10 @@
       className: '',
       studentName: '',
       studentId: '',
+      grade: 'p1',
+      stage: 'stage1',
+      topicId: 'p1-s1-2d',
+      selectedArtistIndex: 0,
       selfImage: null,
       pins: [],
       activePin: null,
@@ -1480,12 +1531,38 @@
       selectedChipWord: null
     };
 
+    /** Loaded from curriculum.json — 年級 × 3 學段 × (平面+立體) */
+    let curriculum = {
+      grades: [
+        { id: 'p1', label: '小一', ksSuggest: 'ks1' },
+        { id: 'p2', label: '小二', ksSuggest: 'ks1' },
+        { id: 'p3', label: '小三', ksSuggest: 'ks1' },
+        { id: 'p4', label: '小四', ksSuggest: 'ks2' },
+        { id: 'p5', label: '小五', ksSuggest: 'ks2' },
+        { id: 'p6', label: '小六', ksSuggest: 'ks2' }
+      ],
+      stages: [
+        { id: 'stage1', label: '第一學段' },
+        { id: 'stage2', label: '第二學段' },
+        { id: 'stage3', label: '第三學段' }
+      ],
+      forms: [
+        { id: '2d', label: '平面' },
+        { id: '3d', label: '立體' }
+      ],
+      topics: []
+    };
+    let curriculumLoaded = false;
+
     function stepKey() {
       return STEPS[state.step].id;
     }
 
     function answerKey(extra) {
-      return [state.ks, state.source, state.source === 'peer' ? state.selectedPeer : 'main', stepKey(), extra || ''].filter(Boolean).join('|');
+      let scope = 'main';
+      if (state.source === 'peer') scope = state.selectedPeer;
+      else if (state.source === 'master') scope = state.topicId || 'main';
+      return [state.ks, state.source, scope, stepKey(), extra || ''].filter(Boolean).join('|');
     }
 
     function toast(msg, opts) {
@@ -1517,6 +1594,10 @@
           className: state.className,
           studentName: state.studentName,
           studentId: state.studentId,
+          grade: state.grade,
+          stage: state.stage,
+          topicId: state.topicId,
+          selectedArtistIndex: state.selectedArtistIndex,
           selfImage: state.selfImage,
           pins: state.pins,
           answers: state.answers,
@@ -1549,6 +1630,10 @@
           className: p.className || '',
           studentName: p.studentName || '',
           studentId: p.studentId || '',
+          grade: p.grade || 'p1',
+          stage: p.stage || 'stage1',
+          topicId: p.topicId || 'p1-s1-2d',
+          selectedArtistIndex: typeof p.selectedArtistIndex === 'number' ? p.selectedArtistIndex : 0,
           selfImage: p.selfImage || null,
           pins: Array.isArray(p.pins) ? p.pins : [],
           answers: p.answers || {},
@@ -1559,7 +1644,214 @@
       } catch (e) { /* ignore */ }
     }
 
-    const MASTER_ART_SRC = 'assets/demo-master-urban.png';
+    const MASTER_ART_FALLBACK = 'assets/demo-master-urban.png';
+
+    function formLabel(form) {
+      if (form === '3d') return '立體';
+      return '平面';
+    }
+
+    function findGrade(id) {
+      return (curriculum.grades || []).find(g => g.id === id) || null;
+    }
+
+    function findStage(id) {
+      return (curriculum.stages || []).find(s => s.id === id) || null;
+    }
+
+    function topicsFor(grade, stage) {
+      return (curriculum.topics || []).filter(t => t.grade === grade && t.stage === stage);
+    }
+
+    function findTopic(id) {
+      return (curriculum.topics || []).find(t => t.id === id) || null;
+    }
+
+    function currentTopic() {
+      let t = findTopic(state.topicId);
+      if (t) return t;
+      const list = topicsFor(state.grade, state.stage);
+      return list[0] || (curriculum.topics || [])[0] || null;
+    }
+
+    function artistSlots(topic) {
+      const raw = (topic && Array.isArray(topic.artists)) ? topic.artists : [];
+      return raw.length ? raw : [{ name: '', workTitle: '', image: null, note: '' }];
+    }
+
+    function artistFilled(a) {
+      if (!a) return false;
+      return !!(String(a.name || '').trim() || String(a.workTitle || '').trim() || a.image);
+    }
+
+    function currentArtist() {
+      const topic = currentTopic();
+      const slots = artistSlots(topic);
+      const idx = Math.max(0, Math.min(state.selectedArtistIndex || 0, slots.length - 1));
+      return { topic, slots, artist: slots[idx], index: idx };
+    }
+
+    function masterDisplayMeta() {
+      const { topic, artist } = currentArtist();
+      if (artistFilled(artist)) {
+        const name = String(artist.name || '').trim() || '藝術家（待補）';
+        const work = String(artist.workTitle || '').trim() || '畫作（待補）';
+        return {
+          title: name + '《' + work + '》',
+          subtitle: (topic ? topic.title : '') + ' · ' + formLabel(topic && topic.form) + (artist.note ? ' · ' + artist.note : ''),
+          image: artist.image || MASTER_ART_FALLBACK,
+          alt: name + '《' + work + '》（示範圖像／非真跡）',
+          empty: false
+        };
+      }
+      return {
+        title: '大師名作館',
+        subtitle: (topic ? topic.title + ' · ' + formLabel(topic.form) + ' · ' : '') + '待進度表補藝術家／畫作',
+        image: MASTER_ART_FALLBACK,
+        alt: '示範圖像／非真跡（待進度表補藝術家／畫作）',
+        empty: true
+      };
+    }
+
+    function suggestKsForGrade(gradeId) {
+      const g = findGrade(gradeId);
+      if (g && g.ksSuggest) return g.ksSuggest;
+      if (gradeId === 'p1' || gradeId === 'p2' || gradeId === 'p3') return 'ks1';
+      return 'ks2';
+    }
+
+    function ensureTopicSelection() {
+      const grades = curriculum.grades || [];
+      if (!findGrade(state.grade) && grades[0]) state.grade = grades[0].id;
+      const stages = curriculum.stages || [];
+      if (!findStage(state.stage) && stages[0]) state.stage = stages[0].id;
+      let list = topicsFor(state.grade, state.stage);
+      if (!list.length && (curriculum.topics || []).length) {
+        const any = curriculum.topics.find(t => t.grade === state.grade) || curriculum.topics[0];
+        if (any) {
+          state.grade = any.grade;
+          state.stage = any.stage;
+          list = topicsFor(state.grade, state.stage);
+        }
+      }
+      if (!list.find(t => t.id === state.topicId)) {
+        state.topicId = list[0] ? list[0].id : (state.topicId || '');
+        state.selectedArtistIndex = 0;
+      }
+    }
+
+    function updateHeaderSubtitle() {
+      const el = document.querySelector('.header-subtitle');
+      if (!el) return;
+      const topic = currentTopic();
+      const g = findGrade(state.grade);
+      const s = findStage(state.stage);
+      if (!topic) {
+        el.textContent = '單元：' + UNIT_TITLE;
+        return;
+      }
+      el.textContent = (g ? g.label : state.grade) + ' · ' + (s ? s.label : state.stage) + ' · ' + topic.title + '（' + formLabel(topic.form) + '）';
+    }
+
+    function fillCurriculumSelects() {
+      ensureTopicSelection();
+      const gSel = document.getElementById('sel-grade');
+      const sSel = document.getElementById('sel-stage');
+      const tSel = document.getElementById('sel-topic');
+      if (!gSel || !sSel || !tSel) return;
+      gSel.innerHTML = (curriculum.grades || []).map(g =>
+        '<option value="' + escapeHtml(g.id) + '"' + (g.id === state.grade ? ' selected' : '') + '>' + escapeHtml(g.label) + '</option>'
+      ).join('');
+      sSel.innerHTML = (curriculum.stages || []).map(s =>
+        '<option value="' + escapeHtml(s.id) + '"' + (s.id === state.stage ? ' selected' : '') + '>' + escapeHtml(s.label) + '</option>'
+      ).join('');
+      const topics = topicsFor(state.grade, state.stage);
+      tSel.innerHTML = topics.map(t => {
+        const badge = formLabel(t.form);
+        const label = badge + '｜' + t.title;
+        return '<option value="' + escapeHtml(t.id) + '"' + (t.id === state.topicId ? ' selected' : '') + '>' + escapeHtml(label) + '</option>';
+      }).join('') || '<option value="">（尚無課題）</option>';
+      updateHeaderSubtitle();
+    }
+
+    function onGradeChange(gradeId, opts) {
+      const o = opts || {};
+      state.grade = gradeId;
+      const stages = curriculum.stages || [];
+      state.stage = stages[0] ? stages[0].id : state.stage;
+      const list = topicsFor(state.grade, state.stage);
+      state.topicId = list[0] ? list[0].id : '';
+      state.selectedArtistIndex = 0;
+      if (!o.skipKsSuggest) {
+        state.ks = suggestKsForGrade(state.grade);
+      }
+      fillCurriculumSelects();
+      renderAll();
+      save();
+    }
+
+    function onStageChange(stageId) {
+      state.stage = stageId;
+      const list = topicsFor(state.grade, state.stage);
+      state.topicId = list[0] ? list[0].id : '';
+      state.selectedArtistIndex = 0;
+      fillCurriculumSelects();
+      renderAll();
+      save();
+    }
+
+    function onTopicChange(topicId) {
+      state.topicId = topicId;
+      state.selectedArtistIndex = 0;
+      const t = findTopic(topicId);
+      if (t) {
+        state.grade = t.grade;
+        state.stage = t.stage;
+      }
+      fillCurriculumSelects();
+      renderAll();
+      save();
+    }
+
+    async function loadCurriculum() {
+      try {
+        const res = await fetch('curriculum.json');
+        if (!res.ok) throw new Error('curriculum fetch failed');
+        const data = await res.json();
+        if (data && Array.isArray(data.grades) && data.grades.length) curriculum.grades = data.grades;
+        if (data && Array.isArray(data.stages) && data.stages.length) curriculum.stages = data.stages;
+        if (data && Array.isArray(data.forms) && data.forms.length) curriculum.forms = data.forms;
+        if (data && Array.isArray(data.topics)) curriculum.topics = data.topics;
+        curriculumLoaded = true;
+      } catch (e) {
+        curriculumLoaded = false;
+        // Offline / file:// fallback: synthesize empty 3×2 placeholders
+        if (!curriculum.topics.length) {
+          curriculum.topics = [];
+          curriculum.grades.forEach(g => {
+            curriculum.stages.forEach(s => {
+              ['2d', '3d'].forEach(form => {
+                const sid = s.id.replace('stage', 's');
+                curriculum.topics.push({
+                  id: g.id + '-' + sid + '-' + form,
+                  title: form === '3d' ? '立體課題（待進度表）' : '平面課題（待進度表）',
+                  grade: g.id,
+                  stage: s.id,
+                  form: form,
+                  artists: [
+                    { name: '', workTitle: '', image: null, note: '' },
+                    { name: '', workTitle: '', image: null, note: '' }
+                  ]
+                });
+              });
+            });
+          });
+        }
+      }
+      ensureTopicSelection();
+      fillCurriculumSelects();
+      renderAll();
+    }
 
     function peerArtworkHtml(peer, compact) {
       if (peer && peer.img) {
@@ -1580,13 +1872,15 @@
 
 
     function masterArtworkHtml(compact) {
+      const meta = masterDisplayMeta();
+      const src = meta.image || MASTER_ART_FALLBACK;
       const thumbCls = compact ? 'w-full h-full object-contain' : 'absolute inset-0 w-full h-full object-contain';
       const wrapCls = compact
         ? 'relative w-full h-full bg-[#ecf5f4] overflow-hidden'
         : 'relative w-full h-full bg-[#ecf5f4]';
-      // AI demo urban master artwork; onerror keeps 示範圖像 SVG visible. Label stays on (非真跡).
+      // Topic-driven master image; fallback demo-master-urban + SVG when empty / onerror.
       return `<div class="${wrapCls}" data-master-art="1">
-  <img id="master-art" src="${MASTER_ART_SRC}" alt="都市鳥瞰示意（示範圖像／非真跡，非樊楓真跡）" class="${thumbCls} z-[1]"
+  <img id="master-art" src="${src}" alt="${escapeHtml(meta.alt)}" class="${thumbCls} z-[1]"
     style="object-fit:contain;"
     onload="this.dataset.loaded='1'; var fb=this.parentElement.querySelector('[data-master-fallback]'); if(fb) fb.style.display='none';"
     onerror="this.style.display='none'; var fb=this.parentElement.querySelector('[data-master-fallback]'); if(fb) fb.style.display='';" />
@@ -1622,7 +1916,15 @@
 
     function contextHint() {
       if (state.source === 'master') {
-        return '📌 文化情境提示：樊楓以<strong>鳥瞰</strong>視角描繪都市，結合<strong>水墨</strong>筆墨層次表現香港的密度與節奏。試從「高處望城」想：你看見怎樣的香港？';
+        const { topic, artist } = currentArtist();
+        if (artistFilled(artist) && (artist.note || artist.name)) {
+          const who = escapeHtml(String(artist.name || '').trim() || '藝術家');
+          const work = escapeHtml(String(artist.workTitle || '').trim() || '作品');
+          const note = escapeHtml(String(artist.note || '').trim());
+          return '📌 <strong>大師名作館</strong>：' + who + '《' + work + '》' + (note ? ' — ' + note : '') +
+            (topic ? '（' + escapeHtml(topic.title) + ' · ' + formLabel(topic.form) + '）' : '');
+        }
+        return '📌 <strong>大師名作館</strong>：本課題尚待進度表補藝術家／畫作。可先用示範圖像練習評賞五步驟；選題後會顯示對應名作。';
       }
       if (state.source === 'peer') {
         const liveId = liveWorkIdFromPeer(state.selectedPeer);
@@ -1640,10 +1942,49 @@
     function renderSourcePicker() {
       const box = document.getElementById('source-picker');
       if (state.source === 'master') {
-        box.innerHTML = `<div class="src-card selected p-3 flex gap-3 items-center">
-          <div class="w-16 h-12 rounded bg-slate-200 overflow-hidden shrink-0">${masterArtworkHtml(true).replace('id="master-art"', 'id="master-art-thumb"').replace('class="w-full h-full"', 'class="w-full h-full" style="pointer-events:none"')}</div>
-          <div><div class="font-bold text-va-blue">樊楓《俯城之五》</div><div class="text-xs text-va-muted">大師課題示意 · 示範圖像／非真跡（AI 都市鳥瞰，非樊楓真跡）</div></div>
+        const { topic, slots } = currentArtist();
+        const form = topic ? topic.form : '2d';
+        const badge = `<span class="form-badge form-${form === '3d' ? '3d' : '2d'}">${formLabel(form)}</span>`;
+        const cards = slots.map((a, idx) => {
+          const filled = artistFilled(a);
+          const title = filled
+            ? (escapeHtml((a.name || '藝術家').trim() || '藝術家') + '《' + escapeHtml((a.workTitle || '畫作').trim() || '畫作') + '》')
+            : '待進度表補藝術家／畫作';
+          const sub = filled
+            ? (escapeHtml(a.note || '大師名作 · 示範圖像／非真跡'))
+            : '大師名作館佔位 · 稍後補入畫作';
+          const sel = (state.selectedArtistIndex === idx) ? 'selected' : '';
+          // Preview: use artist image if any, else fallback thumb via masterArtworkHtml temporarily
+          const prevIdx = state.selectedArtistIndex;
+          state.selectedArtistIndex = idx;
+          const thumb = masterArtworkHtml(true)
+            .replace('id="master-art"', 'id="master-art-thumb-' + idx + '"')
+            .replace('class="w-full h-full"', 'class="w-full h-full" style="pointer-events:none"');
+          state.selectedArtistIndex = prevIdx;
+          return `<button type="button" class="src-card p-3 flex gap-3 items-center text-left w-full ${sel}" data-artist-idx="${idx}">
+            <div class="w-16 h-12 rounded bg-slate-200 overflow-hidden shrink-0">${thumb}</div>
+            <div class="min-w-0">
+              <div class="master-gallery-label mb-0.5">大師名作館 ${badge}</div>
+              <div class="font-bold text-va-blue truncate">${title}</div>
+              <div class="text-xs text-va-muted truncate">${sub}</div>
+            </div>
+          </button>`;
+        }).join('');
+        const emptyBanner = slots.every(a => !artistFilled(a))
+          ? '<div class="master-empty-note">待進度表補藝術家／畫作 — 課題：「' + escapeHtml(topic ? topic.title : '') + '」</div>'
+          : '';
+        box.innerHTML = `<div class="space-y-2">
+          <div class="text-sm font-bold text-va-blue comic">大師名作館${topic ? ' · ' + escapeHtml(topic.title) : ''}</div>
+          ${emptyBanner}
+          <div class="space-y-2">${cards}</div>
         </div>`;
+        box.querySelectorAll('[data-artist-idx]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.selectedArtistIndex = Number(btn.getAttribute('data-artist-idx')) || 0;
+            renderAll();
+            save();
+          });
+        });
       } else if (state.source === 'peer') {
         const liveCards = galleryWorks.length
           ? (`<div class="mb-2"><div class="text-xs font-bold text-va-blue mb-1.5">課堂即時作品${gallerySession ? ' · ' + gallerySession : ''}</div>
@@ -1721,7 +2062,9 @@
     }
 
     function pinScope() {
-      return state.source + ':' + (state.source === 'peer' ? state.selectedPeer : 'main');
+      if (state.source === 'peer') return 'peer:' + state.selectedPeer;
+      if (state.source === 'master') return 'master:' + (state.topicId || 'main');
+      return state.source + ':main';
     }
 
     function scopedPins() {
@@ -2302,8 +2645,10 @@
     }
 
     function renderAll() {
+      fillCurriculumSelects();
       renderModeChrome();
       renderSourcePicker();
+      document.getElementById('context-hint').innerHTML = contextHint();
       renderCanvas();
       renderStepContent();
       renderChips();
@@ -2311,7 +2656,11 @@
 
     function buildPrintCard() {
       const meta = document.getElementById('print-meta');
-      meta.textContent = `班別：${state.className || '——'}　姓名：${state.studentName || '——'}　學號：${state.studentId || '——'}　階段：${state.ks.toUpperCase()}${state.ks === 'ks2' ? ' · 第' + state.level + '層' : ''}　來源：${{ master: '大師名作館', self: '我的創作歷程', peer: '同儕藝廊' }[state.source]}`;
+      const topic = currentTopic();
+      const gLab = (findGrade(state.grade) || {}).label || state.grade || '——';
+      const sLab = (findStage(state.stage) || {}).label || state.stage || '——';
+      const tLab = topic ? (topic.title + '（' + formLabel(topic.form) + '）') : '——';
+      meta.textContent = `班別：${state.className || '——'}　姓名：${state.studentName || '——'}　學號：${state.studentId || '——'}　年級：${gLab}　學段：${sLab}　課題：${tLab}　階段：${state.ks.toUpperCase()}${state.ks === 'ks2' ? ' · 第' + state.level + '層' : ''}　來源：${{ master: '大師名作館', self: '我的創作歷程', peer: '同儕藝廊' }[state.source]}`;
       const art = document.getElementById('print-artwork-wrap');
       art.innerHTML = `<div style="border:1px solid #ccc;border-radius:8px;overflow:hidden;max-height:180px;">${currentArtworkHtml()}</div>`;
       const stepsEl = document.getElementById('print-steps');
@@ -2648,6 +2997,15 @@
     }
 
     // Events
+    (function bindCurriculumSelects() {
+      const gSel = document.getElementById('sel-grade');
+      const sSel = document.getElementById('sel-stage');
+      const tSel = document.getElementById('sel-topic');
+      if (gSel) gSel.addEventListener('change', () => onGradeChange(gSel.value));
+      if (sSel) sSel.addEventListener('change', () => onStageChange(sSel.value));
+      if (tSel) tSel.addEventListener('change', () => onTopicChange(tSel.value));
+    })();
+
     document.querySelectorAll('.ks-toggle').forEach(btn => {
       btn.addEventListener('click', () => {
         state.ks = btn.getAttribute('data-ks');
@@ -2835,20 +3193,24 @@
     });
     document.getElementById('pin-pop-close').addEventListener('click', closePinPopover);
 
-    // seed default pins for master on first visit
+    // seed default pins for master on first visit (scoped to default topic)
     load();
     if (!localStorage.getItem(STORAGE_KEY)) {
+      const seedScope = 'master:' + (state.topicId || 'p1-s1-2d');
       state.pins = [
-        { id: 'seed1', scope: 'master:main', x: 42, y: 28, note: '高聳樓群——密度與垂直線' },
-        { id: 'seed2', scope: 'master:main', x: 55, y: 72, note: '水面／港灣——柔和橫向節奏' },
-        { id: 'seed3', scope: 'master:main', x: 78, y: 35, note: '遠景山影——空間層次' }
+        { id: 'seed1', scope: seedScope, x: 42, y: 28, note: '高聳樓群——密度與垂直線' },
+        { id: 'seed2', scope: seedScope, x: 55, y: 72, note: '水面／港灣——柔和橫向節奏' },
+        { id: 'seed3', scope: seedScope, x: 78, y: 35, note: '遠景山影——空間層次' }
       ];
     }
+    ensureTopicSelection();
+    fillCurriculumSelects();
     renderAll();
     syncAppHeaderHeight();
     requestAnimationFrame(syncAppHeaderHeight);
     save();
     loadRoster();
+    loadCurriculum();
 
     // Firebase anon auth once; rejoin saved classroom session if any
     initFirebaseOnce().then((ok) => {

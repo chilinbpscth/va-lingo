@@ -1,0 +1,820 @@
+{
+  "version": 1,
+  "notes": "Placeholder curriculum: 6 grades × 3 stages × (平面+立體) = 36 topics. Replace titles/artists when schedule arrives. Edit this file only.",
+  "grades": [
+    {
+      "id": "p1",
+      "label": "小一",
+      "ksSuggest": "ks1"
+    },
+    {
+      "id": "p2",
+      "label": "小二",
+      "ksSuggest": "ks1"
+    },
+    {
+      "id": "p3",
+      "label": "小三",
+      "ksSuggest": "ks1"
+    },
+    {
+      "id": "p4",
+      "label": "小四",
+      "ksSuggest": "ks2"
+    },
+    {
+      "id": "p5",
+      "label": "小五",
+      "ksSuggest": "ks2"
+    },
+    {
+      "id": "p6",
+      "label": "小六",
+      "ksSuggest": "ks2"
+    }
+  ],
+  "stages": [
+    {
+      "id": "stage1",
+      "label": "第一學段"
+    },
+    {
+      "id": "stage2",
+      "label": "第二學段"
+    },
+    {
+      "id": "stage3",
+      "label": "第三學段"
+    }
+  ],
+  "forms": [
+    {
+      "id": "2d",
+      "label": "平面",
+      "title": "平面課題（待進度表）"
+    },
+    {
+      "id": "3d",
+      "label": "立體",
+      "title": "立體課題（待進度表）"
+    }
+  ],
+  "topics": [
+    {
+      "id": "p1-s1-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p1",
+      "stage": "stage1",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p1-s1-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p1",
+      "stage": "stage1",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p1-s2-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p1",
+      "stage": "stage2",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p1-s2-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p1",
+      "stage": "stage2",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p1-s3-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p1",
+      "stage": "stage3",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p1-s3-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p1",
+      "stage": "stage3",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p2-s1-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p2",
+      "stage": "stage1",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p2-s1-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p2",
+      "stage": "stage1",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p2-s2-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p2",
+      "stage": "stage2",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p2-s2-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p2",
+      "stage": "stage2",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p2-s3-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p2",
+      "stage": "stage3",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p2-s3-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p2",
+      "stage": "stage3",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p3-s1-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p3",
+      "stage": "stage1",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p3-s1-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p3",
+      "stage": "stage1",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p3-s2-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p3",
+      "stage": "stage2",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p3-s2-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p3",
+      "stage": "stage2",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p3-s3-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p3",
+      "stage": "stage3",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p3-s3-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p3",
+      "stage": "stage3",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p4-s1-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p4",
+      "stage": "stage1",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p4-s1-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p4",
+      "stage": "stage1",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p4-s2-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p4",
+      "stage": "stage2",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p4-s2-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p4",
+      "stage": "stage2",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p4-s3-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p4",
+      "stage": "stage3",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p4-s3-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p4",
+      "stage": "stage3",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p5-s1-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p5",
+      "stage": "stage1",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p5-s1-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p5",
+      "stage": "stage1",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p5-s2-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p5",
+      "stage": "stage2",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p5-s2-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p5",
+      "stage": "stage2",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p5-s3-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p5",
+      "stage": "stage3",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p5-s3-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p5",
+      "stage": "stage3",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p6-s1-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p6",
+      "stage": "stage1",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p6-s1-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p6",
+      "stage": "stage1",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p6-s2-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p6",
+      "stage": "stage2",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p6-s2-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p6",
+      "stage": "stage2",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p6-s3-2d",
+      "title": "平面課題（待進度表）",
+      "grade": "p6",
+      "stage": "stage3",
+      "form": "2d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "p6-s3-3d",
+      "title": "立體課題（待進度表）",
+      "grade": "p6",
+      "stage": "stage3",
+      "form": "3d",
+      "artists": [
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        },
+        {
+          "name": "",
+          "workTitle": "",
+          "image": null,
+          "note": ""
+        }
+      ]
+    }
+  ]
+}
