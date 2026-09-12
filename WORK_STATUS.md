@@ -13,14 +13,14 @@
 - 工作目錄：本檔所屬 `work/va-lingo-mvp`；分支 `codex/va-lingo-google-mvp`。
 - 主 repo：`https://github.com/chilinbpscth/va-lingo`。
 - 核實 main 基線：`46ec4fc78cc0a3e722a70400912a977d5120d4bb`；遠端同版。
-- 獨立 git worktree，原 `work/va-lingo-audit` 無改動；未 commit／push。
+- 獨立 git worktree，原 `work/va-lingo-audit` 無改動；本地 commit `e256f68`，未 push。
 - 上階段工單：本任務 `outputs/VA-LINGO-可執行工單-待批開工-2026-09-13.md`。該稿登入／schema 屬建議，未核實為其他 app 現有契約，唔可照抄冒充已有整合。
 
 ## 已實作及驗證
 
 1. 草稿按學年／班別／學號保存；答案、大頭針按課題／作品／大師 slot／鷹架層分隔。同班換學生、同學號不同班不共用答案。
 2. 本機上傳保留每件作品及對應評賞；可選回已保存作品；取消選取唔刪歷史。舊 `va-lingo-phase1-v1` 完整保留，未自動歸到現登入者，未自動轉換。
-3. 學生下拉唔顯示姓名，新草稿唔保存姓名。前端登入已接 Google `login` API，但暫時仍以 `roster.json` 建立選項；正式驗收前必須改由私有 Sheet 提供可選班別／學號，移除公開名冊載入。
+3. 前端不再載入或保留公開名冊；學生只輸入班別及學號，再由 Google `login` API 對私有 Sheet 核對。新草稿不保存姓名。
 4. 圖片壓縮用最長邊（1600px）、透明底轉白底、解碼失敗拒絕。檔案讀取期間身份或課題切換會拒絕落錯資料。
 5. 儲存失敗有提示，阻止切換學生丟棄未存草稿。
 6. 五步填寫進度依現有句式空格或開放文字計算；KS1 感受步加情緒；唔把開過頁當完成。snapshot 只包含當前作品 pins/steps；詞彙以最後文字比對，標 text-match，唔冒充實際 chip 點擊事件。
@@ -44,7 +44,7 @@
 ## 接續次序
 
 1. 取得整合來源，讀實際驗證及 token／上傳／作品讀取契約；補齊原三份計劃核對。
-2. 改由私有 Sheet 提供登入選擇，移除 roster.json 載入；以伺服器 identity/grade 控制，而非當前選單或 localStorage。
+2. 以伺服器 identity/grade 控制，而非當前輸入或 localStorage；在獲批 Google 測試資源驗證登入失敗、token 到期及跨班拒絕。
 3. 在獲批 Google 測試資源驗證 artwork ID／revision、Drive+Sheet 寫入、去重／重试／歷史保留。
 4. 完成互評提交 UI，驗證自評完成→課堂開放→手動 refresh 畫廊→互評，以及角色／班級／作品範圍。
 5. Firebase 已從前端運行路徑移除；後續獨立 F 期才處理舊服務關寫入及設定檔刪除。

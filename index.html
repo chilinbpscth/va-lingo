@@ -580,24 +580,15 @@
         <div class="header-fields flex flex-wrap items-center gap-2 w-full lg:w-auto">
           <label class="flex items-center gap-1.5 text-sm text-va-muted w-full sm:w-auto min-w-0">
             <span class="shrink-0 font-semibold">班別</span>
-            <select id="field-class" aria-label="班別"
+            <input id="field-class" aria-label="班別" type="text" maxlength="30" autocomplete="off" placeholder="例如 4A"
               class="rounded-full px-3 py-2 text-va-text min-h-touch text-sm border border-va-line bg-white flex-1 min-w-0 sm:min-w-[7rem]">
-              <option value="">請選擇班別</option>
-            </select>
-          </label>
-          <label class="flex items-center gap-1.5 text-sm text-va-muted w-full sm:w-auto min-w-0">
-            <span class="shrink-0 font-semibold">學生</span>
-            <select id="field-student" aria-label="學生" disabled
-              class="rounded-full px-3 py-2 text-va-text min-h-touch text-sm border border-va-line bg-white flex-1 min-w-0 sm:min-w-[8rem] lg:min-w-[11rem]">
-              <option value="">請選擇學生</option>
-            </select>
           </label>
           <label class="flex items-center gap-1.5 text-sm text-va-muted w-full sm:w-auto min-w-0">
             <span class="shrink-0 font-semibold">學號</span>
-            <span id="field-student-id-display" aria-live="polite"
-              class="inline-flex items-center rounded-full px-3 py-2 text-va-text min-h-touch min-w-0 sm:min-w-[6.5rem] text-sm border border-va-line bg-[#f7efe2] text-va-muted flex-1">——</span>
+            <input id="field-student" aria-label="學號" type="text" maxlength="30" inputmode="numeric" autocomplete="off" placeholder="例如 01"
+              class="rounded-full px-3 py-2 text-va-text min-h-touch text-sm border border-va-line bg-white flex-1 min-w-0 sm:min-w-[8rem] lg:min-w-[11rem]">
           </label>
-          <span id="roster-load-note" class="hidden text-xs text-red-600 font-semibold">名單載入失敗</span>
+          <button type="button" id="btn-school-login" class="btn-pill btn-ghost px-4 py-2 text-sm">登入</button>
           <button type="button" id="btn-idea-bank" class="btn-pill btn-primary px-4 py-2 text-sm">
             💡 點子庫
           </button>
@@ -982,140 +973,45 @@
       }
     ];
 
-    let rosterStudents = [];
-    let rosterLoaded = false;
-
-    function sortClasses(classes) {
-      return classes.slice().sort((a, b) => {
-        const na = parseInt(a, 10) || 0;
-        const nb = parseInt(b, 10) || 0;
-        if (na !== nb) return na - nb;
-        return String(a).localeCompare(String(b), 'zh-HK');
-      });
-    }
-
-    function uniqueClasses() {
-      return sortClasses([...new Set(rosterStudents.map(s => s.class).filter(Boolean))]);
-    }
-
-    function studentsInClass(cls) {
-      return rosterStudents
-        .filter(s => s.class === cls)
-        .slice()
-        .sort((a, b) => String(a.seat).localeCompare(String(b.seat), 'zh-HK', { numeric: true }));
-    }
-
-    function updateStudentIdDisplay() {
-      const idDisp = document.getElementById('field-student-id-display');
-      if (idDisp) idDisp.textContent = state.studentId || '——';
-    }
-
-    function fillClassSelect() {
-      const sel = document.getElementById('field-class');
-      if (!sel) return;
-      const cur = state.className || '';
-      sel.innerHTML = '<option value="">請選擇班別</option>' +
-        uniqueClasses().map(c => '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>').join('');
-      sel.value = (cur && uniqueClasses().includes(cur)) ? cur : '';
-    }
-
-    function rebuildStudentSelect(cls, preferredId) {
-      const sel = document.getElementById('field-student');
-      if (!sel) return;
-      if (!cls) {
-        sel.innerHTML = '<option value="">請選擇學生</option>';
-        sel.disabled = true;
-        sel.value = '';
-        updateStudentIdDisplay();
-        return;
-      }
-      const list = studentsInClass(cls);
-      sel.disabled = false;
-      sel.innerHTML = '<option value="">請選擇學生</option>' +
-        list.map(s => '<option value="' + escapeHtml(s.id) + '">' + escapeHtml(s.seat) + '號' + '</option>').join('');
-      const pick = (preferredId && list.some(s => s.id === preferredId)) ? preferredId : '';
-      sel.value = pick;
-      updateStudentIdDisplay();
-    }
-
     function activateStudent(cls, id) {
       if (!save()) {
-        restoreRosterUI();
+        restoreLoginInputs();
         toast('草稿未能保存，請先匯出評賞歷程卡，再處理儲存空間');
         return false;
       }
       Object.assign(state, {
-        className: cls, studentName: '', studentId: id, source: 'master', selectedPeer: 'peer1', step: 0,
+        className: cls, studentId: id, source: 'master', selectedPeer: 'peer1', step: 0,
         sessionToken: '', serverArtworkId: '', serverArtworkRevision: '',
         selfWorks: {}, activeSelfWorks: {}, pins: [], activePin: null, answers: {}, moods: {},
         rubrics: {}, usedChips: {}, lastBlankTarget: null, selectedChipWord: null
       });
       load();
-      // Stored draft identity is never an authority for login or the roster selection.
+      // Stored draft identity is never an authority for Google login.
       state.className = cls;
       state.studentId = id;
-      state.studentName = '';
       ensureTopicSelection();
       fillCurriculumSelects();
-      updateStudentIdDisplay();
+      restoreLoginInputs();
       renderAll();
       save();
       return true;
     }
 
-    function applyStudentFromSelect() {
-      const cls = document.getElementById('field-class').value || '';
-      const id = document.getElementById('field-student').value || '';
-      const stu = rosterStudents.find(s => s.class === cls && s.id === id);
-      if (activateStudent(cls, stu ? stu.id : '')) authenticateSelectedStudent();
+    function restoreLoginInputs() {
+      const classInput = document.getElementById('field-class');
+      const studentInput = document.getElementById('field-student');
+      if (classInput) classInput.value = state.className || '';
+      if (studentInput) studentInput.value = state.studentId || '';
     }
 
-    function restoreRosterUI() {
-      fillClassSelect();
-      const classSel = document.getElementById('field-class');
-      const cls = (classSel && classSel.value) || '';
-      state.className = cls;
-      rebuildStudentSelect(cls, state.studentId);
-      const studentSel = document.getElementById('field-student');
-      const id = (studentSel && studentSel.value) || '';
-      if (id) {
-        const stu = rosterStudents.find(s => s.class === cls && s.id === id);
-        if (stu) {
-          state.className = stu.class;
-          state.studentName = '';
-          state.studentId = stu.id;
-        } else {
-          state.studentName = '';
-          state.studentId = '';
-        }
-      } else {
-        state.studentName = '';
-        state.studentId = '';
-      }
-      updateStudentIdDisplay();
-    }
-
-    async function loadRoster() {
-      const note = document.getElementById('roster-load-note');
-      try {
-        const res = await fetch('roster.json');
-        if (!res.ok) throw new Error('roster fetch failed');
-        const data = await res.json();
-        rosterStudents = Array.isArray(data.students) ? data.students : [];
-        rosterLoaded = true;
-        if (note) note.classList.add('hidden');
-        restoreRosterUI();
-        save();
-      } catch (e) {
-        rosterStudents = [];
-        rosterLoaded = false;
-        fillClassSelect();
-        rebuildStudentSelect('');
-        if (note) {
-          note.textContent = '名單載入失敗';
-          note.classList.remove('hidden');
-        }
-      }
+    async function loginFromInputs() {
+      const classInput = document.getElementById('field-class');
+      const studentInput = document.getElementById('field-student');
+      const classId = String(classInput && classInput.value || '').trim().toUpperCase();
+      const studentId = String(studentInput && studentInput.value || '').trim();
+      if (!classId || !studentId) { toast('請輸入班別及學號'); return; }
+      if (!activateStudent(classId, studentId)) return;
+      await authenticateSelectedStudent();
     }
 
     // Legacy va-lingo-phase1-v1 remains untouched; never auto-assign a shared-device draft to a student.
@@ -1235,7 +1131,6 @@
       selectedPeer: 'peer1',
       step: 0,
       className: '',
-      studentName: '',
       studentId: '',
       grade: 'p1',
       stage: 'stage1',
@@ -1476,7 +1371,6 @@
           selectedPeer: p.selectedPeer || 'peer1',
           step: typeof p.step === 'number' ? p.step : 0,
           className: p.className || '',
-          studentName: '',
           studentId: p.studentId || '',
           grade: p.grade || 'p1',
           stage: p.stage || 'stage1',
@@ -2496,7 +2390,7 @@
       document.getElementById('btn-next').disabled = state.step === STEPS.length - 1;
       const peerSubmit = document.getElementById('btn-peer-submit');
       if (peerSubmit) peerSubmit.classList.toggle('hidden', !(state.source === 'peer' && isLivePeerId(state.selectedPeer)));
-      updateStudentIdDisplay();
+      restoreLoginInputs();
       document.getElementById('step-panel').classList.toggle('ks1-control', state.ks === 'ks1');
     }
 
@@ -2531,7 +2425,7 @@
       const sLab = (findStage(state.stage) || {}).label || state.stage || '——';
       const tLab = topic ? (topic.title + '（' + formLabel(topic.form) + '）') : '——';
       const uLab = (topic && topic.unit) ? topic.unit : currentUnitTitle();
-      meta.textContent = `班別：${state.className || '——'}　姓名：${state.studentName || '——'}　學號：${state.studentId || '——'}　年級：${gLab}　學段：${sLab}　單元：${uLab}　課題：${tLab}　階段：${state.ks.toUpperCase()}${state.ks === 'ks2' ? ' · 第' + state.level + '層' : ''}　來源：${{ master: '大師名作館', self: '我的創作歷程', peer: '同儕藝廊' }[state.source]}`;
+      meta.textContent = `班別：${state.className || '——'}　學號：${state.studentId || '——'}　年級：${gLab}　學段：${sLab}　單元：${uLab}　課題：${tLab}　階段：${state.ks.toUpperCase()}${state.ks === 'ks2' ? ' · 第' + state.level + '層' : ''}　來源：${{ master: '大師名作館', self: '我的創作歷程', peer: '同儕藝廊' }[state.source]}`;
       const art = document.getElementById('print-artwork-wrap');
       art.innerHTML = `<div style="border:1px solid #ccc;border-radius:8px;overflow:hidden;max-height:180px;">${currentArtworkHtml()}</div>`;
       const stepsEl = document.getElementById('print-steps');
@@ -2852,12 +2746,9 @@
     document.getElementById('btn-next').addEventListener('click', () => {
       if (state.step < STEPS.length - 1) { state.step++; renderAll(); save(); }
     });
-    document.getElementById('field-class').addEventListener('change', () => {
-      const cls = document.getElementById('field-class').value || '';
-      if (activateStudent(cls, '')) rebuildStudentSelect(cls, '');
-    });
-    document.getElementById('field-student').addEventListener('change', () => {
-      applyStudentFromSelect();
+    document.getElementById('btn-school-login').addEventListener('click', loginFromInputs);
+    document.getElementById('field-student').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); loginFromInputs(); }
     });
     document.getElementById('btn-idea-bank').addEventListener('click', openIdeaBank);
     document.getElementById('idea-close').addEventListener('click', closeIdeaBank);
@@ -2965,7 +2856,7 @@
     syncAppHeaderHeight();
     requestAnimationFrame(syncAppHeaderHeight);
     save();
-    loadRoster();
+    restoreLoginInputs();
     loadCurriculum();
 
     // A saved round is only restored into the input. Its status and peer work

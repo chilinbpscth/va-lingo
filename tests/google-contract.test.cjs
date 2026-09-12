@@ -27,4 +27,5 @@ test('Apps Script validates a token and never returns roster names to the client
   assert.match(backend, /completedSteps_\(steps, ks\)/);
   assert.doesNotMatch(backend, /steps\[id\]\.complete === true/);
   assert.doesNotMatch(backend, /studentName.*displayLabel|displayLabel.*studentName/);
+  assert.doesNotMatch(front, /roster\.json/);
 });

@@ -27,7 +27,7 @@ npm run test:browser
 - `index.html`：學生介面與 Google Web App client。
 - `curriculum.json`：年級／學段／課題資料。
 - `apps-script/Code.gs`：登入、作品、自評、非即時互評 API。
-- `roster.json`：本機演示資料；正式名冊在私有 Sheet。`roster.school.json` 已忽略，絕不可 commit。
+- `roster.school.json` 已忽略，絕不可 commit。學生登入時只輸入班別及學號，正式名冊只存在私有 Sheet。
 - `tests/`：課程、草稿隔離、Google API 契約及瀏覽器回歸。
 
 ## 邊界
