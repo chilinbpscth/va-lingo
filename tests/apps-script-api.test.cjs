@@ -63,12 +63,16 @@ test('Apps Script enforces token, school year, topic and assessment phase', () =
   api.sheet('roster_v1', headers.roster).appendRow(['2026-27','4A','01','p4','4A・01號',true,'']);
   api.sheet('roster_v1', headers.roster).appendRow(['2026-27','4A','02','p4','4A・02號',true,'']);
   api.sheet('rounds_v1', headers.rounds).appendRow(['4A2026','2026-27','4A','p4','stage1','p4-s1-2d','collecting',1,'','','']);
+  api.sheet('rounds_v1', headers.rounds).appendRow(['4AOLD','2025-26','4A','p4','stage1','p4-s1-2d','collecting',1,'','','']);
   api.sheet('round_members_v1', headers.members).appendRow(['4A2026','01',true,'','']);
   api.sheet('round_members_v1', headers.members).appendRow(['4A2026','02',true,'','']);
   const login = id => api.invoke({action: 'login', payload: {classId: '4A', studentId: id}});
   const one = login('01'); const two = login('02');
+  assert.equal(login('99').error.code, 'FORBIDDEN');
   assert.equal(one.ok, true); assert.equal(one.data.grade, 'p4');
   const call = (token, action, payload, requestId = `${action}-${Math.random()}`) => api.invoke({action, token, requestId, payload});
+  assert.equal(call('', 'getRoundStatus', {roundId: '4A2026'}).error.code, 'FORBIDDEN');
+  assert.equal(call(one.data.token, 'getRoundStatus', {roundId: '4AOLD'}).error.code, 'FORBIDDEN');
   const oversized = 'data:image/jpeg;base64,' + Buffer.alloc(250 * 1024 + 1, 1).toString('base64');
   assert.equal(call(one.data.token, 'uploadArtwork', {roundId: '4A2026', topicId: 'p4-s1-2d', sourceApp: 'va-lingo', imageMime: 'image/jpeg', imageBase64: oversized}).error.code, 'INVALID_INPUT');
   assert.equal(call(one.data.token, 'uploadArtwork', {roundId: '4A2026', topicId: 'other', sourceApp: 'va-lingo', imageMime: 'image/jpeg', imageBase64: image}).error.code, 'FORBIDDEN');
@@ -81,5 +85,6 @@ test('Apps Script enforces token, school year, topic and assessment phase', () =
   assert.equal(call(one.data.token, 'listPeerWorks', {roundId: '4A2026'}).error.code, 'ROUND_NOT_OPEN');
   api.sheet('rounds_v1', headers.rounds).values[1][6] = 'peer_open';
   assert.equal(call(one.data.token, 'listPeerWorks', {roundId: '4A2026'}).data.items.length, 1);
+  assert.equal(call(one.data.token, 'saveAssessment', {roundId: '4A2026', artworkId: work1.data.artworkId, artworkRevision: 1, type: 'peer', ks: 'ks2', steps: fullKs2}).error.code, 'FORBIDDEN');
   assert.equal(call(one.data.token, 'saveAssessment', {roundId: '4A2026', artworkId: work2.data.artworkId, artworkRevision: 1, type: 'peer', ks: 'ks2', steps: fullKs2}, 'peer-1').ok, true);
 });
