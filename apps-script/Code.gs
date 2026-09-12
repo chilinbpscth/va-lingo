@@ -157,6 +157,14 @@ function requireRound_(body, session) {
   if (value_(round,'schoolYear') !== session.schoolYear || value_(round,'classId') !== session.classId || value_(round,'grade') !== session.grade) throw new Error('FORBIDDEN');
   return { id:roundId, row:round };
 }
+function requireRoundMember_(roundId, session) {
+  var members = rows_(apiSheet_(MEMBER_SHEET, ['roundId','studentId','required','exemptionReason','updatedAt']));
+  var member = members.filter(function(row) {
+    return value_(row,'roundId') === roundId && value_(row,'studentId') === session.studentId && String(row.required).toLowerCase() !== 'false';
+  })[0];
+  if (!member) throw new Error('FORBIDDEN');
+  return member;
+}
 function readyStudents_(roundId) {
   var sh = apiSheet_(ASSESSMENT_SHEET, ['assessmentId','revision','artworkId','artworkRevision','roundId','authorClassId','authorStudentId','type','stepsJson','pinsJson','vocabJson','completedStepCount','status','createdAt','updatedAt','requestId']);
   var out = {};
@@ -165,7 +173,7 @@ function readyStudents_(roundId) {
 }
 function getRoundStatus_(body) {
   try {
-    var session = requireSession_(body), round = requireRound_(body, session);
+    var session = requireSession_(body), round = requireRound_(body, session); requireRoundMember_(round.id, session);
     var members = rows_(apiSheet_(MEMBER_SHEET, ['roundId','studentId','required','exemptionReason','updatedAt']))
       .filter(function(row) { return value_(row,'roundId') === round.id && String(row.required).toLowerCase() !== 'false'; });
     var ready = readyStudents_(round.id), count = Object.keys(ready).length;
@@ -186,7 +194,7 @@ function imageBlob_(base64, mime) {
 }
 function uploadArtwork_(body) {
   return withWriteLock_(function() { try {
-    var session = requireSession_(body), round = requireRound_(body, session), p = body.payload || {};
+    var session = requireSession_(body), round = requireRound_(body, session), p = body.payload || {}; requireRoundMember_(round.id, session);
     if (value_(round.row,'phase') !== 'collecting') return apiFail_('ROUND_NOT_OPEN', '課堂已停止收集作品。');
     var topicId = safeText_(p.topicId, 80), sourceApp = safeText_(p.sourceApp, 40);
     if (!topicId || ['va-lingo','paper-cut','face-change','shadow-puppet'].indexOf(sourceApp) === -1) return apiFail_('INVALID_INPUT','作品資料不正確。');
@@ -216,7 +224,7 @@ function completedSteps_(steps, ks) {
 }
 function saveAssessment_(body) {
   return withWriteLock_(function() { try {
-    var session = requireSession_(body), round = requireRound_(body, session), p = body.payload || {};
+    var session = requireSession_(body), round = requireRound_(body, session), p = body.payload || {}; requireRoundMember_(round.id, session);
     var type = p.type === 'peer' ? 'peer' : 'self', artworkId = safeText_(p.artworkId,100), revision = Number(p.artworkRevision || 1);
     if (!artworkId || !Number.isFinite(revision)) return apiFail_('INVALID_INPUT','評賞作品資料不正確。');
     var artworks = rows_(apiSheet_(ARTWORK_SHEET, artworkHeaders_()));
@@ -237,7 +245,7 @@ function saveAssessment_(body) {
 }
 function listPeerWorks_(body) {
   try {
-    var session = requireSession_(body), round = requireRound_(body, session);
+    var session = requireSession_(body), round = requireRound_(body, session); requireRoundMember_(round.id, session);
     if (value_(round.row,'phase') !== 'peer_open') return apiFail_('ROUND_NOT_OPEN','老師尚未開放互評。');
     var selfReady = readyStudents_(round.id);
     if (!selfReady[session.studentId]) return apiFail_('FORBIDDEN','請先提交自己的作品及自評。');
