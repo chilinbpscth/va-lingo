@@ -86,6 +86,7 @@ test('Apps Script enforces token, school year, topic and assessment phase', () =
   api.sheet('rounds_v1', headers.rounds).values[1][6] = 'peer_open';
   assert.equal(call(one.data.token, 'listPeerWorks', {roundId: '4A2026'}).data.items.length, 1);
   assert.equal(call(one.data.token, 'saveAssessment', {roundId: '4A2026', artworkId: work1.data.artworkId, artworkRevision: 1, type: 'peer', ks: 'ks2', steps: fullKs2}).error.code, 'FORBIDDEN');
+  assert.equal(call(one.data.token, 'saveAssessment', {roundId: '4A2026', artworkId: work2.data.artworkId, artworkRevision: 1, type: 'peer', ks: 'ks2', steps: {feel: {open: 'only one'}}}).error.code, 'INVALID_INPUT');
   assert.equal(call(one.data.token, 'saveAssessment', {roundId: '4A2026', artworkId: work2.data.artworkId, artworkRevision: 1, type: 'peer', ks: 'ks2', steps: fullKs2}, 'peer-1').ok, true);
   api.sheet('sessions_v1').values[1][7] = '2000-01-01T00:00:00.000Z';
   assert.equal(call(one.data.token, 'getRoundStatus', {roundId: '4A2026'}).error.code, 'TOKEN_EXPIRED');

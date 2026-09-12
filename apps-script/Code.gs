@@ -226,7 +226,7 @@ function saveAssessment_(body) {
     var ks = p.ks === 'ks1' ? 'ks1' : p.ks === 'ks2' ? 'ks2' : '';
     if (!ks) return apiFail_('INVALID_INPUT','評賞程度不正確。');
     var steps = p.steps || {}, count = completedSteps_(steps, ks);
-    if (type === 'self' && count !== 5) return apiFail_('INVALID_INPUT','請完成評賞五步驟。');
+    if (count !== 5) return apiFail_('INVALID_INPUT', type === 'peer' ? '請完成互評五步驟。' : '請完成評賞五步驟。');
     var requestId = safeText_(body.requestId,100), sh = apiSheet_(ASSESSMENT_SHEET, assessmentHeaders_());
     var prior = rows_(sh).filter(function(row) { return value_(row,'requestId') === requestId && value_(row,'authorStudentId') === session.studentId; })[0];
     if (prior) return apiOk_({assessmentId:value_(prior,'assessmentId'),revision:Number(prior.revision),completedStepCount:Number(prior.completedStepCount)});
