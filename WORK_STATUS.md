@@ -52,4 +52,4 @@
 
 ## 未完成驗收
 
-已用已連接 Google Drive 搜尋 VA-Lingo；只見工作檔與分支備份，未見可核實的 Apps Script 專案、`/exec` 網址、正式 Drive 根資料夾或 Sheet。因此共用登入／token、Google 真實寫入與讀回、全班開放互評、越權測試、iPad Safari 實機、正式 rollout 均未完成。當前本地測試不可代替上述驗收。
+已用已連接 Google Drive 搜尋 VA-Lingo，並以 Apps Script MIME type 直接搜尋；只見工作檔與分支備份，結果沒有可見 Apps Script 專案，亦未見可核實的 `/exec` 網址、正式 Drive 根資料夾或 Sheet。因此共用登入／token、Google 真實寫入與讀回、全班開放互評、越權測試、iPad Safari 實機、正式 rollout 均未完成。當前本地測試不可代替上述驗收。
