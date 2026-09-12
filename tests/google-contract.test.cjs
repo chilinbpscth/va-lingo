@@ -28,6 +28,7 @@ test('Apps Script validates a token and never returns roster names to the client
   assert.match(backend, /requireSession_\(body\)/);
   assert.match(backend, /completedSteps_\(steps, ks\)/);
   assert.match(backend, /topicId !== value_\(round\.row,'topicId'\)/);
+  assert.match(backend, /value_\(round,'schoolYear'\) !== session\.schoolYear/);
   assert.doesNotMatch(backend, /steps\[id\]\.complete === true/);
   assert.doesNotMatch(backend, /studentName.*displayLabel|displayLabel.*studentName/);
   assert.doesNotMatch(front, /roster\.json/);

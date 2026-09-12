@@ -149,7 +149,7 @@ function round_(roundId) {
 function requireRound_(body, session) {
   var roundId = safeText_((body.payload || {}).roundId, 64), round = round_(roundId);
   if (!round) throw new Error('NOT_FOUND');
-  if (value_(round,'classId') !== session.classId || value_(round,'grade') !== session.grade) throw new Error('FORBIDDEN');
+  if (value_(round,'schoolYear') !== session.schoolYear || value_(round,'classId') !== session.classId || value_(round,'grade') !== session.grade) throw new Error('FORBIDDEN');
   return { id:roundId, row:round };
 }
 function readyStudents_(roundId) {
