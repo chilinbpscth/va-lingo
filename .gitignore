@@ -5,3 +5,6 @@ roster.school.json
 ks1-shot.html
 peer-shot.html
 shots/
+
+node_modules/
+test-results/

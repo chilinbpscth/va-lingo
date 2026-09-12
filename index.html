@@ -605,7 +605,7 @@
             匯出評賞歷程卡
           </button>
           <button type="button" id="btn-cloud-submit" class="btn-pill btn-primary px-4 py-2 text-sm" title="需先設定學校 Apps Script 網址">
-            提交到學校雲端
+            提交作品及自評
           </button>
           <button type="button" id="btn-cloud-settings" class="btn-pill btn-ghost px-3 py-2 text-xs text-va-muted" title="IT：貼上 Apps Script /exec 網址">
             雲端設定
@@ -648,6 +648,7 @@
           </div>
         </div>
         <div class="text-xs text-va-muted" id="save-status">尚未儲存</div>
+        <div id="assessment-progress" class="text-xs text-va-muted" aria-live="polite">五步填寫進度：0 / 5</div>
       </div>
     </div>
   </div>
@@ -662,20 +663,21 @@
   </div>
 
 
-  <!-- Classroom peer gallery (Firebase Firestore) -->
+  <!-- Classroom peer gallery (Google Apps Script; students refresh manually) -->
   <div class="max-w-7xl mx-auto px-3 sm:px-4 pt-2 no-print">
     <div class="gallery-bar px-3 py-2.5 flex flex-wrap items-center gap-2">
       <span class="text-sm font-bold text-va-blue comic shrink-0">課堂畫廊</span>
       <label class="flex items-center gap-1.5 text-sm text-va-muted min-w-0">
         <span class="shrink-0 font-semibold">課堂碼</span>
-        <input id="gallery-session-input" type="text" maxlength="6" inputmode="text" autocomplete="off"
-          placeholder="例如 A3B7" aria-label="課堂畫廊代碼"
+        <input id="gallery-session-input" type="text" maxlength="64" inputmode="text" autocomplete="off"
+          placeholder="例如 4A-2026-S1" aria-label="課堂代碼"
           class="rounded-full px-3 py-2 text-va-text min-h-touch text-sm border border-va-line bg-white w-[6.5rem] uppercase tracking-wider font-semibold" />
       </label>
-      <button type="button" id="btn-gallery-join" class="btn-pill btn-ghost px-4 py-2 text-sm">加入課堂畫廊</button>
-      <button type="button" id="btn-gallery-publish" class="btn-pill btn-primary px-4 py-2 text-sm" title="需已加入課堂，並已上傳作品照片">發佈到畫廊</button>
-      <button type="button" id="btn-gallery-retry" class="btn-pill btn-ghost px-3 py-2 text-sm hidden" aria-label="重試畫廊連線">重試</button>
-      <span id="gallery-status" class="text-xs text-va-muted flex-1 min-w-[8rem]">尚未加入課堂</span>
+      <button type="button" id="btn-gallery-join" class="btn-pill btn-ghost px-4 py-2 text-sm">查看課堂狀態</button>
+      <button type="button" id="btn-gallery-publish" class="btn-pill btn-primary px-4 py-2 text-sm" title="需完成作品及自評">提交作品及自評</button>
+      <button type="button" id="btn-gallery-retry" class="btn-pill btn-ghost px-3 py-2 text-sm" aria-label="更新同學作品清單">更新清單</button>
+      <button type="button" id="btn-peer-submit" class="btn-pill btn-primary px-4 py-2 text-sm hidden" title="需完成互評五步驟">提交互評</button>
+      <span id="gallery-status" class="text-xs text-va-muted flex-1 min-w-[8rem]">輸入課堂代碼後查看進度</span>
     </div>
   </div>
 
@@ -786,7 +788,6 @@
       <p id="gallery-lb-caption" class="text-sm text-va-muted mt-2 px-1"></p>
       <div class="flex flex-wrap gap-2 mt-3 px-1">
         <button type="button" id="gallery-lb-use" class="btn-pill btn-primary px-4 py-2 text-sm">用此作品互評</button>
-        <button type="button" id="gallery-lb-delete" class="btn-pill btn-ghost px-4 py-2 text-sm text-red-600 hidden" title="僅可刪除自己發佈的作品">從畫廊刪除</button>
       </div>
     </div>
   </div>
@@ -809,9 +810,12 @@
     </footer>
   </article>
 
+  <script src="assets/js/assessment-context.js"></script>
+  <script src="assets/js/assessment-snapshot.js"></script>
   <script>
   (function () {
     'use strict';
+    const Context = window.VAAssessmentContext;
 
     const STEPS = [
       { id: 'feel', title: '整體感受', emoji: '💭' },
@@ -844,7 +848,7 @@
 
     const SCAFFOLDS = {
       feel: {
-        ks1: '這幅畫令我覺得<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>，因為<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>。',
+        ks1: '這件作品令我覺得<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>，因為<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>。',
         ks2: '初見作品，我感受到<span class="scaffold-blank" contenteditable="true" data-blank="0"></span>的氣氛；最吸引我的是<span class="scaffold-blank" contenteditable="true" data-blank="1"></span>。'
       },
       describe: {
@@ -1028,29 +1032,42 @@
       const list = studentsInClass(cls);
       sel.disabled = false;
       sel.innerHTML = '<option value="">請選擇學生</option>' +
-        list.map(s => '<option value="' + escapeHtml(s.id) + '">' + escapeHtml(s.seat) + ' ' + escapeHtml(s.name) + '</option>').join('');
+        list.map(s => '<option value="' + escapeHtml(s.id) + '">' + escapeHtml(s.seat) + '號' + '</option>').join('');
       const pick = (preferredId && list.some(s => s.id === preferredId)) ? preferredId : '';
       sel.value = pick;
       updateStudentIdDisplay();
     }
 
-    function applyStudentFromSelect() {
-      const classSel = document.getElementById('field-class');
-      const studentSel = document.getElementById('field-student');
-      const cls = (classSel && classSel.value) || '';
-      const id = (studentSel && studentSel.value) || '';
-      const stu = rosterStudents.find(s => s.id === id);
-      state.className = cls;
-      if (stu) {
-        state.className = stu.class;
-        state.studentName = stu.name;
-        state.studentId = stu.id;
-      } else {
-        state.studentName = '';
-        state.studentId = '';
+    function activateStudent(cls, id) {
+      if (!save()) {
+        restoreRosterUI();
+        toast('草稿未能保存，請先匯出評賞歷程卡，再處理儲存空間');
+        return false;
       }
+      Object.assign(state, {
+        className: cls, studentName: '', studentId: id, source: 'master', selectedPeer: 'peer1', step: 0,
+        sessionToken: '', serverArtworkId: '', serverArtworkRevision: '',
+        selfWorks: {}, activeSelfWorks: {}, pins: [], activePin: null, answers: {}, moods: {},
+        rubrics: {}, usedChips: {}, lastBlankTarget: null, selectedChipWord: null
+      });
+      load();
+      // Stored draft identity is never an authority for login or the roster selection.
+      state.className = cls;
+      state.studentId = id;
+      state.studentName = '';
+      ensureTopicSelection();
+      fillCurriculumSelects();
       updateStudentIdDisplay();
+      renderAll();
       save();
+      return true;
+    }
+
+    function applyStudentFromSelect() {
+      const cls = document.getElementById('field-class').value || '';
+      const id = document.getElementById('field-student').value || '';
+      const stu = rosterStudents.find(s => s.class === cls && s.id === id);
+      if (activateStudent(cls, stu ? stu.id : '')) authenticateSelectedStudent();
     }
 
     function restoreRosterUI() {
@@ -1062,10 +1079,10 @@
       const studentSel = document.getElementById('field-student');
       const id = (studentSel && studentSel.value) || '';
       if (id) {
-        const stu = rosterStudents.find(s => s.id === id);
+        const stu = rosterStudents.find(s => s.class === cls && s.id === id);
         if (stu) {
           state.className = stu.class;
-          state.studentName = stu.name;
+          state.studentName = '';
           state.studentId = stu.id;
         } else {
           state.studentName = '';
@@ -1101,7 +1118,8 @@
       }
     }
 
-    const STORAGE_KEY = 'va-lingo-phase1-v1';
+    // Legacy va-lingo-phase1-v1 remains untouched; never auto-assign a shared-device draft to a student.
+    function storageKey() { return Context.draftStorageKey(state); }
     const SUBMIT_URL_KEY = 'vaSubmitUrl';
     /** 學校 Apps Script /exec；由「雲端設定」寫入 localStorage，勿把密鑰寫死在程式 */
     let SUBMIT_URL = (localStorage.getItem(SUBMIT_URL_KEY) || '').trim();
@@ -1112,56 +1130,15 @@
       return u || UNIT_TITLE_FALLBACK;
     }
 
-    /* —— Firebase classroom peer gallery (Auth anon + Firestore; no Storage) —— */
-    const FIREBASE_CONFIG = {
-      apiKey: 'AIzaSyD0OXjZO2tuhfPG-vZOuNcppuSy8wkdcwk',
-      authDomain: 'va-lingo.firebaseapp.com',
-      projectId: 'va-lingo',
-      storageBucket: 'va-lingo.firebasestorage.app',
-      messagingSenderId: '1052572479943',
-      appId: '1:1052572479943:web:f5607aab32460a000329e2',
-      measurementId: 'G-93903LBRDZ'
-    };
+    /* Classroom work is supplied by Google Apps Script on explicit refresh. */
     const GALLERY_SESSION_KEY = 'vaGallerySession';
-    // Cap photoData ~≤200KB (data URL chars). Firestore doc limit ~1MiB; keep headroom for caption/meta.
-    const GALLERY_MAX_PHOTO_CHARS = 200000;
-
-    let fbApp = null;
-    let fbAuth = null;
-    let fbDb = null;
-    let fbMods = null; // modular firestore helpers
-    let fbReady = false;
-    let fbAuthReady = null; // Promise
-    let galleryUnsub = null;
     let galleryWorks = []; // { id, ...data }
     let gallerySession = (localStorage.getItem(GALLERY_SESSION_KEY) || '').trim().toUpperCase();
     let lightboxWorkId = null;
-    let galleryBusy = false;
 
     function setGalleryStatus(msg) {
       const el = document.getElementById('gallery-status');
       if (el) el.textContent = msg;
-    }
-
-    function setGalleryRetryVisible(show) {
-      const btn = document.getElementById('btn-gallery-retry');
-      if (!btn) return;
-      btn.classList.toggle('hidden', !show);
-    }
-
-    function clearGalleryBusyUi(fallbackStatus) {
-      galleryBusy = false;
-      const joinBtn = document.getElementById('btn-gallery-join');
-      const pubBtn = document.getElementById('btn-gallery-publish');
-      if (joinBtn) {
-        joinBtn.disabled = false;
-        joinBtn.textContent = '加入課堂畫廊';
-      }
-      if (pubBtn) {
-        pubBtn.disabled = false;
-        pubBtn.textContent = '發佈到畫廊';
-      }
-      if (fallbackStatus != null) setGalleryStatus(fallbackStatus);
     }
 
     function galleryStatusSummary() {
@@ -1185,16 +1162,7 @@
       return galleryWorks.find(w => w.id === workId) || null;
     }
 
-    /** Public gallery label only — never write full student name into Firestore. */
-    function buildGalleryDisplayLabel() {
-      const cls = String(state.className || '').trim();
-      const seat = String(state.studentId || '').trim().replace(/[^\dA-Za-z]/g, '').slice(0, 4);
-      if (cls && seat) return cls + '・' + seat + '號';
-      if (cls) return cls + '・同學';
-      if (seat) return seat + '號・同學';
-      return '同學';
-    }
-
+    /** Public gallery label only — never use a student's name in peer work. */
     function workDisplayLabel(w) {
       if (!w) return '同學';
       if (w.displayLabel) return String(w.displayLabel);
@@ -1204,89 +1172,6 @@
       if (cls && name) return cls + '・同學';
       if (cls) return cls + '・同學';
       return '同學';
-    }
-
-    function buildCaptionSummary() {
-      try {
-        const steps = buildStepsPayload();
-        const parts = [];
-        Object.keys(steps).forEach(k => {
-          const t = (steps[k] && steps[k].text) ? String(steps[k].text).trim() : '';
-          if (t) parts.push(steps[k].title + '：' + t);
-        });
-        let s = parts.join(' ｜ ');
-        if (s.length > 500) s = s.slice(0, 497) + '…';
-        return s;
-      } catch (e) {
-        return '';
-      }
-    }
-
-    async function ensurePhotoUnderLimit(dataUrl) {
-      let q = 0.62;
-      let maxW = 1280;
-      let out = await compressDataUrl(dataUrl, maxW, q);
-      let guard = 0;
-      while (out && out.length > GALLERY_MAX_PHOTO_CHARS && guard < 12) {
-        guard++;
-        if (q > 0.35) q = Math.round((q - 0.08) * 100) / 100;
-        else {
-          maxW = Math.max(480, Math.round(maxW * 0.72));
-          q = 0.5;
-        }
-        out = await compressDataUrl(dataUrl, maxW, q);
-      }
-      return out;
-    }
-
-    function initFirebaseOnce() {
-      if (fbAuthReady) return fbAuthReady;
-      fbAuthReady = (async () => {
-        try {
-          const appMod = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js');
-          const authMod = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js');
-          const fsMod = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-          fbApp = appMod.initializeApp(FIREBASE_CONFIG);
-          fbAuth = authMod.getAuth(fbApp);
-          fbDb = fsMod.getFirestore(fbApp);
-          fbMods = {
-            collection: fsMod.collection,
-            doc: fsMod.doc,
-            setDoc: fsMod.setDoc,
-            addDoc: fsMod.addDoc,
-            deleteDoc: fsMod.deleteDoc,
-            onSnapshot: fsMod.onSnapshot,
-            query: fsMod.query,
-            orderBy: fsMod.orderBy,
-            serverTimestamp: fsMod.serverTimestamp,
-            Timestamp: fsMod.Timestamp
-          };
-          if (!fbAuth.currentUser) {
-            await authMod.signInAnonymously(fbAuth);
-          }
-          fbReady = true;
-          setGalleryRetryVisible(false);
-          setGalleryStatus(gallerySession
-            ? ('已就緒 · 課堂 ' + gallerySession)
-            : 'Firebase 已就緒 · 輸入課堂碼加入');
-          return true;
-        } catch (err) {
-          console.warn('[va-lingo] Firebase init failed', err);
-          fbReady = false;
-          fbAuthReady = null; // allow retry
-          setGalleryStatus('畫廊暫不可用（離線或被封鎖）— 本機自評仍可用');
-          setGalleryRetryVisible(true);
-          return false;
-        }
-      })();
-      return fbAuthReady;
-    }
-
-    function stopGalleryListener() {
-      if (typeof galleryUnsub === 'function') {
-        try { galleryUnsub(); } catch (e) { /* ignore */ }
-      }
-      galleryUnsub = null;
     }
 
     function renderLiveGalleryIfNeeded() {
@@ -1303,147 +1188,6 @@
       });
     }
 
-    function startGalleryListener(code) {
-      stopGalleryListener();
-      galleryWorks = [];
-      if (!fbReady || !fbDb || !fbMods || !code) {
-        renderLiveGalleryIfNeeded();
-        return;
-      }
-      const worksRef = fbMods.collection(fbDb, 'sessions', code, 'works');
-      const q = fbMods.query(worksRef, fbMods.orderBy('createdAt', 'desc'));
-      galleryUnsub = fbMods.onSnapshot(q, (snap) => {
-        galleryWorks = snap.docs.map(d => {
-          const data = d.data() || {};
-          return Object.assign({ id: d.id }, data);
-        });
-        setGalleryRetryVisible(false);
-        setGalleryStatus('課堂 ' + code + ' · ' + galleryWorks.length + ' 件作品（即時）');
-        renderLiveGalleryIfNeeded();
-      }, (err) => {
-        console.warn('[va-lingo] gallery snapshot error', err);
-        setGalleryStatus('畫廊監聽失敗 — 可重試；本機自評仍可用');
-        setGalleryRetryVisible(true);
-      });
-    }
-
-    async function joinGallerySession(fromInput) {
-      const input = document.getElementById('gallery-session-input');
-      const code = normalizeSessionCode(fromInput != null ? fromInput : (input && input.value));
-      if (input) input.value = code;
-      if (code.length < 4) {
-        toast('課堂碼請輸入 4–6 個英數字');
-        clearGalleryBusyUi(galleryStatusSummary());
-        setGalleryRetryVisible(false);
-        return;
-      }
-      if (galleryBusy) return;
-      galleryBusy = true;
-      setGalleryRetryVisible(false);
-      const joinBtn = document.getElementById('btn-gallery-join');
-      if (joinBtn) { joinBtn.disabled = true; joinBtn.textContent = '加入中…'; }
-      setGalleryStatus('加入中…');
-      try {
-        const ok = await initFirebaseOnce();
-        if (!ok || !fbAuth || !fbAuth.currentUser) {
-          toast('無法連接畫廊，請檢查網絡後按「重試」— 本機自評仍可用');
-          clearGalleryBusyUi('尚未加入課堂（畫廊離線）');
-          setGalleryRetryVisible(true);
-          return;
-        }
-        // Touch session doc so teachers can see active codes (rules: create/update if authed)
-        const sessionRef = fbMods.doc(fbDb, 'sessions', code);
-        await fbMods.setDoc(sessionRef, {
-          classId: code,
-          updatedAt: fbMods.serverTimestamp(),
-          joinedBy: fbAuth.currentUser.uid
-        }, { merge: true });
-        gallerySession = code;
-        localStorage.setItem(GALLERY_SESSION_KEY, code);
-        startGalleryListener(code);
-        toast('已加入課堂畫廊：' + code);
-        clearGalleryBusyUi('課堂 ' + code + ' · 連接中…');
-        setGalleryRetryVisible(false);
-        if (state.source !== 'peer') {
-          state.source = 'peer';
-          withPreservedScroll(() => renderAll());
-          save();
-        } else {
-          renderLiveGalleryIfNeeded();
-        }
-      } catch (err) {
-        console.warn(err);
-        toast('加入失敗：' + (err && err.message ? err.message : String(err)));
-        clearGalleryBusyUi('加入失敗 — 可重試；本機自評仍可用');
-        setGalleryRetryVisible(true);
-      }
-    }
-
-    async function publishToGallery() {
-      if (!gallerySession) {
-        toast('請先輸入課堂碼並加入畫廊');
-        return;
-      }
-      if (!state.selfImage) {
-        toast('請先在「我的創作歷程」上傳作品照片');
-        state.source = 'self';
-        withPreservedScroll(() => renderAll());
-        save();
-        return;
-      }
-      if (!state.className) {
-        toast('請先選擇班別（畫廊只顯示班別／座位標籤，不含全名）');
-        return;
-      }
-      const label = buildGalleryDisplayLabel();
-      if (!window.confirm('確定發佈到課堂畫廊？\n\n標籤：' + label + '\n同學將可即時看到作品圖（不含真實姓名）。\n圖片會壓縮至約 200KB 以內。')) {
-        return;
-      }
-      if (galleryBusy) return;
-      galleryBusy = true;
-      const btn = document.getElementById('btn-gallery-publish');
-      if (btn) { btn.disabled = true; btn.textContent = '發佈中…'; }
-      setGalleryStatus('壓縮並發佈中…');
-      setGalleryRetryVisible(false);
-      try {
-        const ok = await initFirebaseOnce();
-        if (!ok || !fbAuth.currentUser) throw new Error('尚未登入畫廊');
-        const photoData = await ensurePhotoUnderLimit(state.selfImage);
-        if (!photoData) throw new Error('無法處理圖片');
-        if (photoData.length > GALLERY_MAX_PHOTO_CHARS) {
-          toast('圖片仍超過約 200KB，請換較小照片或降低解析度後再試');
-          throw new Error('圖片仍太大（>' + GALLERY_MAX_PHOTO_CHARS + '）');
-        }
-        const classId = gallerySession;
-        const payload = {
-          uid: fbAuth.currentUser.uid,
-          classId: classId,
-          createdAt: fbMods.serverTimestamp(),
-          displayLabel: label,
-          photoData: photoData,
-          caption: buildCaptionSummary(),
-          ks: state.ks,
-          level: state.level
-        };
-        await fbMods.addDoc(fbMods.collection(fbDb, 'sessions', classId, 'works'), payload);
-        toast('已發佈到課堂畫廊（' + label + '）');
-        if (!galleryUnsub) startGalleryListener(classId);
-        state.source = 'peer';
-        withPreservedScroll(() => renderAll());
-        save();
-        clearGalleryBusyUi(galleryStatusSummary());
-        setGalleryRetryVisible(false);
-      } catch (err) {
-        console.warn(err);
-        const msg = (err && err.message) ? err.message : String(err);
-        if (msg.indexOf('圖片仍太大') === -1) {
-          toast('發佈失敗：' + msg + ' — 可重試；本機自評仍可用');
-        }
-        clearGalleryBusyUi(galleryStatusSummary() + '（發佈失敗）');
-        setGalleryRetryVisible(true);
-      }
-    }
-
     function openGalleryLightbox(workId) {
       const w = findLiveWork(workId);
       if (!w || !w.photoData) return;
@@ -1453,13 +1197,10 @@
       const title = document.getElementById('gallery-lb-title');
       const meta = document.getElementById('gallery-lb-meta');
       const cap = document.getElementById('gallery-lb-caption');
-      const delBtn = document.getElementById('gallery-lb-delete');
       if (img) img.src = w.photoData;
       if (title) title.textContent = workDisplayLabel(w);
       if (meta) meta.textContent = '點擊「用此作品互評」開始回饋';
       if (cap) cap.textContent = w.caption || '';
-      const isOwn = !!(fbAuth && fbAuth.currentUser && w.uid === fbAuth.currentUser.uid);
-      if (delBtn) delBtn.classList.toggle('hidden', !isOwn);
       if (box) {
         box.classList.remove('hidden');
         activateFocusTrap(box, { onEscape: closeGalleryLightbox });
@@ -1473,31 +1214,6 @@
       const img = document.getElementById('gallery-lb-img');
       if (img) img.removeAttribute('src');
       lightboxWorkId = null;
-      const delBtn = document.getElementById('gallery-lb-delete');
-      if (delBtn) delBtn.classList.add('hidden');
-    }
-
-    async function deleteOwnGalleryWork(workId) {
-      const w = findLiveWork(workId);
-      if (!w) return;
-      if (!fbAuth || !fbAuth.currentUser || w.uid !== fbAuth.currentUser.uid) {
-        toast('只能刪除自己發佈的作品');
-        return;
-      }
-      if (!gallerySession) return;
-      if (!window.confirm('確定從本課堂畫廊刪除這件作品？')) return;
-      try {
-        const ok = await initFirebaseOnce();
-        if (!ok) throw new Error('畫廊未連線');
-        await fbMods.deleteDoc(fbMods.doc(fbDb, 'sessions', gallerySession, 'works', workId));
-        if (state.selectedPeer === 'live:' + workId) state.selectedPeer = 'peer1';
-        closeGalleryLightbox();
-        toast('已從畫廊刪除');
-        save();
-      } catch (err) {
-        console.warn(err);
-        toast('刪除失敗：' + (err && err.message ? err.message : String(err)));
-      }
     }
 
     function selectLiveWorkForPeer(workId) {
@@ -1525,7 +1241,8 @@
       stage: 'stage1',
       topicId: 'p1-s1-2d',
       selectedArtistIndex: 0,
-      selfImage: null,
+      selfWorks: {},
+      activeSelfWorks: {},
       pins: [],
       activePin: null,
       answers: {},
@@ -1535,6 +1252,124 @@
       lastBlankTarget: null,
       selectedChipWord: null
     };
+
+    Object.defineProperty(state, 'selfImage', {
+      get() { const work = Context.selectedWork(state); return work ? work.image : null; },
+      set(image) {
+        if (!image) Context.selectWork(state, null);
+        else Context.addWork(state, image, crypto.randomUUID(), new Date().toISOString());
+      }
+    });
+
+    // Google Web App client. Peer work is explicitly refreshed by the student.
+    async function googleApi(action, payload) {
+      if (!SUBMIT_URL) throw new Error('請先由 IT 設定學校 Google /exec 網址');
+      const res = await fetch(SUBMIT_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, requestId: crypto.randomUUID(), token: state.sessionToken || '', payload })
+      });
+      const data = await res.json();
+      if (!res.ok || !data || !data.ok) throw new Error((data && data.error && data.error.message) || (data && data.error) || '學校服務暫時未能回應');
+      return data.data || {};
+    }
+
+    async function authenticateSelectedStudent() {
+      if (!state.className || !state.studentId) return;
+      try {
+        const data = await googleApi('login', { classId: state.className, studentId: state.studentId });
+        state.sessionToken = data.token;
+        state.grade = data.grade;
+        setGalleryStatus('已登入；請輸入老師提供的課堂代碼');
+        ensureTopicSelection();
+        fillCurriculumSelects();
+        renderAll();
+        save();
+      } catch (err) {
+        state.sessionToken = '';
+        setGalleryStatus('未能登入學校服務');
+        toast(err.message);
+      }
+    }
+
+    function currentRoundId() {
+      return normalizeSessionCode((document.getElementById('gallery-session-input') || {}).value || gallerySession);
+    }
+
+    async function joinGallerySession(fromInput) {
+      const input = document.getElementById('gallery-session-input');
+      const roundId = normalizeSessionCode(fromInput != null ? fromInput : (input && input.value));
+      if (!roundId) { toast('請輸入老師提供的課堂代碼'); return; }
+      if (!state.sessionToken) { toast('請先選擇班別及學號，待登入完成後再查看'); return; }
+      if (input) input.value = roundId;
+      gallerySession = roundId;
+      localStorage.setItem(GALLERY_SESSION_KEY, roundId);
+      try {
+        const status = await googleApi('getRoundStatus', { roundId });
+        setGalleryStatus('課堂 ' + roundId + '：' + (status.phase === 'peer_open' ? '可開始互評' : '正收集作品') + '（' + (status.readyCount || 0) + '/' + (status.expectedCount || 0) + '）');
+        if (status.phase === 'peer_open') await refreshPeerWorks();
+      } catch (err) {
+        setGalleryStatus('未能讀取課堂狀態');
+        toast(err.message);
+      }
+    }
+
+    async function refreshPeerWorks() {
+      const roundId = currentRoundId();
+      if (!roundId) { toast('請先輸入課堂代碼'); return; }
+      try {
+        const data = await googleApi('listPeerWorks', { roundId, pageSize: 12 });
+        gallerySession = roundId;
+        galleryWorks = (data.items || []).map(item => Object.assign({ id: item.artworkId, photoData: item.imageData || '' }, item));
+        setGalleryStatus('已更新：' + galleryWorks.length + ' 件同學作品');
+        if (state.source !== 'peer') state.source = 'peer';
+        withPreservedScroll(() => renderAll());
+        save();
+      } catch (err) {
+        setGalleryStatus('更新清單失敗；請稍後再按「更新清單」');
+        toast(err.message);
+      }
+    }
+
+    async function publishToGallery() {
+      const roundId = currentRoundId();
+      const snapshot = currentAssessmentSnapshot();
+      if (!roundId) { toast('請先輸入老師提供的課堂代碼'); return; }
+      if (!state.sessionToken) { toast('請先選擇班別及學號，完成登入後再提交'); return; }
+      if (!state.selfImage) { toast('請先上傳作品'); return; }
+      if (snapshot.completedStepCount !== STEPS.length) { toast('請先完成評賞五步驟，現時 ' + snapshot.completedStepCount + '/5'); return; }
+      try {
+        const artwork = await googleApi('uploadArtwork', {
+          roundId, topicId: state.topicId, sourceApp: 'va-lingo', mediaType: 'image',
+          imageMime: 'image/jpeg', imageBase64: state.selfImage
+        });
+        const assessment = await googleApi('saveAssessment', {
+          roundId, artworkId: artwork.artworkId, artworkRevision: artwork.revision,
+          type: 'self', ks: state.ks, steps: snapshot.steps, pins: snapshot.pins, vocabUses: snapshot.vocabUses
+        });
+        state.serverArtworkId = artwork.artworkId;
+        state.serverArtworkRevision = artwork.revision;
+        toast('作品及自評已提交；等待老師開放互評');
+        await joinGallerySession(roundId);
+        return assessment;
+      } catch (err) { toast('提交失敗：' + err.message); }
+    }
+
+    async function submitPeerAssessment() {
+      const roundId = currentRoundId();
+      const workId = liveWorkIdFromPeer(state.selectedPeer);
+      const work = workId && findLiveWork(workId);
+      const snapshot = currentAssessmentSnapshot();
+      if (!roundId || !state.sessionToken) { toast('請先登入並查看課堂狀態'); return; }
+      if (!work) { toast('請先選取一件同學作品'); return; }
+      if (snapshot.completedStepCount !== STEPS.length) { toast('請先完成互評五步驟，現時 ' + snapshot.completedStepCount + '/5'); return; }
+      try {
+        await googleApi('saveAssessment', {
+          roundId, artworkId: work.artworkId, artworkRevision: work.revision,
+          type: 'peer', ks: state.ks, steps: snapshot.steps, pins: snapshot.pins, vocabUses: snapshot.vocabUses
+        });
+        toast('互評已提交');
+      } catch (err) { toast('互評提交失敗：' + err.message); }
+    }
 
     /** Loaded from curriculum.json — 年級 × 3 學段 × (平面+立體) */
     let curriculum = {
@@ -1564,10 +1399,7 @@
     }
 
     function answerKey(extra) {
-      let scope = 'main';
-      if (state.source === 'peer') scope = state.selectedPeer;
-      else if (state.source === 'master') scope = state.topicId || 'main';
-      return [state.ks, state.source, scope, stepKey(), extra || ''].filter(Boolean).join('|');
+      return Context.answerKey(state, stepKey(), extra);
     }
 
     function toast(msg, opts) {
@@ -1589,6 +1421,13 @@
     }
 
     function save() {
+      const progress = document.getElementById('assessment-progress');
+      if (progress) progress.textContent = '五步填寫進度：' + currentAssessmentSnapshot().completedStepCount + ' / 5';
+      const key = storageKey();
+      if (!key) {
+        document.getElementById('save-status').textContent = '請先選擇班別及學號，才能保存個人草稿';
+        return true;
+      }
       try {
         const payload = {
           ks: state.ks,
@@ -1597,13 +1436,13 @@
           selectedPeer: state.selectedPeer,
           step: state.step,
           className: state.className,
-          studentName: state.studentName,
           studentId: state.studentId,
           grade: state.grade,
           stage: state.stage,
           topicId: state.topicId,
           selectedArtistIndex: state.selectedArtistIndex,
-          selfImage: state.selfImage,
+          selfWorks: state.selfWorks,
+          activeSelfWorks: state.activeSelfWorks,
           pins: state.pins,
           answers: state.answers,
           moods: state.moods,
@@ -1611,19 +1450,23 @@
           usedChips: state.usedChips,
           savedAt: new Date().toISOString()
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        localStorage.setItem(key, JSON.stringify(payload));
         const d = new Date();
         const hk = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }));
         const t = hk.toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         document.getElementById('save-status').textContent = '已自動儲存 ' + t + '（香港時間）';
+        return true;
       } catch (e) {
-        document.getElementById('save-status').textContent = '儲存失敗（可能超出容量）';
+        document.getElementById('save-status').textContent = '儲存失敗（可能超出容量）；請先匯出，暫勿重新整理';
+        return false;
       }
     }
 
     function load() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const key = storageKey();
+        if (!key) return;
+        const raw = localStorage.getItem(key);
         if (!raw) return;
         const p = JSON.parse(raw);
         Object.assign(state, {
@@ -1633,13 +1476,14 @@
           selectedPeer: p.selectedPeer || 'peer1',
           step: typeof p.step === 'number' ? p.step : 0,
           className: p.className || '',
-          studentName: p.studentName || '',
+          studentName: '',
           studentId: p.studentId || '',
           grade: p.grade || 'p1',
           stage: p.stage || 'stage1',
           topicId: p.topicId || 'p1-s1-2d',
           selectedArtistIndex: typeof p.selectedArtistIndex === 'number' ? p.selectedArtistIndex : 0,
-          selfImage: p.selfImage || null,
+          selfWorks: p.selfWorks || {},
+          activeSelfWorks: p.activeSelfWorks || {},
           pins: Array.isArray(p.pins) ? p.pins : [],
           answers: p.answers || {},
           moods: p.moods || {},
@@ -1945,7 +1789,7 @@
         const peer = PEERS.find(p => p.id === state.selectedPeer) || PEERS[0];
         return '🤝 同儕作品：' + peer.hint + ' 請用友善、具體的句子給予回饋。';
       }
-      return '🎨 這是你自己的創作。試用評賞五步驟回顧過程：你想表達熱鬧香港的哪一面？';
+      return '🎨 這是你自己的創作。試用評賞五步驟回顧過程：你想透過這件作品表達甚麼？';
     }
 
     function renderSourcePicker() {
@@ -1996,13 +1840,12 @@
         });
       } else if (state.source === 'peer') {
         const liveCards = galleryWorks.length
-          ? (`<div class="mb-2"><div class="text-xs font-bold text-va-blue mb-1.5">課堂即時作品${gallerySession ? ' · ' + gallerySession : ''}</div>
+          ? (`<div class="mb-2"><div class="text-xs font-bold text-va-blue mb-1.5">課堂作品（手動更新）${gallerySession ? ' · ' + gallerySession : ''}</div>
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" style="min-height:${Math.max(120, Math.ceil(galleryWorks.length / 2) * 96)}px">` +
              galleryWorks.map(w => {
                const pid = 'live:' + w.id;
                const label = escapeHtml(workDisplayLabel(w));
-               const own = (fbAuth && fbAuth.currentUser && w.uid === fbAuth.currentUser.uid);
-               const sub = own ? '我的作品 · 點擊可刪除' : '點擊放大／互評';
+               const sub = '點擊放大／互評';
                const src = (w.photoData || '').replace(/"/g, '&quot;');
                return `<button type="button" class="gallery-thumb p-1.5 ${state.selectedPeer === pid ? 'selected' : ''}" data-live-work="${escapeHtml(w.id)}">
                   <img src="${src}" alt="${label}" loading="lazy" />
@@ -2046,16 +1889,34 @@
             📷 拍攝／上傳作品
             <input id="self-file" type="file" accept="image/*" capture="environment" class="hidden" />
           </label>
-          ${state.selfImage ? '<button type="button" id="clear-self" class="btn-pill btn-ghost px-3 py-2 min-h-touch text-sm">清除圖片</button>' : ''}
+          ${state.selfImage ? '<button type="button" id="clear-self" class="btn-pill btn-ghost px-3 py-2 min-h-touch text-sm">取消選取作品</button>' : ''}
+          ${(state.selfWorks[state.topicId] || []).length ? '<label class="text-sm">已保存作品 <select id="self-work-history" aria-label="已保存作品" class="border rounded px-2 py-2"><option value="">請選擇作品</option>' + state.selfWorks[state.topicId].map((work, i) => '<option value="' + escapeHtml(work.id) + '"' + (Context.selectedWork(state)?.id === work.id ? ' selected' : '') + '>作品 ' + (i + 1) + '</option>').join('') + '</select></label>' : ''}
         </div>`;
+        const history = document.getElementById('self-work-history');
+        if (history) history.addEventListener('change', () => {
+          Context.selectWork(state, history.value || null);
+          renderAll();
+          save();
+        });
         const fi = document.getElementById('self-file');
         if (fi) {
           fi.addEventListener('change', (e) => {
             const file = e.target.files && e.target.files[0];
             if (!file) return;
+            if (!storageKey()) { toast('請先選擇班別及學號'); return; }
+            if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024) {
+              toast('請選擇 10MB 以內的 JPEG、PNG 或 WebP 圖片'); return;
+            }
+            const owner = storageKey(), topic = state.topicId;
             const reader = new FileReader();
-            reader.onload = () => {
-              state.selfImage = reader.result;
+            reader.onerror = () => toast('未能讀取圖片，請重試');
+            reader.onload = async () => {
+              const image = await compressDataUrl(reader.result, 1600, 0.7);
+              if (owner !== storageKey() || topic !== state.topicId) {
+                toast('班別／學號或課題已切換，請重新選擇圖片'); return;
+              }
+              if (!image || image.length > 1400000) { toast('圖片未能壓縮至合適大小，請選另一張'); return; }
+              state.selfImage = image;
               const y = window.scrollY || 0;
               renderAll();
               requestAnimationFrame(() => window.scrollTo(0, y));
@@ -2071,9 +1932,7 @@
     }
 
     function pinScope() {
-      if (state.source === 'peer') return 'peer:' + state.selectedPeer;
-      if (state.source === 'master') return 'master:' + (state.topicId || 'main');
-      return state.source + ':main';
+      return Context.pinScope(state);
     }
 
     function scopedPins() {
@@ -2635,6 +2494,8 @@
       });
       document.getElementById('btn-prev').disabled = state.step === 0;
       document.getElementById('btn-next').disabled = state.step === STEPS.length - 1;
+      const peerSubmit = document.getElementById('btn-peer-submit');
+      if (peerSubmit) peerSubmit.classList.toggle('hidden', !(state.source === 'peer' && isLivePeerId(state.selectedPeer)));
       updateStudentIdDisplay();
       document.getElementById('step-panel').classList.toggle('ks1-control', state.ks === 'ks1');
     }
@@ -2861,7 +2722,7 @@
       toast(url ? '雲端網址已儲存' : '已清除雲端網址');
     }
 
-    /** 把 data URL 壓成 JPEG（最大寬 1600、quality 0.7）；失敗則回傳原文 */
+    /** 把 data URL 壓成 JPEG（最長邊 1600、quality 0.7）；失敗回傳 null */
     function compressDataUrl(dataUrl, maxW, quality) {
       return new Promise((resolve) => {
         if (!dataUrl || typeof dataUrl !== 'string' || dataUrl.indexOf('data:') !== 0) {
@@ -2873,137 +2734,39 @@
           try {
             let w = img.naturalWidth || img.width;
             let h = img.naturalHeight || img.height;
-            if (!w || !h) { resolve(dataUrl); return; }
+            if (!w || !h) { resolve(null); return; }
             const limit = maxW || 1600;
-            if (w > limit) {
-              h = Math.round(h * (limit / w));
-              w = limit;
-            }
+            const scale = Math.min(1, limit / Math.max(w, h));
+            w = Math.max(1, Math.round(w * scale));
+            h = Math.max(1, Math.round(h * scale));
             const canvas = document.createElement('canvas');
             canvas.width = w;
             canvas.height = h;
             const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
             ctx.drawImage(img, 0, 0, w, h);
             resolve(canvas.toDataURL('image/jpeg', quality != null ? quality : 0.7));
           } catch (e) {
-            resolve(dataUrl);
+            resolve(null);
           }
         };
-        img.onerror = () => resolve(dataUrl);
+        img.onerror = () => resolve(null);
         img.src = dataUrl;
       });
     }
 
     /** 彙整五步評賞文字（給 submission.json 的 steps） */
+    function currentAssessmentSnapshot() {
+      return window.VAAssessmentSnapshot.build(state, STEPS, SCAFFOLDS, vocabWordList());
+    }
+
     function buildStepsPayload() {
-      const prevStep = state.step;
-      const out = {};
-      STEPS.forEach((st, i) => {
-        state.step = i;
-        const useScaffold = state.ks === 'ks1' || state.level === 1;
-        const entry = { id: st.id, title: st.title };
-        if (state.ks === 'ks1' && i === 0) {
-          entry.mood = state.moods[answerKey('mood')] || '';
-        }
-        if (useScaffold) {
-          entry.scaffold = (state.answers[answerKey('scaffold')] || []).slice();
-          entry.text = entry.scaffold.filter(Boolean).join('／');
-        } else {
-          entry.open = state.answers[answerKey('open')] || '';
-          entry.text = entry.open;
-          entry.rubric = state.rubrics[answerKey('rubric')] || {};
-        }
-        out[st.id] = entry;
-      });
-      state.step = prevStep;
-      return out;
+      return currentAssessmentSnapshot().steps;
     }
 
     async function submitToCloud() {
-      if (!SUBMIT_URL) {
-        toast('請先在「雲端設定」貼上學校 /exec 網址');
-        openCloudSettings();
-        return;
-      }
-      if (!state.className) {
-        toast('請先選擇班別');
-        return;
-      }
-      if (!state.studentId && !state.studentName) {
-        toast('請先選擇學生');
-        return;
-      }
-
-      const btn = document.getElementById('btn-cloud-submit');
-      if (btn) { btn.disabled = true; btn.textContent = '提交中…'; }
-
-      try {
-        let imageBase64 = null;
-        let imageMime = null;
-        if (state.selfImage) {
-          const compressed = await compressDataUrl(state.selfImage, 1600, 0.7);
-          imageBase64 = compressed || state.selfImage;
-          imageMime = 'image/jpeg';
-        }
-
-        const payload = {
-          action: 'submit',
-          className: state.className,
-          studentName: state.studentName,
-          studentId: state.studentId,
-          ks: state.ks,
-          level: state.level,
-          source: state.source,
-          unit: currentUnitTitle(),
-          steps: buildStepsPayload(),
-          pins: state.pins,
-          answers: state.answers,
-          moods: state.moods,
-          rubrics: state.rubrics
-        };
-        if (imageBase64) {
-          payload.imageBase64 = imageBase64;
-          payload.imageMime = imageMime;
-        }
-
-        // 勿加自訂 Authorization 等標頭，以免 Apps Script CORS 失敗
-        const res = await fetch(SUBMIT_URL, {
-          method: 'POST',
-          // text/plain 可避過部分 preflight；Apps Script 仍可 JSON.parse
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        });
-
-        const text = await res.text();
-        let data = null;
-        try { data = JSON.parse(text); } catch (e) { /* ignore */ }
-
-        if (!res.ok && !data) {
-          throw new Error('伺服器回應 ' + res.status);
-        }
-        if (!data || !data.ok) {
-          throw new Error((data && data.error) || '提交失敗');
-        }
-
-        save(); // 本機仍保留
-        const link = data.folderUrl || data.fileUrl || '';
-        if (link) {
-          toast(
-            '已提交到學校雲端！ <a href="' + link.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener">開啟資料夾</a>',
-            { html: true, duration: 8000 }
-          );
-        } else {
-          toast('已提交到學校雲端！', { duration: 4000 });
-        }
-        if (data.warning) toast(data.warning, { duration: 5000 });
-      } catch (err) {
-        toast('提交失敗：' + (err && err.message ? err.message : String(err)), { duration: 4500 });
-      } finally {
-        if (btn) {
-          btn.textContent = '提交到學校雲端';
-          refreshSubmitButton();
-        }
-      }
+      return publishToGallery();
     }
 
     // Events
@@ -3091,11 +2854,7 @@
     });
     document.getElementById('field-class').addEventListener('change', () => {
       const cls = document.getElementById('field-class').value || '';
-      state.className = cls;
-      state.studentName = '';
-      state.studentId = '';
-      rebuildStudentSelect(cls, '');
-      save();
+      if (activateStudent(cls, '')) rebuildStudentSelect(cls, '');
     });
     document.getElementById('field-student').addEventListener('change', () => {
       applyStudentFromSelect();
@@ -3149,8 +2908,10 @@
       if (input && gallerySession) input.value = gallerySession;
       const joinBtn = document.getElementById('btn-gallery-join');
       const pubBtn = document.getElementById('btn-gallery-publish');
+      const peerSubmitBtn = document.getElementById('btn-peer-submit');
       if (joinBtn) joinBtn.addEventListener('click', () => joinGallerySession());
       if (pubBtn) pubBtn.addEventListener('click', () => publishToGallery());
+      if (peerSubmitBtn) peerSubmitBtn.addEventListener('click', () => submitPeerAssessment());
       if (input) {
         input.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
@@ -3166,23 +2927,17 @@
       }
       const lbClose = document.getElementById('gallery-lb-close');
       const lbUse = document.getElementById('gallery-lb-use');
-      const lbDel = document.getElementById('gallery-lb-delete');
       const lb = document.getElementById('gallery-lightbox');
       const retryBtn = document.getElementById('btn-gallery-retry');
       if (lbClose) lbClose.addEventListener('click', closeGalleryLightbox);
       if (lbUse) lbUse.addEventListener('click', () => {
         if (lightboxWorkId) selectLiveWorkForPeer(lightboxWorkId);
       });
-      if (lbDel) lbDel.addEventListener('click', () => {
-        if (lightboxWorkId) deleteOwnGalleryWork(lightboxWorkId);
-      });
       if (lb) lb.addEventListener('click', (e) => {
         if (e.target.id === 'gallery-lightbox') closeGalleryLightbox();
       });
       if (retryBtn) retryBtn.addEventListener('click', () => {
-        setGalleryRetryVisible(false);
-        if (gallerySession) joinGallerySession(gallerySession);
-        else joinGallerySession();
+        refreshPeerWorks();
       });
     })();
 
@@ -3203,16 +2958,7 @@
     });
     document.getElementById('pin-pop-close').addEventListener('click', closePinPopover);
 
-    // seed default pins for master on first visit (scoped to default topic)
-    load();
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      const seedScope = 'master:' + (state.topicId || 'p1-s1-2d');
-      state.pins = [
-        { id: 'seed1', scope: seedScope, x: 42, y: 28, note: '高聳樓群——密度與垂直線' },
-        { id: 'seed2', scope: seedScope, x: 55, y: 72, note: '水面／港灣——柔和橫向節奏' },
-        { id: 'seed3', scope: seedScope, x: 78, y: 35, note: '遠景山影——空間層次' }
-      ];
-    }
+    // Start without an identity. Student drafts load only after an explicit selection.
     ensureTopicSelection();
     fillCurriculumSelects();
     renderAll();
@@ -3222,15 +2968,12 @@
     loadRoster();
     loadCurriculum();
 
-    // Firebase anon auth once; rejoin saved classroom session if any
-    initFirebaseOnce().then((ok) => {
-      if (!ok) return;
-      if (gallerySession) {
-        const input = document.getElementById('gallery-session-input');
-        if (input) input.value = gallerySession;
-        startGalleryListener(gallerySession);
-      }
-    });
+    // A saved round is only restored into the input. Its status and peer work
+    // are read only when the student explicitly asks for a refresh.
+    if (gallerySession) {
+      const input = document.getElementById('gallery-session-input');
+      if (input) input.value = gallerySession;
+    }
   })();
   </script>
 </body>

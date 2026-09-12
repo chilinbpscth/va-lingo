@@ -1,0 +1,13 @@
+{
+  "name": "va-lingo",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "check": "node scripts/check-scripts.cjs",
+    "test:browser": "node tests/browser.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.58.2"
+  }
+}
