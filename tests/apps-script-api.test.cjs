@@ -69,6 +69,8 @@ test('Apps Script enforces token, school year, topic and assessment phase', () =
   const one = login('01'); const two = login('02');
   assert.equal(one.ok, true); assert.equal(one.data.grade, 'p4');
   const call = (token, action, payload, requestId = `${action}-${Math.random()}`) => api.invoke({action, token, requestId, payload});
+  const oversized = 'data:image/jpeg;base64,' + Buffer.alloc(250 * 1024 + 1, 1).toString('base64');
+  assert.equal(call(one.data.token, 'uploadArtwork', {roundId: '4A2026', topicId: 'p4-s1-2d', sourceApp: 'va-lingo', imageMime: 'image/jpeg', imageBase64: oversized}).error.code, 'INVALID_INPUT');
   assert.equal(call(one.data.token, 'uploadArtwork', {roundId: '4A2026', topicId: 'other', sourceApp: 'va-lingo', imageMime: 'image/jpeg', imageBase64: image}).error.code, 'FORBIDDEN');
   const work1 = call(one.data.token, 'uploadArtwork', {roundId: '4A2026', topicId: 'p4-s1-2d', sourceApp: 'va-lingo', imageMime: 'image/jpeg', imageBase64: image}, 'upload-1');
   assert.equal(work1.ok, true);

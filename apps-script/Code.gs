@@ -83,6 +83,11 @@ var TOKEN_TTL_MS = 45 * 60 * 1000;
 
 function apiOk_(data) { return json_({ ok: true, data: data || {} }); }
 function apiFail_(code, message) { return json_({ ok: false, error: { code: code, message: message } }); }
+function writeError_(error, message) {
+  var code = error && error.message;
+  if (code === 'TOKEN_EXPIRED' || code === 'AUTH_REQUIRED' || code === 'INVALID_INPUT') return apiFail_(code, message);
+  return apiFail_('RETRYABLE_WRITE_ERROR', message);
+}
 function withWriteLock_(work) {
   var lock = LockService.getScriptLock();
   lock.waitLock(15000);
@@ -195,7 +200,7 @@ function uploadArtwork_(body) {
     var now = nowIso_(), hash = tokenHash_(Utilities.base64Encode(image.bytes));
     sheet.appendRow([artworkId,1,round.id,session.classId,session.studentId,session.grade,topicId,sourceApp,'image',file.getId(),image.mime,image.bytes.length,hash,'uploaded',now,now,requestId]);
     return apiOk_({artworkId:artworkId,revision:1,status:'uploaded'});
-  } catch (e) { return apiFail_(e.message === 'TOKEN_EXPIRED' ? 'TOKEN_EXPIRED' : 'RETRYABLE_WRITE_ERROR','未能儲存作品。'); } });
+  } catch (e) { return writeError_(e, '未能儲存作品。'); } });
 }
 function completedSteps_(steps, ks) {
   var ids = ['feel','describe','form','meaning','judge'];
@@ -228,7 +233,7 @@ function saveAssessment_(body) {
     var now = nowIso_(), id = randomId_('asm');
     sh.appendRow([id,1,artworkId,revision,round.id,session.classId,session.studentId,type,JSON.stringify(steps),JSON.stringify(p.pins || []),JSON.stringify(p.vocabUses || []),count,'submitted',now,now,requestId]);
     return apiOk_({assessmentId:id,revision:1,completedStepCount:count,status:'submitted'});
-  } catch (e) { return apiFail_(e.message === 'TOKEN_EXPIRED' ? 'TOKEN_EXPIRED' : 'RETRYABLE_WRITE_ERROR','未能儲存評賞。'); } });
+  } catch (e) { return writeError_(e, '未能儲存評賞。'); } });
 }
 function listPeerWorks_(body) {
   try {
