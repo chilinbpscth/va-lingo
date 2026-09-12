@@ -29,6 +29,8 @@ test('Apps Script validates a token and never returns roster names to the client
   assert.match(backend, /completedSteps_\(steps, ks\)/);
   assert.match(backend, /topicId !== value_\(round\.row,'topicId'\)/);
   assert.match(backend, /value_\(round,'schoolYear'\) !== session\.schoolYear/);
+  assert.match(backend, /bytes\.length > 250 \* 1024/);
+  assert.match(front, /GOOGLE_ARTWORK_MAX_CHARS = 341000/);
   assert.doesNotMatch(backend, /steps\[id\]\.complete === true/);
   assert.doesNotMatch(backend, /studentName.*displayLabel|displayLabel.*studentName/);
   assert.doesNotMatch(front, /roster\.json/);

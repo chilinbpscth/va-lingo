@@ -1028,6 +1028,7 @@
 
     /* Classroom work is supplied by Google Apps Script on explicit refresh. */
     const GALLERY_SESSION_KEY = 'vaGallerySession';
+    const GOOGLE_ARTWORK_MAX_CHARS = 341000;
     let galleryWorks = []; // { id, ...data }
     let gallerySession = (localStorage.getItem(GALLERY_SESSION_KEY) || '').trim().toUpperCase();
     let lightboxWorkId = null;
@@ -1805,11 +1806,11 @@
             const reader = new FileReader();
             reader.onerror = () => toast('未能讀取圖片，請重試');
             reader.onload = async () => {
-              const image = await compressDataUrl(reader.result, 1600, 0.7);
+              const image = await compressForGoogleArtwork(reader.result);
               if (owner !== storageKey() || topic !== state.topicId) {
                 toast('班別／學號或課題已切換，請重新選擇圖片'); return;
               }
-              if (!image || image.length > 1400000) { toast('圖片未能壓縮至合適大小，請選另一張'); return; }
+              if (!image) { toast('圖片未能壓縮至適合課堂互評嘅大小，請選另一張'); return; }
               state.selfImage = image;
               const y = window.scrollY || 0;
               renderAll();
@@ -2648,6 +2649,16 @@
         img.onerror = () => resolve(null);
         img.src = dataUrl;
       });
+    }
+
+    async function compressForGoogleArtwork(dataUrl) {
+      let width = 1600, quality = 0.72, image = await compressDataUrl(dataUrl, width, quality);
+      for (let attempt = 0; image && image.length > GOOGLE_ARTWORK_MAX_CHARS && attempt < 10; attempt++) {
+        if (quality > 0.38) quality = Math.max(0.38, quality - 0.08);
+        else width = Math.max(480, Math.round(width * 0.75));
+        image = await compressDataUrl(dataUrl, width, quality);
+      }
+      return image && image.length <= GOOGLE_ARTWORK_MAX_CHARS ? image : null;
     }
 
     /** 彙整五步評賞文字（給 submission.json 的 steps） */

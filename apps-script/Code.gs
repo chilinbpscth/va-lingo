@@ -175,7 +175,7 @@ function imageBlob_(base64, mime) {
   if (match) { mime = match[1]; raw = match[2]; }
   if (['image/jpeg','image/png','image/webp'].indexOf(mime) === -1) throw new Error('INVALID_INPUT');
   var bytes = Utilities.base64Decode(raw.replace(/\s/g, ''));
-  if (!bytes.length || bytes.length > 1024 * 1024) throw new Error('INVALID_INPUT');
+  if (!bytes.length || bytes.length > 250 * 1024) throw new Error('INVALID_INPUT');
   var ext = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg';
   return { bytes:bytes, mime:mime, ext:ext };
 }

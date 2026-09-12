@@ -24,7 +24,7 @@ Apps Script 會按需要建立 `sessions_v1`、`artworks_v1`、`assessments_v1`�
 
 ## 3. 課堂開放流程
 
-老師先在 `rounds_v1` 建立 `phase=collecting` 的課堂，並在 `round_members_v1` 凍結應交學生。學生交作品及自評後，老師核對交齊或填好缺席豁免，才把 phase 改為 `peer_open`。學生須手動按「更新清單」才會看到可互評作品。
+老師先在 `rounds_v1` 建立 `phase=collecting` 的課堂，並在 `round_members_v1` 凍結應交學生。學生交作品及自評後，老師核對交齊或填好缺席豁免，才把 phase 改為 `peer_open`。學生須手動按「更新清單」才會看到可互評作品。為確保整班更新可用，每件上傳圖像會壓縮至 250KB 以下。
 
 ## 4. 驗收與回退
 
