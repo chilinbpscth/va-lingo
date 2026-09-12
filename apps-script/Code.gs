@@ -180,6 +180,7 @@ function uploadArtwork_(body) {
     if (value_(round.row,'phase') !== 'collecting') return apiFail_('ROUND_NOT_OPEN', '課堂已停止收集作品。');
     var topicId = safeText_(p.topicId, 80), sourceApp = safeText_(p.sourceApp, 40);
     if (!topicId || ['va-lingo','paper-cut','face-change','shadow-puppet'].indexOf(sourceApp) === -1) return apiFail_('INVALID_INPUT','作品資料不正確。');
+    if (topicId !== value_(round.row,'topicId')) return apiFail_('FORBIDDEN','作品課題與課堂不符。');
     var image = imageBlob_(p.imageBase64, String(p.imageMime || ''));
     var requestId = safeText_(body.requestId, 100), sheet = apiSheet_(ARTWORK_SHEET, artworkHeaders_());
     var prior = rows_(sheet).filter(function(row) { return value_(row,'requestId') === requestId && value_(row,'studentId') === session.studentId; })[0];
