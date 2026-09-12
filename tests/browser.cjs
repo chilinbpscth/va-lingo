@@ -45,6 +45,7 @@ const assert = require('node:assert/strict');
  assert.match(await page.locator('#step-content .scaffold-blank').first().innerText(),/我的第一份作品/);
  const storage=await page.evaluate(()=>({...localStorage}));
  assert.equal(JSON.parse(storage['va-lingo-phase1-v1']).answers.legacy,'keep');
+ assert(!JSON.stringify(storage).includes('synthetic-token'));
  assert(!JSON.stringify(Object.entries(storage).filter(([k])=>k.startsWith('va-lingo-drafts-v2:'))).includes('PRIVATE'));
  assert(!(await page.locator('body').innerText()).includes('PRIVATE'));
  // Simulate full browser storage: switching students must not discard the unsaved work.
