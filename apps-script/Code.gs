@@ -83,6 +83,11 @@ var TOKEN_TTL_MS = 45 * 60 * 1000;
 
 function apiOk_(data) { return json_({ ok: true, data: data || {} }); }
 function apiFail_(code, message) { return json_({ ok: false, error: { code: code, message: message } }); }
+function withWriteLock_(work) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try { return work(); } finally { lock.releaseLock(); }
+}
 function apiSheet_(name, headers) {
   if (!SHEET_ID) throw new Error('尚未設定 SHEET_ID。');
   var ss = SpreadsheetApp.openById(SHEET_ID);
@@ -121,7 +126,7 @@ function requireSession_(body) {
   return { classId:value_(hit,'classId'), studentId:value_(hit,'studentId'), grade:value_(hit,'grade'), schoolYear:value_(hit,'schoolYear') };
 }
 function login_(body) {
-  try {
+  return withWriteLock_(function() { try {
     var p = body.payload || {};
     var classId = safeText_(p.classId, 30), studentId = safeText_(p.studentId, 30);
     if (!classId || !studentId) return apiFail_('INVALID_INPUT', '請輸入班別及學號。');
@@ -135,7 +140,7 @@ function login_(body) {
     apiSheet_(SESSION_SHEET, ['sessionId','tokenHash','schoolYear','classId','studentId','grade','issuedAt','expiresAt','revokedAt'])
       .appendRow([randomId_('ses'), tokenHash_(rawToken), value_(found,'schoolYear'), classId, studentId, value_(found,'grade'), issued.toISOString(), expires.toISOString(), '']);
     return apiOk_({token:rawToken, expiresAt:expires.toISOString(), classId:classId, studentId:studentId, grade:value_(found,'grade'), displayLabel:value_(found,'displayLabel')});
-  } catch (e) { return apiFail_('RETRYABLE_WRITE_ERROR', e.message || String(e)); }
+  } catch (e) { return apiFail_('RETRYABLE_WRITE_ERROR', e.message || String(e)); } });
 }
 function round_(roundId) {
   var sheet = apiSheet_(ROUND_SHEET, ['roundId','schoolYear','classId','grade','stageId','topicId','phase','peerTargetCount','openedAt','peerOpenedAt','closedAt']);
@@ -175,7 +180,7 @@ function imageBlob_(base64, mime) {
   return { bytes:bytes, mime:mime, ext:ext };
 }
 function uploadArtwork_(body) {
-  try {
+  return withWriteLock_(function() { try {
     var session = requireSession_(body), round = requireRound_(body, session), p = body.payload || {};
     if (value_(round.row,'phase') !== 'collecting') return apiFail_('ROUND_NOT_OPEN', '課堂已停止收集作品。');
     var topicId = safeText_(p.topicId, 80), sourceApp = safeText_(p.sourceApp, 40);
@@ -190,7 +195,7 @@ function uploadArtwork_(body) {
     var now = nowIso_(), hash = tokenHash_(Utilities.base64Encode(image.bytes));
     sheet.appendRow([artworkId,1,round.id,session.classId,session.studentId,session.grade,topicId,sourceApp,'image',file.getId(),image.mime,image.bytes.length,hash,'uploaded',now,now,requestId]);
     return apiOk_({artworkId:artworkId,revision:1,status:'uploaded'});
-  } catch (e) { return apiFail_(e.message === 'TOKEN_EXPIRED' ? 'TOKEN_EXPIRED' : 'RETRYABLE_WRITE_ERROR','未能儲存作品。'); }
+  } catch (e) { return apiFail_(e.message === 'TOKEN_EXPIRED' ? 'TOKEN_EXPIRED' : 'RETRYABLE_WRITE_ERROR','未能儲存作品。'); } });
 }
 function completedSteps_(steps, ks) {
   var ids = ['feel','describe','form','meaning','judge'];
@@ -205,7 +210,7 @@ function completedSteps_(steps, ks) {
   }).length;
 }
 function saveAssessment_(body) {
-  try {
+  return withWriteLock_(function() { try {
     var session = requireSession_(body), round = requireRound_(body, session), p = body.payload || {};
     var type = p.type === 'peer' ? 'peer' : 'self', artworkId = safeText_(p.artworkId,100), revision = Number(p.artworkRevision || 1);
     if (!artworkId || !Number.isFinite(revision)) return apiFail_('INVALID_INPUT','評賞作品資料不正確。');
@@ -223,7 +228,7 @@ function saveAssessment_(body) {
     var now = nowIso_(), id = randomId_('asm');
     sh.appendRow([id,1,artworkId,revision,round.id,session.classId,session.studentId,type,JSON.stringify(steps),JSON.stringify(p.pins || []),JSON.stringify(p.vocabUses || []),count,'submitted',now,now,requestId]);
     return apiOk_({assessmentId:id,revision:1,completedStepCount:count,status:'submitted'});
-  } catch (e) { return apiFail_(e.message === 'TOKEN_EXPIRED' ? 'TOKEN_EXPIRED' : 'RETRYABLE_WRITE_ERROR','未能儲存評賞。'); }
+  } catch (e) { return apiFail_(e.message === 'TOKEN_EXPIRED' ? 'TOKEN_EXPIRED' : 'RETRYABLE_WRITE_ERROR','未能儲存評賞。'); } });
 }
 function listPeerWorks_(body) {
   try {

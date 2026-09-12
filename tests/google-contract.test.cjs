@@ -23,6 +23,8 @@ test('the client has no Firebase code or automatic peer listener', () => {
 test('Apps Script validates a token and never returns roster names to the client', () => {
   assert.match(backend, /tokenHash_\(token\)/);
   assert.match(backend, /TOKEN_TTL_MS/);
+  assert.match(backend, /LockService\.getScriptLock\(\)/);
+  assert.match(backend, /withWriteLock_\(function\(\)/);
   assert.match(backend, /requireSession_\(body\)/);
   assert.match(backend, /completedSteps_\(steps, ks\)/);
   assert.match(backend, /topicId !== value_\(round\.row,'topicId'\)/);
