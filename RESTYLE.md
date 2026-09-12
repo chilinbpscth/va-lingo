@@ -1,6 +1,6 @@
 # VA-Lingo visual restyle（Codex shared tokens／宣紙／青瓷／朱砂）
 
-`index.html` 對齊 Codex 共用 token（`data-app="va-lingo"`），並維持視藝前端配色「宣紙主調＋青瓷＋朱砂」。功能不變（KS 鷹架、Firebase 畫廊、Drive 提交、手機版修正皆保留）。
+`index.html` 對齊 Codex 共用 token（`data-app="va-lingo"`），並維持視藝前端配色「宣紙主調＋青瓷＋朱砂」。現有功能包括 KS 鷹架、Google Drive／Sheet 提交及手機版修正；同儕作品以手動更新清單讀取。
 
 ## Tokens
 
