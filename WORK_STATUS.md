@@ -26,7 +26,7 @@
 6. 五步填寫進度依現有句式空格或開放文字計算；KS1 感受步加情緒；唔把開過頁當完成。snapshot 只包含當前作品 pins/steps；詞彙以最後文字比對，標 text-match，唔冒充實際 chip 點擊事件。
 7. 新增 dependency-free context/snapshot 模組、Node 測試及可重跑瀏覽器回歸（合成學生及圖片）。Apps Script 已有 login / getRoundStatus / uploadArtwork / saveAssessment / listPeerWorks；前端手動 refresh，沒有 Firebase SDK URL 或即時 listener。舊無 token `submit` action 已拒絕，實際資源 ID 已從分支移除。
 
-已跑：`npm test` 12 項通過；`npm run check` inline JS 語法及名冊 Git 檢查通過；`npm run test:browser` Chrome 無頁面 JS 錯誤、學生隔離／作品歷史／重載／空間不足保留，以及模擬 login → uploadArtwork → 自評 saveAssessment → getRoundStatus → listPeerWorks → 互評 saveAssessment 端到端契約通過；`git diff --check` 通過。前端已無 Firebase 代碼；Apps Script 五步完成度由伺服器根據內容重算，不信任客戶端 `complete`。390px／1280px 本地畫面截圖已生成並目視檢查。這是本機模擬 Web App，未代替 Google 正式驗收。
+已跑：`npm test` 13 項通過；其中 Apps Script 模擬服務實際驗證 login、學年／課題範圍、上傳、自評五步拒絕／接受、開放前後互評。`npm run check` inline JS 語法及名冊 Git 檢查通過；`npm run test:browser` Chrome 無頁面 JS 錯誤、學生隔離／作品歷史／重載／空間不足保留，以及模擬 login → uploadArtwork → 自評 saveAssessment → getRoundStatus → listPeerWorks → 互評 saveAssessment 端到端契約通過；`git diff --check` 通過。前端已無 Firebase 代碼；Apps Script 五步完成度由伺服器根據內容重算，不信任客戶端 `complete`。390px／1280px 本地畫面截圖已生成並目視檢查。這是本機模擬 Web App，未代替 Google 正式驗收。
 
 ## 共用接口定位：現時阻礙
 
