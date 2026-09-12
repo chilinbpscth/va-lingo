@@ -1032,6 +1032,7 @@
     let galleryWorks = []; // { id, ...data }
     let gallerySession = (localStorage.getItem(GALLERY_SESSION_KEY) || '').trim().toUpperCase();
     let lightboxWorkId = null;
+    let cloudSubmissionBusy = false;
 
     function setGalleryStatus(msg) {
       const el = document.getElementById('gallery-status');
@@ -1158,11 +1159,11 @@
     });
 
     // Google Web App client. Peer work is explicitly refreshed by the student.
-    async function googleApi(action, payload) {
+    async function googleApi(action, payload, requestId) {
       if (!SUBMIT_URL) throw new Error('請先由 IT 設定學校 Google /exec 網址');
       const res = await fetch(SUBMIT_URL, {
         method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action, requestId: crypto.randomUUID(), token: state.sessionToken || '', payload })
+        body: JSON.stringify({ action, requestId: requestId || crypto.randomUUID(), token: state.sessionToken || '', payload })
       });
       const data = await res.json();
       if (!res.ok || !data || !data.ok) throw new Error((data && data.error && data.error.message) || (data && data.error) || '學校服務暫時未能回應');
@@ -1233,21 +1234,48 @@
       if (!state.sessionToken) { toast('請先選擇班別及學號，完成登入後再提交'); return; }
       if (!state.selfImage) { toast('請先上傳作品'); return; }
       if (snapshot.completedStepCount !== STEPS.length) { toast('請先完成評賞五步驟，現時 ' + snapshot.completedStepCount + '/5'); return; }
+      if (cloudSubmissionBusy) return;
+      cloudSubmissionBusy = true;
+      const submitButton = document.getElementById('btn-gallery-publish');
+      if (submitButton) { submitButton.disabled = true; submitButton.textContent = '提交中…'; }
       try {
-        const artwork = await googleApi('uploadArtwork', {
-          roundId, topicId: state.topicId, sourceApp: 'va-lingo', mediaType: 'image',
-          imageMime: 'image/jpeg', imageBase64: state.selfImage
-        });
+        const currentWork = Context.selectedWork(state);
+        let artwork = currentWork && currentWork.serverRoundId === roundId && currentWork.serverArtworkId
+          ? {artworkId: currentWork.serverArtworkId, revision: currentWork.serverArtworkRevision}
+          : null;
+        if (!artwork) {
+          currentWork.pendingUploadRequestId = currentWork.pendingUploadRequestId || crypto.randomUUID();
+          save();
+          artwork = await googleApi('uploadArtwork', {
+            roundId, topicId: state.topicId, sourceApp: 'va-lingo', mediaType: 'image',
+            imageMime: 'image/jpeg', imageBase64: state.selfImage
+          }, currentWork.pendingUploadRequestId);
+          if (currentWork) {
+            currentWork.serverRoundId = roundId;
+            currentWork.serverArtworkId = artwork.artworkId;
+            currentWork.serverArtworkRevision = artwork.revision;
+            delete currentWork.pendingUploadRequestId;
+            save();
+          }
+        }
+        currentWork.pendingSelfAssessmentRequestId = currentWork.pendingSelfAssessmentRequestId || crypto.randomUUID();
+        save();
         const assessment = await googleApi('saveAssessment', {
           roundId, artworkId: artwork.artworkId, artworkRevision: artwork.revision,
           type: 'self', ks: state.ks, steps: snapshot.steps, pins: snapshot.pins, vocabUses: snapshot.vocabUses
-        });
+        }, currentWork.pendingSelfAssessmentRequestId);
+        delete currentWork.pendingSelfAssessmentRequestId;
+        save();
         state.serverArtworkId = artwork.artworkId;
         state.serverArtworkRevision = artwork.revision;
         toast('作品及自評已提交；等待老師開放互評');
         await joinGallerySession(roundId);
         return assessment;
       } catch (err) { toast('提交失敗：' + err.message); }
+      finally {
+        cloudSubmissionBusy = false;
+        if (submitButton) { submitButton.disabled = false; submitButton.textContent = '提交作品及自評'; }
+      }
     }
 
     async function submitPeerAssessment() {
