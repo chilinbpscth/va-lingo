@@ -1166,8 +1166,20 @@
         body: JSON.stringify({ action, requestId: requestId || crypto.randomUUID(), token: state.sessionToken || '', payload })
       });
       const data = await res.json();
-      if (!res.ok || !data || !data.ok) throw new Error((data && data.error && data.error.message) || (data && data.error) || '學校服務暫時未能回應');
+      if (!res.ok || !data || !data.ok) {
+        const error = new Error((data && data.error && data.error.message) || (data && data.error) || '學校服務暫時未能回應');
+        error.code = data && data.error && data.error.code;
+        throw error;
+      }
       return data.data || {};
+    }
+
+    function handleSessionError(error) {
+      if (!error || !['TOKEN_EXPIRED', 'AUTH_REQUIRED'].includes(error.code)) return false;
+      state.sessionToken = '';
+      setGalleryStatus('登入已過期；請重新輸入班別及學號');
+      toast('登入已過期，請重新登入');
+      return true;
     }
 
     async function authenticateSelectedStudent() {
@@ -1206,7 +1218,7 @@
         if (status.phase === 'peer_open') await refreshPeerWorks();
       } catch (err) {
         setGalleryStatus('未能讀取課堂狀態');
-        toast(err.message);
+        if (!handleSessionError(err)) toast(err.message);
       }
     }
 
@@ -1223,7 +1235,7 @@
         save();
       } catch (err) {
         setGalleryStatus('更新清單失敗；請稍後再按「更新清單」');
-        toast(err.message);
+        if (!handleSessionError(err)) toast(err.message);
       }
     }
 
@@ -1271,7 +1283,7 @@
         toast('作品及自評已提交；等待老師開放互評');
         await joinGallerySession(roundId);
         return assessment;
-      } catch (err) { toast('提交失敗：' + err.message); }
+      } catch (err) { if (!handleSessionError(err)) toast('提交失敗：' + err.message); }
       finally {
         cloudSubmissionBusy = false;
         if (submitButton) { submitButton.disabled = false; submitButton.textContent = '提交作品及自評'; }
@@ -1292,7 +1304,7 @@
           type: 'peer', ks: state.ks, steps: snapshot.steps, pins: snapshot.pins, vocabUses: snapshot.vocabUses
         });
         toast('互評已提交');
-      } catch (err) { toast('互評提交失敗：' + err.message); }
+      } catch (err) { if (!handleSessionError(err)) toast('互評提交失敗：' + err.message); }
     }
 
     /** Loaded from curriculum.json — 年級 × 3 學段 × (平面+立體) */

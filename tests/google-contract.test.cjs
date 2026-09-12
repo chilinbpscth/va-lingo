@@ -20,6 +20,8 @@ test('the client has no Firebase code or automatic peer listener', () => {
   assert.match(front, /submitPeerAssessment/);
   assert.match(front, /pendingUploadRequestId/);
   assert.match(front, /cloudSubmissionBusy/);
+  assert.match(front, /handleSessionError/);
+  assert.match(front, /TOKEN_EXPIRED/);
 });
 
 test('Apps Script validates a token and never returns roster names to the client', () => {
