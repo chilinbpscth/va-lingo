@@ -19,9 +19,12 @@ var ROOT_FOLDER_ID = ''; // 部署時由 IT 填入；不可把學校實際 ID co
 /** 私有 Sheet ID；登入、課堂、作品及評賞索引均在此儲存。 */
 var SHEET_ID = ''; // 部署時由 IT 填入；不可把學校實際 ID commit 到 repo
 
+// 每次部署使用新的私有前端檔案，保留舊版本可回退。
+var APP_HTML_FILE_ID = ''; // 由同 repo build:google 產出 App.html 並上傳私有 Drive
+
 var ACTIVE_SCHOOL_YEAR = '2026-27'; // IT 更新學年；舊學年名冊保留但不能登入
 
-var VERSION = 'va-lingo-google-mvp-1';
+var VERSION = 'va-lingo-google-mvp-2';
 var TZ = 'Asia/Hong_Kong';
 
 // ---------- JSON 回應 ----------
@@ -38,13 +41,18 @@ function err_(msg) {
 // ---------- 健康檢查 ----------
 /**
  * GET ?ping=1 → { ok:true, version:'va-lingo-google-mvp-1' }
- * 其他 GET 回傳簡短說明（避免空白頁困惑）
+ * 其他 GET 載入同 repo 打包的私有 Drive 前端；未設定則回傳說明。
  */
 function doGet(e) {
   e = e || {};
   var p = e.parameter || {};
   if (String(p.ping || '') === '1') {
     return json_({ ok: true, version: VERSION });
+  }
+  if (APP_HTML_FILE_ID) {
+    var html = DriveApp.getFileById(APP_HTML_FILE_ID).getBlob().getDataAsString('UTF-8');
+    return HtmlService.createHtmlOutput(html).setTitle('藝言堂 — 自評與互評')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   }
   return json_({
     ok: true,
@@ -361,5 +369,14 @@ function setup_() {
 
 /** Apps Script 執行選單不列出尾綴底線函式；供測試初始化使用。 */
 function setupMvpTest() {
+  var active = Session.getActiveUser().getEmail();
+  if (!active || active !== Session.getEffectiveUser().getEmail()) {
+    throw new Error('只限部署擁有者執行初始化。');
+  }
   return setup_();
+}
+
+/** HtmlService 通訊亦經相同 action／token／課堂驗證，不能略過授權。 */
+function callApi(body) {
+  return JSON.parse(doPost({postData:{contents:JSON.stringify(body)}}).getContent());
 }

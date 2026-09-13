@@ -1018,6 +1018,7 @@
 
     // Legacy va-lingo-phase1-v1 remains untouched; never auto-assign a shared-device draft to a student.
     function storageKey() { return Context.draftStorageKey(state); }
+    const GOOGLE_HOSTED = window.VA_GOOGLE_HOSTED === true;
     const SUBMIT_URL_KEY = 'vaSubmitUrl';
     /** 學校 Apps Script /exec；由「雲端設定」寫入 localStorage，勿把密鑰寫死在程式 */
     let SUBMIT_URL = (localStorage.getItem(SUBMIT_URL_KEY) || '').trim();
@@ -1166,13 +1167,28 @@
 
     // Google Web App client. Peer work is explicitly refreshed by the student.
     async function googleApi(action, payload, requestId) {
-      if (!SUBMIT_URL) throw new Error('請先由 IT 設定學校 Google /exec 網址');
-      const res = await fetch(SUBMIT_URL, {
-        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action, requestId: requestId || crypto.randomUUID(), token: state.sessionToken || '', payload })
-      });
-      const data = await res.json();
-      if (!res.ok || !data || !data.ok) {
+      const body = { action, requestId: requestId || crypto.randomUUID(), token: state.sessionToken || '', payload };
+      let data;
+      if (GOOGLE_HOSTED) {
+        data = await new Promise((resolve, reject) => {
+          if (!window.google || !google.script || !google.script.run) {
+            reject(new Error('學校服務未能載入，請重新開啟學校連結')); return;
+          }
+          google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).callApi(body);
+        });
+      } else {
+        if (!SUBMIT_URL) throw new Error('請先由 IT 設定學校 Google /exec 網址');
+        const res = await fetch(SUBMIT_URL, {
+          method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(body)
+        });
+        if (!(res.headers.get('Content-Type') || '').includes('application/json')) {
+          throw new Error('請使用學校提供的 Apps Script 學生入口登入');
+        }
+        data = await res.json();
+        if (!res.ok && data && data.ok) throw new Error('學校服務暫時未能回應');
+      }
+      if (!data || !data.ok) {
         const error = new Error((data && data.error && data.error.message) || (data && data.error) || '學校服務暫時未能回應');
         error.code = data && data.error && data.error.code;
         throw error;
@@ -1654,9 +1670,12 @@
 
     async function loadCurriculum() {
       try {
-        const res = await fetch('curriculum.json');
-        if (!res.ok) throw new Error('curriculum fetch failed');
-        const data = await res.json();
+        let data = window.VA_CURRICULUM;
+        if (!data) {
+          const res = await fetch('curriculum.json');
+          if (!res.ok) throw new Error('curriculum fetch failed');
+          data = await res.json();
+        }
         if (data && Array.isArray(data.grades) && data.grades.length) curriculum.grades = data.grades;
         if (data && Array.isArray(data.stages) && data.stages.length) curriculum.stages = data.stages;
         if (data && Array.isArray(data.forms) && data.forms.length) curriculum.forms = data.forms;
@@ -2670,7 +2689,9 @@
     function refreshSubmitButton() {
       const btn = document.getElementById('btn-cloud-submit');
       if (!btn) return;
-      const ready = !!SUBMIT_URL;
+      const ready = GOOGLE_HOSTED || !!SUBMIT_URL;
+      const settings = document.getElementById('btn-cloud-settings');
+      if (settings && GOOGLE_HOSTED) settings.hidden = true;
       btn.disabled = !ready;
       btn.title = ready
         ? '把評賞歷程提交到學校 Drive'
@@ -2679,6 +2700,7 @@
     }
 
     function openCloudSettings() {
+      if (GOOGLE_HOSTED) { toast('已連接學校服務'); return; }
       const modal = document.getElementById('cloud-modal');
       const input = document.getElementById('cloud-url-input');
       if (input) input.value = SUBMIT_URL || '';

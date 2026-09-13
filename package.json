@@ -5,7 +5,9 @@
   "scripts": {
     "test": "node --test tests/*.test.cjs",
     "check": "node scripts/check-scripts.cjs",
-    "test:browser": "node tests/browser.cjs"
+    "test:browser": "node tests/browser.cjs",
+    "build:google": "node scripts/build-google.cjs",
+    "test:google-browser": "npm run build:google && VA_TEST_GOOGLE_HOSTED=1 node tests/browser.cjs"
   },
   "devDependencies": {
     "playwright": "1.58.2"

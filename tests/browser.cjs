@@ -5,6 +5,7 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 (async()=>{
  const root=path.resolve(__dirname,'..');
+ const hosted=process.env.VA_TEST_GOOGLE_HOSTED==='1';
  await require('node:fs/promises').mkdir(path.join(root,'test-results'),{recursive:true});
  const calls=[]; let expireSession=false; let recoveryStage; let schoolYear="2026-27";
  const server=createServer(async(req,res)=>{try{const url=new URL(req.url,'http://localhost');
@@ -21,7 +22,7 @@ const assert = require('node:assert/strict');
        responses.listOwnWorks={items:[{artworkId:'art-synthetic',revision:1,roundId:request.payload.roundId,topicId:uploaded.topicId,stageId:recoveryStage,grade:'p4',imageData:uploaded.imageBase64,assessment:{steps:assessment.steps,pins:assessment.pins}}],nextOffset:null,totalCount:1};
      }
      res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:true,data:responses[request.action]||{}}));return; }
-   const target=path.resolve(root,'.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!target.startsWith(root+path.sep)){res.writeHead(403).end();return;}const body=await readFile(target);res.setHeader('Content-Type',target.endsWith('.js')?'text/javascript':target.endsWith('.json')?'application/json':target.endsWith('.html')?'text/html':target.endsWith('.png')?'image/png':'text/plain');res.end(body);}catch(e){res.writeHead(404).end();}});
+   const target=path.resolve(root,'.'+decodeURIComponent(url.pathname==='/'?(hosted?'/build/google/App.html':'/index.html'):url.pathname));if(!target.startsWith(root+path.sep)){res.writeHead(403).end();return;}const body=await readFile(target);res.setHeader('Content-Type',target.endsWith('.js')?'text/javascript':target.endsWith('.json')?'application/json':target.endsWith('.html')?'text/html':target.endsWith('.png')?'image/png':'text/plain');res.end(body);}catch(e){res.writeHead(404).end();}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  let browser;
  try{
@@ -29,6 +30,23 @@ const assert = require('node:assert/strict');
  const page=await browser.newPage({viewport:{width:1280,height:900}});
  page.setDefaultTimeout(8000);
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const browserApiRequests=[];
+ page.on('request',req=>{if(new URL(req.url()).pathname==='/exec')browserApiRequests.push(req.url());});
+ if(hosted){
+   await page.exposeFunction('__googleTestCall',async body=>{
+     const response=await fetch('http://127.0.0.1:'+server.address().port+'/exec',{method:'POST',body:JSON.stringify(body)});
+     return response.json();
+   });
+   await page.addInitScript(()=>{
+     function runner(success, failure){return {
+       withSuccessHandler(fn){return runner(fn,failure);},
+       withFailureHandler(fn){return runner(success,fn);},
+       callApi(body){window.__googleTestCall(body).then(success,failure);}
+     };}
+     window.google={script:{get run(){return runner();}}};
+   });
+ }
+
  await page.addInitScript(()=>localStorage.setItem('va-lingo-phase1-v1',JSON.stringify({studentId:'old-id',studentName:'LEGACY-PRIVATE',answers:{legacy:'keep'}})));
  await page.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'domcontentloaded'});
  async function login(studentId){await page.locator('#field-class').fill('4A');await page.locator('#field-student').fill(studentId);await page.locator('#btn-school-login').click();await page.waitForFunction(()=>document.querySelector('#gallery-status').textContent.includes('已登入'));}
@@ -122,6 +140,7 @@ const assert = require('node:assert/strict');
  await page.locator('#btn-gallery-join').click();
  await page.waitForFunction(()=>document.querySelector('#toast').textContent.includes('重新登入'));
  assert.deepEqual(errors,[]);
+ if(hosted){assert.equal(browserApiRequests.length,0);assert.equal(await page.locator('#btn-cloud-submit').isEnabled(),true);assert.equal(await page.locator('#btn-cloud-settings').isVisible(),false);}
  await page.screenshot({path:path.join(root,'test-results/draft-desktop.png'),fullPage:true});
  await page.setViewportSize({width:390,height:844});
  await page.screenshot({path:path.join(root,'test-results/draft-mobile.png'),fullPage:true});

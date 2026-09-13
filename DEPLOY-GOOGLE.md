@@ -1,6 +1,6 @@
 # VA-Lingo Google MVP 部署指引
 
-本指引只適用於獲批的測試或正式部署。現時分支仍未獲部署批准。
+本指引只適用於獲批的測試或正式部署。私人測試部署已獲批；正式部署仍須用家確認。
 
 ## 1. 建立私有資源
 
@@ -20,7 +20,21 @@ Apps Script 會按需要建立 `sessions_v1`、`artworks_v1`、`assessments_v1`�
 
 建立獨立 Apps Script 專案，貼上 `apps-script/Code.gs`，時區設為 `Asia/Hong_Kong`，再部署成 Web App。以部署帳戶執行，存取範圍只限可實際使用的學校帳戶／受管裝置。先以 `/dev` 測試，驗證後才建 `/exec` 版本。
 
-把 `/exec` URL 由 IT 放入受管裝置設定，或在學生頁的「雲端設定」輸入。網址不是秘密，但不可當作授權；伺服器會核對名冊、短期 token、班別、年級及課堂。
+### 校內 Apps Script 學生入口（v2）
+
+真實 v1 驗收發現：校內權限 Web App 從獨立靜態頁 fetch，預設及 credentials:include 均 Failed to fetch。因此校內學生入口使用 HtmlService 與 google.script.run；不改成匿名，不新增第三方代理。
+
+1. 在同一 repo 跑 `npm run build:google`，產生 `build/google/App.html`；它包含同一份 index、三個本地 JS 模組及 curriculum，不另維護一套前端。
+2. 用部署帳戶將 App.html 上傳到私有測試 Drive。每次版本用新檔案，保留舊檔供回退，不公開分享。確認上傳 bytes 與本地 SHA256 一致。
+3. 在 Google 專案設定 `APP_HTML_FILE_ID`、`ROOT_FOLDER_ID`、`SHEET_ID`。本地 repo 三者保持空白，不提交學校資料。
+4. 執行 `setupMvpTest`，只限 Google 部署擁有者；完成需要的 Drive／Sheets 授權。以同一測試專案建立新部署版本，保留既有 v1。
+5. 學生直接開 `/exec`（Google 校內登入閘），載入前端後再用班別＋學號取得短命 token。毋須填雲端網址。
+6. `callApi` 經相同 doPost dispatcher，仍核對名冊、短命 token、班／年級／課堂／配額；不因使用 google.script.run 略過驗證。
+7. `/exec?ping=1` 仍為 JSON 健康檢查。外部 POST 仍保留同契約，但獨立靜態頁的跨來源呼叫未通過校內登入驗收，不能作學生入口。
+
+Google 官方通訊機制：https://developers.google.com/apps-script/guides/html/communication
+
+`npm run test:google-browser` 是模擬 google.script.run 的完整瀏覽器回歸；`VA_TEST_GOOGLE_RPC=1 node --test tests/apps-script-api.test.cjs` 重跑同一套 API 隔離及寫入測試。兩者不代替 Google 實測／iPad 驗收。
 
 ## 3. 課堂開放流程
 

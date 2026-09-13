@@ -46,7 +46,9 @@ function createApi() {
   vm.createContext(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'apps-script', 'Code.gs'), 'utf8'), context);
   context.SHEET_ID = 'sheet'; context.ROOT_FOLDER_ID = 'root';
-  const invoke = body => JSON.parse(context.doPost({postData: {contents: JSON.stringify(body)}}).getContent());
+  const invoke = body => process.env.VA_TEST_GOOGLE_RPC === '1'
+    ? JSON.parse(JSON.stringify(context.callApi(body)))
+    : JSON.parse(context.doPost({postData: {contents: JSON.stringify(body)}}).getContent());
   const sheet = (name, headers) => { let sh = sheets.get(name); if (!sh) { sh = new Sheet(); sh.appendRow(headers); sheets.set(name, sh); } return sh; };
   return {invoke, sheet, context};
 }
@@ -238,4 +240,28 @@ test('peer pages reach beyond twelve works and closed rounds allow reading but r
  } while(offset!==null);
  assert.equal(new Set(ids).size,14);
  for(const type of ['self','peer']) assert.equal(api.invoke({action:'saveAssessment',token,requestId:'closed-'+type,payload:{roundId:'r',artworkId:type==='self'?'a1':'a2',type,ks:'ks2',steps:fullKs2}}).error.code,'ROUND_NOT_OPEN');
+});
+
+
+test('hosted page reads only its configured private artifact; ping stays JSON', () => {
+  const api = createApi();
+  api.context.APP_HTML_FILE_ID = 'private-app-v2';
+  api.context.DriveApp.getFileById = id => {
+    assert.equal(id, 'private-app-v2');
+    return {getBlob: () => ({getDataAsString: () => '<html>hosted-app</html>'})};
+  };
+  api.context.HtmlService = {createHtmlOutput: html => ({html, setTitle(){return this;}, addMetaTag(){return this;}})};
+  assert.equal(api.context.doGet({parameter:{}}).html, '<html>hosted-app</html>');
+  assert.equal(JSON.parse(api.context.doGet({parameter:{ping:'1'}}).getContent()).ok, true);
+});
+
+test('public setup wrapper rejects students and missing Google identities', () => {
+  const api = createApi();
+  let active = 'student@example.test';
+  api.context.Session = {getActiveUser: () => ({getEmail: () => active}), getEffectiveUser: () => ({getEmail: () => 'owner@example.test'})};
+  assert.throws(() => api.context.setupMvpTest(), /只限部署擁有者/);
+  active = '';
+  assert.throws(() => api.context.setupMvpTest(), /只限部署擁有者/);
+  active = 'owner@example.test';
+  assert.match(api.context.setupMvpTest(), /完成/);
 });

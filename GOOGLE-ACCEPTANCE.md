@@ -7,7 +7,8 @@
 1. 在私有 Sheet 填入兩位合成學生：同一 `schoolYear`、`classId`、`grade`，不同 `studentId`；`displayLabel` 只用「4A・01號」形式。
 2. 建立一個 `phase=collecting` 的 round，`round_members_v1` 只列兩位學生；round 的 `schoolYear`、`classId`、`grade`、`topicId` 必須和名冊一致。
 3. 填入 `ROOT_FOLDER_ID` 和 `SHEET_ID`，從 Apps Script 執行選單執行 `setupMvpTest()`（呼叫內部 `setup_`）；確認 Sheet 出現所有 `*_v1` 分頁。
-4. 部署測試 `/exec`，以 `?ping=1` 檢查回傳 `ok:true`。
+4. 跑 `npm run build:google`，將 App.html 上傳私有 Drive 並填 APP_HTML_FILE_ID；部署測試 `/exec`，以 `?ping=1` 檢查回傳 `ok:true`。
+5. 從 `/exec` 直接開學生頁（HtmlService），確認 curriculum 課題齊、無需填雲端網址；觀察呼叫經 google.script.run，沒有由靜態頁跨來源 fetch /exec。
 
 ## 學生流程及證據
 
