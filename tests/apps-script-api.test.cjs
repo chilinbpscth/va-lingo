@@ -144,3 +144,21 @@ test('direct peer submissions enforce self readiness, uniqueness and quota', () 
   assert.equal(save(0,2,'peer','over-quota').error.code,'PEER_QUOTA_REACHED');
   assert.equal(api.sheet('assessments_v1').getLastRow(),5);
 });
+
+test('fresh sessions recover only their own submitted progress', () => {
+  const api=createApi();
+  for (const id of ['01','02']) {
+    api.sheet('roster_v1',headers.roster).appendRow(['2026-27','4A',id,'p4','Seat',true,'']);
+    api.sheet('round_members_v1',headers.members).appendRow(['r',id,true,'','']);
+  }
+  api.sheet('rounds_v1',headers.rounds).appendRow(['r','2026-27','4A','p4','stage1','topic','collecting',2,'','','']);
+  const login=id=>api.invoke({action:'login',payload:{classId:'4A',studentId:id}}).data.token;
+  const token=login('01');
+  const work=api.invoke({action:'uploadArtwork',token,requestId:'u',payload:{roundId:'r',topicId:'topic',sourceApp:'va-lingo',imageMime:'image/jpeg',imageBase64:image}}).data;
+  api.invoke({action:'saveAssessment',token,requestId:'s',payload:{roundId:'r',artworkId:work.artworkId,type:'self',ks:'ks2',steps:fullKs2}});
+  const status=id=>api.invoke({action:'getRoundStatus',token:login(id),payload:{roundId:'r'}}).data;
+  assert.equal(status('01').myProgress.selfSubmitted,true);
+  assert.equal(status('02').myProgress.selfSubmitted,false);
+  assert.equal(status('02').readyCount,1);
+  assert.equal(status('01').myProgress.peerRemainingCount,2);
+});

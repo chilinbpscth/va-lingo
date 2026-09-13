@@ -72,3 +72,5 @@
 查實重試識別只按學號比對，可能跨班／課堂撞 requestId。已將 upload 重試限制為同班、同學號、同 round；assessment 加同作品、revision、type 範圍；兩種寫入拒絕空 requestId。新增真實 Apps Script VM 回歸，驗證兩班同學號、同班不同課堂共用 requestId 各自建立獨立資料，原請求重試不增列。14 項 Node tests、inline check、diff whitespace 通過。仍需補跨裝置續做、互評配額等驗收，未部署。
 
 互評伺服器驗收補強：直接呼叫 saveAssessment 亦須作者及對方已交自評；同作品版本不可用新 requestId 重複交互評；同一 requestId 重試仍回原結果。peerTargetCount 現按每名學生的互評提交配額執行，必須為正整數。新增 API 測試驗證略過畫廊直接提交、未完成自評、重複／重試及超配額；15 項測試與 check 通過。後續須在 UI 顯示自己的已交數及配額，並驗證跨裝置恢復。
+
+getRoundStatus 已新增只屬當前學生的 myProgress（自評已交、互評已交／配額／剩餘），全班 readyCount 只計應交成員。前端課堂查詢顯示自己的進度。新增 fresh session API 測試證明不同學生不讀到對方自評狀態；16 項測試、check 及 Chrome browser 通過，瀏覽器亦驗證互評 0/1 顯示。此項只完成跨登入的提交進度讀回，尚未完成作品／答案跨裝置恢復，不當完整跨裝置驗收。

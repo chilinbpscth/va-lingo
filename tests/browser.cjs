@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
  const server=createServer(async(req,res)=>{try{const url=new URL(req.url,'http://localhost');
    if(url.pathname==='/exec') { let raw=''; for await(const chunk of req) raw+=chunk; const request=JSON.parse(raw); calls.push(request);
      if(expireSession && request.action==='getRoundStatus') {res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:false,error:{code:'TOKEN_EXPIRED',message:'登入已過期'}}));return;}
-     const responses={login:{token:'synthetic-token',grade:'p4',displayLabel:'4A・01號'},getRoundStatus:{phase:'peer_open',readyCount:2,expectedCount:2},uploadArtwork:{artworkId:'art-synthetic',revision:1},saveAssessment:{assessmentId:'asm-synthetic',revision:1,completedStepCount:5},listPeerWorks:{items:[{artworkId:'peer-synthetic',revision:1,displayLabel:'同學作品',imageData:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLuzwAAAABJRU5ErkJggg=='}]}};
+     const responses={login:{token:'synthetic-token',grade:'p4',displayLabel:'4A・01號'},getRoundStatus:{phase:'peer_open',readyCount:2,expectedCount:2,myProgress:{selfSubmitted:true,peerSubmittedCount:0,peerTargetCount:1,peerRemainingCount:1}},uploadArtwork:{artworkId:'art-synthetic',revision:1},saveAssessment:{assessmentId:'asm-synthetic',revision:1,completedStepCount:5},listPeerWorks:{items:[{artworkId:'peer-synthetic',revision:1,displayLabel:'同學作品',imageData:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLuzwAAAABJRU5ErkJggg=='}]}};
      res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:true,data:responses[request.action]||{}}));return; }
    const target=path.resolve(root,'.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!target.startsWith(root+path.sep)){res.writeHead(403).end();return;}const body=await readFile(target);res.setHeader('Content-Type',target.endsWith('.js')?'text/javascript':target.endsWith('.json')?'application/json':target.endsWith('.html')?'text/html':target.endsWith('.png')?'image/png':'text/plain');res.end(body);}catch(e){res.writeHead(404).end();}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
@@ -64,7 +64,7 @@ const assert = require('node:assert/strict');
  for (let step=0;step<5;step++) { await page.locator('.step-btn').nth(step).click(); const blanks=page.locator('#step-content .scaffold-blank'); const n=await blanks.count(); for(let i=0;i<n;i++) await blanks.nth(i).fill('線條'); }
  await page.locator('#gallery-session-input').fill('4A-2026-S1');
  await page.locator('#btn-gallery-publish').click();
- await page.waitForFunction(()=>document.querySelector('#gallery-status').textContent.includes('已更新'));
+ await page.waitForFunction(()=>document.querySelector('#gallery-status').textContent.includes('我的互評：0/1'));
  await page.locator('#btn-gallery-retry').click();
  await page.waitForFunction(()=>document.querySelector('#gallery-status').textContent.includes('已更新'));
  await page.locator('[data-live-work="peer-synthetic"]').click();

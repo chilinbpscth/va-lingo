@@ -1216,6 +1216,10 @@
         const status = await googleApi('getRoundStatus', { roundId });
         setGalleryStatus('課堂 ' + roundId + '：' + (status.phase === 'peer_open' ? '可開始互評' : '正收集作品') + '（' + (status.readyCount || 0) + '/' + (status.expectedCount || 0) + '）');
         if (status.phase === 'peer_open') await refreshPeerWorks();
+        if (status.myProgress) {
+          const mine = status.myProgress;
+          setGalleryStatus('課堂 ' + roundId + '：全班自評 ' + status.readyCount + '/' + status.expectedCount + '；我的自評：' + (mine.selfSubmitted ? '已交' : '未交') + '；我的互評：' + mine.peerSubmittedCount + '/' + mine.peerTargetCount);
+        }
       } catch (err) {
         setGalleryStatus('未能讀取課堂狀態');
         if (!handleSessionError(err)) toast(err.message);

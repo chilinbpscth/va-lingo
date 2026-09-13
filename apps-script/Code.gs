@@ -176,8 +176,15 @@ function getRoundStatus_(body) {
     var session = requireSession_(body), round = requireRound_(body, session); requireRoundMember_(round.id, session);
     var members = rows_(apiSheet_(MEMBER_SHEET, ['roundId','studentId','required','exemptionReason','updatedAt']))
       .filter(function(row) { return value_(row,'roundId') === round.id && String(row.required).toLowerCase() !== 'false'; });
-    var ready = readyStudents_(round.id), count = Object.keys(ready).length;
-    return apiOk_({roundId:round.id, phase:value_(round.row,'phase'), expectedCount:members.length, readyCount:count});
+    var ready = readyStudents_(round.id), count = members.filter(function(member) { return ready[value_(member,'studentId')]; }).length;
+    var own = rows_(apiSheet_(ASSESSMENT_SHEET, assessmentHeaders_())).filter(function(row) {
+      return value_(row,'roundId') === round.id && value_(row,'authorClassId') === session.classId && value_(row,'authorStudentId') === session.studentId && value_(row,'status') === 'submitted';
+    });
+    var peerIds = {};
+    own.forEach(function(row) { if (value_(row,'type') === 'peer') peerIds[value_(row,'artworkId') + ':' + value_(row,'artworkRevision')] = true; });
+    var peerCount = Object.keys(peerIds).length, target = Number(round.row.peerTargetCount) || 0;
+    return apiOk_({roundId:round.id, phase:value_(round.row,'phase'), expectedCount:members.length, readyCount:count,
+      myProgress:{selfSubmitted:!!ready[session.studentId],peerSubmittedCount:peerCount,peerTargetCount:target,peerRemainingCount:Math.max(0,target-peerCount)}});
   } catch (e) { return apiFail_(e.message === 'TOKEN_EXPIRED' ? 'TOKEN_EXPIRED' : 'FORBIDDEN', '未能讀取課堂狀態。'); }
 }
 
