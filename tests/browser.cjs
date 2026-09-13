@@ -6,11 +6,16 @@ const assert = require('node:assert/strict');
 (async()=>{
  const root=path.resolve(__dirname,'..');
  await require('node:fs/promises').mkdir(path.join(root,'test-results'),{recursive:true});
- const calls=[]; let expireSession=false;
+ const calls=[]; let expireSession=false; let recoveryStage;
  const server=createServer(async(req,res)=>{try{const url=new URL(req.url,'http://localhost');
    if(url.pathname==='/exec') { let raw=''; for await(const chunk of req) raw+=chunk; const request=JSON.parse(raw); calls.push(request);
      if(expireSession && request.action==='getRoundStatus') {res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:false,error:{code:'TOKEN_EXPIRED',message:'登入已過期'}}));return;}
      const responses={login:{token:'synthetic-token',grade:'p4',displayLabel:'4A・01號'},getRoundStatus:{phase:'peer_open',readyCount:2,expectedCount:2,myProgress:{selfSubmitted:true,peerSubmittedCount:0,peerTargetCount:1,peerRemainingCount:1}},uploadArtwork:{artworkId:'art-synthetic',revision:1},saveAssessment:{assessmentId:'asm-synthetic',revision:1,completedStepCount:5},listPeerWorks:{items:[{artworkId:'peer-synthetic',revision:1,displayLabel:'同學作品',imageData:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLuzwAAAABJRU5ErkJggg=='}]}};
+     if(request.action==='listOwnWorks') {
+       const uploaded=calls.find(c=>c.action==='uploadArtwork').payload;
+       const assessment=calls.find(c=>c.action==='saveAssessment' && c.payload.type==='self').payload;
+       responses.listOwnWorks={items:[{artworkId:'art-synthetic',revision:1,roundId:request.payload.roundId,topicId:uploaded.topicId,stageId:recoveryStage,grade:'p4',imageData:uploaded.imageBase64,assessment:{steps:assessment.steps,pins:assessment.pins}}],nextOffset:null,totalCount:1};
+     }
      res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:true,data:responses[request.action]||{}}));return; }
    const target=path.resolve(root,'.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!target.startsWith(root+path.sep)){res.writeHead(403).end();return;}const body=await readFile(target);res.setHeader('Content-Type',target.endsWith('.js')?'text/javascript':target.endsWith('.json')?'application/json':target.endsWith('.html')?'text/html':target.endsWith('.png')?'image/png':'text/plain');res.end(body);}catch(e){res.writeHead(404).end();}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
@@ -79,6 +84,22 @@ const assert = require('node:assert/strict');
  assert.equal(calls.filter(c=>c.action==='saveAssessment')[1].payload.type,'peer');
  assert.equal(calls.find(c=>c.action==='saveAssessment').payload.steps.feel.complete,true);
  assert.equal(calls.find(c=>c.action==='listPeerWorks').payload.roundId,'4A2026');
+ // A clean device has no saved artwork or answers; restore through the real button.
+ recoveryStage=await page.evaluate(()=>JSON.parse(Object.entries(localStorage).find(([k])=>k.startsWith('va-lingo-drafts-v2:'))[1]).stage);
+ await page.evaluate(()=>{for(const k of Object.keys(localStorage)) if(k.startsWith('va-lingo-drafts-v2:'))localStorage.removeItem(k);});
+ await page.reload({waitUntil:'domcontentloaded'});
+ await login('01');
+ await page.locator('#gallery-session-input').fill('4A2026');
+ await page.locator('#btn-own-recover').click();
+ await page.waitForFunction(()=>document.querySelector('#gallery-status').textContent.includes('已取回 1'));
+ await page.locator('.step-btn').first().click();
+ assert.match(await page.locator('#step-content .scaffold-blank').first().innerText(),/線條/);
+ assert.equal(await page.locator('#self-work-history option').count(),2);
+ await page.locator('#step-content .scaffold-blank').first().locator('.blank-clear').click();
+ await page.locator('#step-content .scaffold-blank').first().fill('取回後修改');
+ await page.locator('#btn-own-recover').click();
+ await page.waitForFunction(()=>document.querySelector('#gallery-status').textContent.includes('已取回 0'));
+ assert.match(await page.locator('#step-content .scaffold-blank').first().innerText(),/取回後修改/);
  expireSession=true;
  await page.locator('#btn-gallery-join').click();
  await page.waitForFunction(()=>document.querySelector('#toast').textContent.includes('重新登入'));

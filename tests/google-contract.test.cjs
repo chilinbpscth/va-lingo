@@ -30,7 +30,7 @@ test('Apps Script validates a token and never returns roster names to the client
   assert.match(backend, /LockService\.getScriptLock\(\)/);
   assert.match(backend, /withWriteLock_\(function\(\)/);
   assert.match(backend, /requireSession_\(body\)/);
-  assert.match(backend, /completedSteps_\(steps, ks\)/);
+  assert.match(backend, /completedSteps_\(steps, ks, level\)/);
   assert.match(backend, /topicId !== value_\(round\.row,'topicId'\)/);
   assert.match(backend, /value_\(round,'schoolYear'\) !== session\.schoolYear/);
   assert.match(backend, /bytes\.length > 250 \* 1024/);

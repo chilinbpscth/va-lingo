@@ -1305,7 +1305,7 @@
         save();
         const assessment = await googleApi('saveAssessment', {
           roundId, artworkId: artwork.artworkId, artworkRevision: artwork.revision,
-          type: 'self', ks: state.ks, steps: snapshot.steps, pins: snapshot.pins, vocabUses: snapshot.vocabUses
+          type: 'self', ks: state.ks, level: state.level, steps: snapshot.steps, pins: snapshot.pins, vocabUses: snapshot.vocabUses
         }, currentWork.pendingSelfAssessmentRequestId);
         delete currentWork.pendingSelfAssessmentRequestId;
         save();
@@ -1332,7 +1332,7 @@
       try {
         await googleApi('saveAssessment', {
           roundId, artworkId: work.artworkId, artworkRevision: work.revision,
-          type: 'peer', ks: state.ks, steps: snapshot.steps, pins: snapshot.pins, vocabUses: snapshot.vocabUses
+          type: 'peer', ks: state.ks, level: state.level, steps: snapshot.steps, pins: snapshot.pins, vocabUses: snapshot.vocabUses
         });
         toast('互評已提交');
       } catch (err) { if (!handleSessionError(err)) toast('互評提交失敗：' + err.message); }

@@ -219,14 +219,14 @@ function uploadArtwork_(body) {
     return apiOk_({artworkId:artworkId,revision:1,status:'uploaded'});
   } catch (e) { return writeError_(e, '未能儲存作品。'); } });
 }
-function completedSteps_(steps, ks) {
+function completedSteps_(steps, ks, level) {
   var ids = ['feel','describe','form','meaning','judge'];
   return ids.filter(function(id) {
     var step = steps && steps[id];
     if (!step || typeof step !== 'object') return false;
-    if (ks === 'ks1') {
+    if (ks === 'ks1' || level === 1) {
       var blanks = Array.isArray(step.scaffold) ? step.scaffold : [];
-      return blanks.length > 0 && blanks.every(function(value) { return safeText_(value, 500).length > 0; }) && (id !== 'feel' || safeText_(step.mood, 40).length > 0);
+      return blanks.length > 0 && blanks.every(function(value) { return safeText_(value, 500).length > 0; }) && (ks !== 'ks1' || id !== 'feel' || safeText_(step.mood, 40).length > 0);
     }
     return safeText_(step.open, 3000).length > 0;
   }).length;
@@ -242,7 +242,9 @@ function saveAssessment_(body) {
     if (type === 'peer' && value_(round.row,'phase') !== 'peer_open') return apiFail_('ROUND_NOT_OPEN','老師尚未開放互評。');
     var ks = p.ks === 'ks1' ? 'ks1' : p.ks === 'ks2' ? 'ks2' : '';
     if (!ks) return apiFail_('INVALID_INPUT','評賞程度不正確。');
-    var steps = p.steps || {}, count = completedSteps_(steps, ks);
+    var level = p.level === undefined ? 2 : Number(p.level);
+    if (level !== 1 && level !== 2) return apiFail_('INVALID_INPUT','評賞模式不正確。');
+    var steps = p.steps || {}, count = completedSteps_(steps, ks, level);
     if (count !== 5) return apiFail_('INVALID_INPUT', type === 'peer' ? '請完成互評五步驟。' : '請完成評賞五步驟。');
     if (!body.requestId || !String(body.requestId).trim()) return apiFail_('INVALID_INPUT','缺少提交識別碼。');
     var requestId = safeText_(body.requestId,100), sh = apiSheet_(ASSESSMENT_SHEET, assessmentHeaders_());

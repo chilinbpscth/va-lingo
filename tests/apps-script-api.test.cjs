@@ -189,3 +189,14 @@ test('new device recovery returns own images and assessments with bounded pages'
   assert.equal(read('01',-1).error.code,'INVALID_INPUT');
   assert.equal(api.invoke({action:'listOwnWorks',payload:{roundId:'r'}}).ok,false);
 });
+
+
+test('KS2 scaffold mode accepts complete blanks without requiring a KS1 mood',()=>{
+ const api=createApi();
+ const steps=Object.fromEntries(['feel','describe','form','meaning','judge'].map(id=>[id,{scaffold:['line','shape']}]));
+ assert.equal(api.context.completedSteps_(steps,'ks2',1),5);
+ assert.equal(api.context.completedSteps_(steps,'ks2',2),0);
+ assert.equal(api.context.completedSteps_(steps,'ks1',1),4);
+ steps.form.scaffold[1]='';
+ assert.equal(api.context.completedSteps_(steps,'ks2',1),4);
+});
