@@ -118,6 +118,29 @@ test('Apps Script enforces token, school year, topic and assessment phase', () =
 });
 
 
+test('write authorization failures are not retryable and cannot create records', () => {
+  const api = createApi();
+  api.sheet('roster_v1', headers.roster).appendRow(['2026-27','4A','03','p4','Seat 03',true,'']);
+  for (const [roundId, year, classId, member] of [
+    ['unlisted','2026-27','4A',false],
+    ['other-class','2026-27','4B',true],
+    ['old-year','2025-26','4A',true]
+  ]) {
+    api.sheet('rounds_v1', headers.rounds).appendRow([roundId,year,classId,'p4','stage1','topic','collecting',1,'','','']);
+    if (member) api.sheet('round_members_v1', headers.members).appendRow([roundId,'03',true,'','']);
+  }
+  const token = api.invoke({action:'login',payload:{classId:'4A',studentId:'03'}}).data.token;
+  for (const roundId of ['unlisted','other-class','old-year']) {
+    for (const action of ['uploadArtwork','saveAssessment']) {
+      const response = api.invoke({action,token,requestId:action+'-'+roundId,payload:{roundId,topicId:'topic',sourceApp:'va-lingo',imageMime:'image/jpeg',imageBase64:image,artworkId:'not-owned',artworkRevision:1,type:'self',ks:'ks2',steps:fullKs2}});
+      assert.equal(response.ok,false);
+      assert.equal(response.error.code,'FORBIDDEN',action+' '+roundId);
+    }
+  }
+  assert.equal(api.sheet('artworks_v1',api.context.artworkHeaders_()).getLastRow(),1);
+  assert.equal(api.sheet('assessments_v1',api.context.assessmentHeaders_()).getLastRow(),1);
+});
+
 test('retry IDs are isolated by class and round, and missing IDs cannot deduplicate', () => {
   const api = createApi();
   const outcomes = [];

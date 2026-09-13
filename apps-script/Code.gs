@@ -24,7 +24,7 @@ var APP_HTML_FILE_ID = ''; // 由同 repo build:google 產出 App.html 並上傳
 
 var ACTIVE_SCHOOL_YEAR = '2026-27'; // IT 更新學年；舊學年名冊保留但不能登入
 
-var VERSION = 'va-lingo-google-mvp-4';
+var VERSION = 'va-lingo-google-mvp-5';
 var TZ = 'Asia/Hong_Kong';
 
 // ---------- JSON 回應 ----------
@@ -96,7 +96,7 @@ function apiOk_(data) { return json_({ ok: true, data: data || {} }); }
 function apiFail_(code, message) { return json_({ ok: false, error: { code: code, message: message } }); }
 function writeError_(error, message) {
   var code = error && error.message;
-  if (code === 'TOKEN_EXPIRED' || code === 'AUTH_REQUIRED' || code === 'INVALID_INPUT') return apiFail_(code, message);
+  if (code === 'TOKEN_EXPIRED' || code === 'AUTH_REQUIRED' || code === 'FORBIDDEN' || code === 'INVALID_INPUT') return apiFail_(code, message);
   return apiFail_('RETRYABLE_WRITE_ERROR', message);
 }
 function withWriteLock_(work) {
