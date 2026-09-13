@@ -15,6 +15,7 @@ class Sheet {
 function createApi() {
   const sheets = new Map();
   const folders = new Map();
+  const storedFiles = new Map();
   const lock = {waitLock() {}, releaseLock() {}};
   let uuid = 0;
   const ss = {getSheetByName: name => sheets.get(name) || null, insertSheet(name) { const sh = new Sheet(); sheets.set(name, sh); return sh; }};
@@ -22,7 +23,7 @@ function createApi() {
     Date, JSON, Math, Number, String, Array, Object, RegExp, Error,
     ContentService: {MimeType: {JSON: 'application/json'}, createTextOutput(text) { return {setMimeType() { return this; }, getContent() { return text; }}; }},
     SpreadsheetApp: {openById(id) { if (id !== 'sheet') throw new Error('bad sheet'); return ss; }},
-    DriveApp: {getFolderById(id) { if (id !== 'root') throw new Error('bad root'); return folders.get('root'); }, getFileById(id) { return {getBlob() { return {getBytes() { return []; }}; }}; }},
+    DriveApp: {getFolderById(id) { if (id !== 'root') throw new Error('bad root'); return folders.get('root'); }, getFileById(id) { return {getBlob() { return {getBytes() { return storedFiles.get(id).bytes; }}; }}; }},
     LockService: {getScriptLock() { return lock; }},
     Utilities: {
       DigestAlgorithm: {SHA_256: 'sha256'},
@@ -38,7 +39,7 @@ function createApi() {
     return {
       getFoldersByName(child) { const item = children.get(child); return {hasNext: () => !!item, next: () => item}; },
       createFolder(child) { const item = folder(child); children.set(child, item); return item; },
-      createFile(blob) { const id = `file-${files.size + 1}`; files.set(id, blob); return {getId: () => id}; }
+      createFile(blob) { const id = `file-${storedFiles.size + 1}`; files.set(id, blob); storedFiles.set(id, blob); return {getId: () => id}; }
     };
   }
   folders.set('root', folder('root'));
@@ -161,4 +162,30 @@ test('fresh sessions recover only their own submitted progress', () => {
   assert.equal(status('02').myProgress.selfSubmitted,false);
   assert.equal(status('02').readyCount,1);
   assert.equal(status('01').myProgress.peerRemainingCount,2);
+});
+
+test('new device recovery returns own images and assessments with bounded pages', () => {
+  const api=createApi();
+  api.sheet('rounds_v1',headers.rounds).appendRow(['r','2026-27','4A','p4','stage1','topic','collecting',1,'','','']);
+  const login=id=>api.invoke({action:'login',payload:{classId:'4A',studentId:id}}).data.token;
+  for(const id of ['01','02']) {
+    api.sheet('roster_v1',headers.roster).appendRow(['2026-27','4A',id,'p4','PRIVATE-NAME',true,'']);
+    api.sheet('round_members_v1',headers.members).appendRow(['r',id,true,'','']);
+    const token=login(id);
+    for(let n=0;n<2;n++) {
+      const work=api.invoke({action:'uploadArtwork',token,requestId:'u'+n,payload:{roundId:'r',topicId:'topic',sourceApp:'va-lingo',imageMime:'image/jpeg',imageBase64:image}}).data;
+      api.invoke({action:'saveAssessment',token,requestId:'s'+n,payload:{roundId:'r',artworkId:work.artworkId,type:'self',ks:'ks2',steps:fullKs2}});
+    }
+  }
+  const read=(id,offset=0)=>api.invoke({action:'listOwnWorks',token:login(id),payload:{roundId:'r',offset}});
+  const first=read('01').data, second=read('01',first.nextOffset).data;
+  assert.equal(first.items.length,1);
+  assert.equal(first.totalCount,2);
+  assert.equal(first.items[0].imageData,image);
+  assert.equal(second.nextOffset,null);
+  assert.notEqual(first.items[0].artworkId,read('02').data.items[0].artworkId);
+  assert.deepEqual(first.items[0].assessment.steps,fullKs2);
+  assert.equal(JSON.stringify(first).includes('PRIVATE-NAME'),false);
+  assert.equal(read('01',-1).error.code,'INVALID_INPUT');
+  assert.equal(api.invoke({action:'listOwnWorks',payload:{roundId:'r'}}).ok,false);
 });

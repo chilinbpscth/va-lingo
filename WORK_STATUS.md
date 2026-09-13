@@ -74,3 +74,5 @@
 互評伺服器驗收補強：直接呼叫 saveAssessment 亦須作者及對方已交自評；同作品版本不可用新 requestId 重複交互評；同一 requestId 重試仍回原結果。peerTargetCount 現按每名學生的互評提交配額執行，必須為正整數。新增 API 測試驗證略過畫廊直接提交、未完成自評、重複／重試及超配額；15 項測試與 check 通過。後續須在 UI 顯示自己的已交數及配額，並驗證跨裝置恢復。
 
 getRoundStatus 已新增只屬當前學生的 myProgress（自評已交、互評已交／配額／剩餘），全班 readyCount 只計應交成員。前端課堂查詢顯示自己的進度。新增 fresh session API 測試證明不同學生不讀到對方自評狀態；16 項測試、check 及 Chrome browser 通過，瀏覽器亦驗證互評 0/1 顯示。此項只完成跨登入的提交進度讀回，尚未完成作品／答案跨裝置恢復，不當完整跨裝置驗收。
+
+新增 listOwnWorks 私有恢復 API：session＋課堂成員限制，只回自己的作品、該作品最近自評，逐頁一張圖及 nextOffset；不回姓名、Drive ID 或其他學生評語。VM 測試已改善為真正保存／讀回圖片 bytes，驗證 fresh login 取回原圖及五步答案、分頁、不同學生隔離及無 token 拒絕；17 項通過。前端恢復入口仍待接線，尚未完成跨裝置使用流程。

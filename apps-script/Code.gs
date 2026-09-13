@@ -62,6 +62,7 @@ function doPost(e) {
     if (action === 'uploadArtwork') return uploadArtwork_(body);
     if (action === 'saveAssessment') return saveAssessment_(body);
     if (action === 'listPeerWorks') return listPeerWorks_(body);
+    if (action === 'listOwnWorks') return listOwnWorks_(body);
     if (action === 'submit') return apiFail_('NOT_SUPPORTED', '舊 submit API 已退役；請使用登入後的 MVP 操作。');
     return apiFail_('UNKNOWN_ACTION', '未知的操作。');
   } catch (ex) {
@@ -263,6 +264,33 @@ function saveAssessment_(body) {
     return apiOk_({assessmentId:id,revision:1,completedStepCount:count,status:'submitted'});
   } catch (e) { return writeError_(e, '未能儲存評賞。'); } });
 }
+// Private recovery: one image per page bounds the response size on school Wi-Fi.
+function listOwnWorks_(body) {
+  try {
+    var session = requireSession_(body), round = requireRound_(body, session);
+    requireRoundMember_(round.id, session);
+    var offset = Number((body.payload || {}).offset || 0);
+    if (!Number.isInteger(offset) || offset < 0) return apiFail_('INVALID_INPUT','作品頁碼不正確。');
+    var own = rows_(apiSheet_(ARTWORK_SHEET, artworkHeaders_())).filter(function(row) {
+      return value_(row,'roundId') === round.id && value_(row,'classId') === session.classId && value_(row,'studentId') === session.studentId;
+    });
+    var assessments = rows_(apiSheet_(ASSESSMENT_SHEET, assessmentHeaders_())).filter(function(row) {
+      return value_(row,'roundId') === round.id && value_(row,'authorClassId') === session.classId && value_(row,'authorStudentId') === session.studentId && value_(row,'type') === 'self';
+    });
+    var items = own.slice(offset, offset + 1).map(function(row) {
+      var history = assessments.filter(function(a) { return value_(a,'artworkId') === value_(row,'artworkId') && Number(a.artworkRevision) === Number(row.revision); });
+      var latest = history.length ? history[history.length - 1] : null;
+      var bytes = DriveApp.getFileById(value_(row,'driveFileId')).getBlob().getBytes();
+      return {artworkId:value_(row,'artworkId'),revision:Number(row.revision),roundId:round.id,
+        topicId:value_(row,'topicId'),stageId:value_(round.row,'stageId'),grade:session.grade,
+        sourceApp:value_(row,'sourceApp'),createdAt:value_(row,'createdAt'),
+        imageData:'data:' + value_(row,'mime') + ';base64,' + Utilities.base64Encode(bytes),
+        assessment:latest ? {assessmentId:value_(latest,'assessmentId'),steps:JSON.parse(value_(latest,'stepsJson') || '{}'),pins:JSON.parse(value_(latest,'pinsJson') || '[]'),completedStepCount:Number(latest.completedStepCount),status:value_(latest,'status')} : null};
+    });
+    return apiOk_({items:items,nextOffset:offset + 1 < own.length ? offset + 1 : null,totalCount:own.length});
+  } catch (e) { return apiFail_(e.message === 'TOKEN_EXPIRED' ? 'TOKEN_EXPIRED' : 'FORBIDDEN','未能讀取自己的作品。'); }
+}
+
 function listPeerWorks_(body) {
   try {
     var session = requireSession_(body), round = requireRound_(body, session); requireRoundMember_(round.id, session);
