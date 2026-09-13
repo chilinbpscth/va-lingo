@@ -70,3 +70,5 @@
 ## 持續目標修正（2026-09-13）
 
 查實重試識別只按學號比對，可能跨班／課堂撞 requestId。已將 upload 重試限制為同班、同學號、同 round；assessment 加同作品、revision、type 範圍；兩種寫入拒絕空 requestId。新增真實 Apps Script VM 回歸，驗證兩班同學號、同班不同課堂共用 requestId 各自建立獨立資料，原請求重試不增列。14 項 Node tests、inline check、diff whitespace 通過。仍需補跨裝置續做、互評配額等驗收，未部署。
+
+互評伺服器驗收補強：直接呼叫 saveAssessment 亦須作者及對方已交自評；同作品版本不可用新 requestId 重複交互評；同一 requestId 重試仍回原結果。peerTargetCount 現按每名學生的互評提交配額執行，必須為正整數。新增 API 測試驗證略過畫廊直接提交、未完成自評、重複／重試及超配額；15 項測試與 check 通過。後續須在 UI 顯示自己的已交數及配額，並驗證跨裝置恢復。

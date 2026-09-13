@@ -119,3 +119,28 @@ test('retry IDs are isolated by class and round, and missing IDs cannot deduplic
   assert.equal(api.sheet('artworks_v1').getLastRow(),4);
   assert.equal(api.sheet('assessments_v1').getLastRow(),4);
 });
+
+test('direct peer submissions enforce self readiness, uniqueness and quota', () => {
+  const api = createApi();
+  api.sheet('rounds_v1',headers.rounds).appendRow(['r','2026-27','4A','p4','stage1','topic','collecting',1,'','','']);
+  const students = ['01','02','03'].map(studentId => {
+    api.sheet('roster_v1',headers.roster).appendRow(['2026-27','4A',studentId,'p4','Seat',true,'']);
+    api.sheet('round_members_v1',headers.members).appendRow(['r',studentId,true,'','']);
+    const token = api.invoke({action:'login',payload:{classId:'4A',studentId}}).data.token;
+    const work = api.invoke({action:'uploadArtwork',token,requestId:'upload-'+studentId,payload:{roundId:'r',topicId:'topic',sourceApp:'va-lingo',imageMime:'image/jpeg',imageBase64:image}}).data;
+    return {token,work};
+  });
+  const save = (author,target,type,requestId) => api.invoke({action:'saveAssessment',token:students[author].token,requestId,payload:{roundId:'r',artworkId:students[target].work.artworkId,artworkRevision:1,type,ks:'ks2',steps:fullKs2}});
+  api.sheet('rounds_v1').values[1][6]='peer_open';
+  assert.equal(save(0,1,'peer','early').error.code,'FORBIDDEN');
+  assert.equal(save(0,0,'self','self0').ok,true);
+  assert.equal(save(0,1,'peer','target-unready').error.code,'FORBIDDEN');
+  assert.equal(save(1,1,'self','self1').ok,true);
+  assert.equal(save(2,2,'self','self2').ok,true);
+  const first=save(0,1,'peer','peer1');
+  assert.equal(first.ok,true);
+  assert.equal(save(0,1,'peer','peer1').data.assessmentId,first.data.assessmentId);
+  assert.equal(save(0,1,'peer','duplicate').error.code,'ALREADY_SUBMITTED');
+  assert.equal(save(0,2,'peer','over-quota').error.code,'PEER_QUOTA_REACHED');
+  assert.equal(api.sheet('assessments_v1').getLastRow(),5);
+});

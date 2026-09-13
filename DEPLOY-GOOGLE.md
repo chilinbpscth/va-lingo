@@ -31,3 +31,5 @@ Apps Script 會按需要建立 `sessions_v1`、`artworks_v1`、`assessments_v1`�
 在合成測試名冊先驗證：有效／無效登入、短期 token 過期、作品重試、五步未完成拒絕、未開放互評拒絕、跨班與評自己拒絕、兩部裝置手動 refresh。再以已批准測試帳戶驗證 Drive 圖檔及 Sheet 索引。
 
 正式發佈前要再次檢查 Pages 沒有 `roster.school.json`、Firebase SDK 或舊設定 URL。若 Google API 故障，學生保留本機草稿及匯出評賞卡；不可重新啟用 Firebase 作後備。
+
+`peerTargetCount` 必須為正整數，表示每名學生本課堂可提交的互評數。伺服器拒絕超配額及同作品版本的重複互評；網絡重試需沿用原 requestId。提交者及被評作品的作者均須已完成自評。

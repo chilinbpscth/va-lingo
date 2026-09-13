@@ -240,6 +240,17 @@ function saveAssessment_(body) {
     var requestId = safeText_(body.requestId,100), sh = apiSheet_(ASSESSMENT_SHEET, assessmentHeaders_());
     var prior = rows_(sh).filter(function(row) { return value_(row,'requestId') === requestId && value_(row,'authorStudentId') === session.studentId && value_(row,'authorClassId') === session.classId && value_(row,'roundId') === round.id && value_(row,'artworkId') === artworkId && Number(row.artworkRevision) === revision && value_(row,'type') === type; })[0];
     if (prior) return apiOk_({assessmentId:value_(prior,'assessmentId'),revision:Number(prior.revision),completedStepCount:Number(prior.completedStepCount)});
+    if (type === 'peer') {
+      var ready = readyStudents_(round.id);
+      if (!ready[session.studentId] || !ready[value_(artwork,'studentId')]) return apiFail_('FORBIDDEN','請先完成自評，並選擇已完成自評的同學作品。');
+      var submitted = rows_(sh).filter(function(row) {
+        return value_(row,'roundId') === round.id && value_(row,'authorClassId') === session.classId && value_(row,'authorStudentId') === session.studentId && value_(row,'type') === 'peer' && value_(row,'status') === 'submitted';
+      });
+      if (submitted.some(function(row) { return value_(row,'artworkId') === artworkId && Number(row.artworkRevision) === revision; })) return apiFail_('ALREADY_SUBMITTED','這件作品已提交互評。');
+      var quota = Number(round.row.peerTargetCount);
+      if (!Number.isInteger(quota) || quota < 1) return apiFail_('ROUND_NOT_OPEN','老師尚未設定互評配額。');
+      if (submitted.length >= quota) return apiFail_('PEER_QUOTA_REACHED','你已完成本課堂的互評配額。');
+    }
     var now = nowIso_(), id = randomId_('asm');
     sh.appendRow([id,1,artworkId,revision,round.id,session.classId,session.studentId,type,JSON.stringify(steps),JSON.stringify(p.pins || []),JSON.stringify(p.vocabUses || []),count,'submitted',now,now,requestId]);
     return apiOk_({assessmentId:id,revision:1,completedStepCount:count,status:'submitted'});
