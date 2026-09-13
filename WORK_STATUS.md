@@ -84,3 +84,5 @@ Chrome 新增完整恢復操作：刪除合成學生本機草稿、重新登入�
 學年登入修正：後端 ACTIVE_SCHOOL_YEAR 篩選名冊，不取舊學年首筆；回傳 schoolYear，前端按伺服器學年切換草稿。登入 displayLabel 固定班別＋學號，不回私有名冊 displayLabel；新增舊／新學年重複班號和私有姓名回傳測試。前端忽略已過時登入回應。20 項 tests、check、Chrome 通過；學年切換 UI 邊界與 live Google 仍需驗證。
 
 已製作 outputs/Google-MVP-測試部署套件 準備稿：Code.gs、部署／驗收說明、兩名合成學生及課堂 CSV、SHA256。未部署，不含正式名冊。驗收新增明示缺口：已交自評可恢復，但互評答案／歷程尚未跨裝置恢復；本機未交草稿不會自動上 Google。修正 Code.gs 註解，移除「任何擁有連結的人」作方便選項。下一步先補互評歷程與整合測試，再凍結部署套件並向用家提供最後測試部署確認。
+
+互評恢復已接 listPeerWorks.myAssessment，只回當前登入學生對該作品的評語；選作品時恢復答案及 pins，保留本機已有答案。API 測試核對評者可讀回自己評語而另一學生不見；recovery module 測試與既有 Chrome 回歸通過（21 項 Node）。仍需 Chrome 新增清空後恢復互評驗證，以及 gallery 超過 12 件時的分頁／已評作品可達性；closed 課堂尚不能讀互評，不可當完整歷程已完成。

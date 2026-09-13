@@ -304,9 +304,14 @@ function listPeerWorks_(body) {
     var works = rows_(apiSheet_(ARTWORK_SHEET, artworkHeaders_())).filter(function(row) {
       return value_(row,'roundId') === round.id && value_(row,'studentId') !== session.studentId && value_(row,'status') === 'uploaded' && selfReady[value_(row,'studentId')];
     }).slice(0, 12);
+    var myReviews = rows_(apiSheet_(ASSESSMENT_SHEET, assessmentHeaders_())).filter(function(row) {
+      return value_(row,'roundId') === round.id && value_(row,'authorClassId') === session.classId && value_(row,'authorStudentId') === session.studentId && value_(row,'type') === 'peer';
+    });
     var items = works.map(function(row) {
       var data = DriveApp.getFileById(value_(row,'driveFileId')).getBlob().getBytes();
-      return {artworkId:value_(row,'artworkId'), revision:Number(row.revision), topicId:value_(row,'topicId'), sourceApp:value_(row,'sourceApp'), displayLabel:'同學作品', imageData:'data:' + value_(row,'mime') + ';base64,' + Utilities.base64Encode(data)};
+      var review = myReviews.filter(function(a) { return value_(a,'artworkId') === value_(row,'artworkId') && Number(a.artworkRevision) === Number(row.revision); }).pop();
+      return {artworkId:value_(row,'artworkId'), revision:Number(row.revision), topicId:value_(row,'topicId'), stageId:value_(round.row,'stageId'), grade:session.grade, sourceApp:value_(row,'sourceApp'), displayLabel:'同學作品', imageData:'data:' + value_(row,'mime') + ';base64,' + Utilities.base64Encode(data),
+        myAssessment:review ? {steps:JSON.parse(value_(review,'stepsJson') || '{}'),pins:JSON.parse(value_(review,'pinsJson') || '[]'),status:value_(review,'status')} : null};
     });
     return apiOk_({items:items,refreshedAt:nowIso_()});
   } catch (e) { return apiFail_(e.message === 'TOKEN_EXPIRED' ? 'TOKEN_EXPIRED' : 'RETRYABLE_WRITE_ERROR','未能更新同學作品清單。'); }

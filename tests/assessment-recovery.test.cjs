@@ -15,3 +15,14 @@ test('cloud recovery restores answer scope and preserves local edits on repeated
  assert.equal(state.selfWorks.topic.length,1);
  assert.equal(state.pins.length,1);
 });
+
+test('peer recovery restores only the selected review without replacing local answers',()=>{
+ const state={schoolYear:'2026-27',className:'4A',studentId:'01',grade:'p4',stage:'stage1',topicId:'topic',ks:'ks2',level:2,source:'peer',selectedPeer:'live:peer-a',answers:{},moods:{},rubrics:{},pins:[]};
+ const item={artworkId:'peer-a',revision:1,myAssessment:{steps:{feel:{open:'my peer feedback'}},pins:[]}};
+ assert.equal(Recovery.restorePeer(state,item),true);
+ const key=Context.answerKey(state,'feel','open');
+ assert.equal(state.answers[key],'my peer feedback');
+ state.answers[key]='new local feedback';
+ assert.equal(Recovery.restorePeer(state,item),false);
+ assert.equal(state.answers[key],'new local feedback');
+});

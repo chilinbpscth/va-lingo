@@ -1121,6 +1121,10 @@
       if (!w) return;
       state.source = 'peer';
       state.selectedPeer = 'live:' + workId;
+      if (w.topicId) state.topicId = w.topicId;
+      if (w.stageId) state.stage = w.stageId;
+      state.artworkRevision = w.revision || 1;
+      VAAssessmentRecovery.restorePeer(state, w);
       closeGalleryLightbox();
       renderAll();
       save();
