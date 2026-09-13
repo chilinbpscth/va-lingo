@@ -53,3 +53,20 @@
 ## 未完成驗收
 
 已用已連接 Google Drive 搜尋 VA-Lingo，並以 Apps Script MIME type 直接搜尋；只見工作檔與分支備份，結果沒有可見 Apps Script 專案，亦未見可核實的 `/exec` 網址、正式 Drive 根資料夾或 Sheet。因此共用登入／token、Google 真實寫入與讀回、全班開放互評、越權測試、iPad Safari 實機、正式 rollout 均未完成。當前本地測試不可代替上述驗收。
+
+## Grok 協作工單 VA-GOOGLE-REVIEW-01（2026-09-13）
+
+只讀工單已完成交付、追問、補件與結案；不是 MVP 完成。收件為 Grok Bot「藝言堂」，不是其內部 Codex CLI bot。
+
+- Grok 回報已連帳戶可讀舊 Drive／Sheet metadata，owner 為 IT 專用帳戶；根下只見 Sheet。此為 Grok 提供的核對結果，Codex 未直接重驗該帳戶。Sheet 內容回空，分頁／表頭仍未核實。先前 Codex 404 不代表資源不存在。
+- 已收到三份原計劃的相关摘錄及 §3.4 API 段落；未取得三份完整原檔，不能聲稱已讀晒。
+- 已糾正：教師私有 Sheet 可留真名；限制為學生 UI／公開 repo 不公開姓名。name 欄本身不是衝突。
+- Grok 沒有讀到本機 MVP 分支，不把其同意當 code review。推送並非交付原碼唯一方法；未 push／deploy。
+- 待對照差異：計劃 REST 路徑 vs MVP action dispatch；計劃分開 self_reviews/peer_reviews vs assessments_v1；Drive 按 topic 分夾 vs 現有學生分夾；互評配額、學生自己的進度與跨裝置續做仍需檢查。原文 TTL 2–4 小時只是例子，MVP 45 分鐘亦屬短命。
+- Apps Script project／live endpoint 仍未取得；Google live 驗收未完成，部署批准邊界沿用。
+
+已建立 grok-bot-collaboration skill，規定 active task 內等交付、核對、追修；發單／確認收到不等於完成。技能格式驗證通過。實際演練遇到剪貼簿逾時、中文 typeText 丟字、長段截短，均讀回後補正；已寫入技能。
+
+## 持續目標修正（2026-09-13）
+
+查實重試識別只按學號比對，可能跨班／課堂撞 requestId。已將 upload 重試限制為同班、同學號、同 round；assessment 加同作品、revision、type 範圍；兩種寫入拒絕空 requestId。新增真實 Apps Script VM 回歸，驗證兩班同學號、同班不同課堂共用 requestId 各自建立獨立資料，原請求重試不增列。14 項 Node tests、inline check、diff whitespace 通過。仍需補跨裝置續做、互評配額等驗收，未部署。

@@ -94,3 +94,28 @@ test('Apps Script enforces token, school year, topic and assessment phase', () =
   api.sheet('sessions_v1').values[1][7] = '2000-01-01T00:00:00.000Z';
   assert.equal(call(one.data.token, 'getRoundStatus', {roundId: '4A2026'}).error.code, 'TOKEN_EXPIRED');
 });
+
+
+test('retry IDs are isolated by class and round, and missing IDs cannot deduplicate', () => {
+  const api = createApi();
+  const outcomes = [];
+  for (const [classId, roundId] of [['4A','round-a'], ['4B','round-b'], ['4A','round-c']]) {
+    if (roundId !== 'round-c') api.sheet('roster_v1', headers.roster).appendRow(['2026-27',classId,'01','p4','Seat 01',true,'']);
+    api.sheet('rounds_v1', headers.rounds).appendRow([roundId,'2026-27',classId,'p4','stage1','topic','collecting',1,'','','']);
+    api.sheet('round_members_v1', headers.members).appendRow([roundId,'01',true,'','']);
+    const token = api.invoke({action:'login',payload:{classId,studentId:'01'}}).data.token;
+    const upload = {action:'uploadArtwork',token,requestId:'same-upload',payload:{roundId,topicId:'topic',sourceApp:'va-lingo',imageMime:'image/jpeg',imageBase64:image}};
+    assert.equal(api.invoke({...upload,requestId:''}).error.code,'INVALID_INPUT');
+    const work = api.invoke(upload).data;
+    assert.equal(api.invoke(upload).data.artworkId,work.artworkId);
+    const assessment = {action:'saveAssessment',token,requestId:'same-self',payload:{roundId,artworkId:work.artworkId,artworkRevision:1,type:'self',ks:'ks2',steps:fullKs2}};
+    assert.equal(api.invoke({...assessment,requestId:''}).error.code,'INVALID_INPUT');
+    const saved = api.invoke(assessment).data;
+    assert.equal(api.invoke(assessment).data.assessmentId,saved.assessmentId);
+    outcomes.push({work:work.artworkId,assessment:saved.assessmentId});
+  }
+  assert.equal(new Set(outcomes.map(o=>o.work)).size,3);
+  assert.equal(new Set(outcomes.map(o=>o.assessment)).size,3);
+  assert.equal(api.sheet('artworks_v1').getLastRow(),4);
+  assert.equal(api.sheet('assessments_v1').getLastRow(),4);
+});

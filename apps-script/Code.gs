@@ -200,8 +200,9 @@ function uploadArtwork_(body) {
     if (!topicId || ['va-lingo','paper-cut','face-change','shadow-puppet'].indexOf(sourceApp) === -1) return apiFail_('INVALID_INPUT','作品資料不正確。');
     if (topicId !== value_(round.row,'topicId')) return apiFail_('FORBIDDEN','作品課題與課堂不符。');
     var image = imageBlob_(p.imageBase64, String(p.imageMime || ''));
+    if (!body.requestId || !String(body.requestId).trim()) return apiFail_('INVALID_INPUT','缺少提交識別碼。');
     var requestId = safeText_(body.requestId, 100), sheet = apiSheet_(ARTWORK_SHEET, artworkHeaders_());
-    var prior = rows_(sheet).filter(function(row) { return value_(row,'requestId') === requestId && value_(row,'studentId') === session.studentId; })[0];
+    var prior = rows_(sheet).filter(function(row) { return value_(row,'requestId') === requestId && value_(row,'studentId') === session.studentId && value_(row,'classId') === session.classId && value_(row,'roundId') === round.id; })[0];
     if (prior) return apiOk_({artworkId:value_(prior,'artworkId'), revision:Number(prior.revision), status:value_(prior,'status')});
     var root = DriveApp.getFolderById(ROOT_FOLDER_ID), artworkId = randomId_('art'), folder = ensureChildFolder_(ensureChildFolder_(ensureChildFolder_(root, session.schoolYear), session.classId), session.studentId);
     var file = folder.createFile(Utilities.newBlob(image.bytes, image.mime, artworkId + '.' + image.ext));
@@ -235,8 +236,9 @@ function saveAssessment_(body) {
     if (!ks) return apiFail_('INVALID_INPUT','評賞程度不正確。');
     var steps = p.steps || {}, count = completedSteps_(steps, ks);
     if (count !== 5) return apiFail_('INVALID_INPUT', type === 'peer' ? '請完成互評五步驟。' : '請完成評賞五步驟。');
+    if (!body.requestId || !String(body.requestId).trim()) return apiFail_('INVALID_INPUT','缺少提交識別碼。');
     var requestId = safeText_(body.requestId,100), sh = apiSheet_(ASSESSMENT_SHEET, assessmentHeaders_());
-    var prior = rows_(sh).filter(function(row) { return value_(row,'requestId') === requestId && value_(row,'authorStudentId') === session.studentId; })[0];
+    var prior = rows_(sh).filter(function(row) { return value_(row,'requestId') === requestId && value_(row,'authorStudentId') === session.studentId && value_(row,'authorClassId') === session.classId && value_(row,'roundId') === round.id && value_(row,'artworkId') === artworkId && Number(row.artworkRevision) === revision && value_(row,'type') === type; })[0];
     if (prior) return apiOk_({assessmentId:value_(prior,'assessmentId'),revision:Number(prior.revision),completedStepCount:Number(prior.completedStepCount)});
     var now = nowIso_(), id = randomId_('asm');
     sh.appendRow([id,1,artworkId,revision,round.id,session.classId,session.studentId,type,JSON.stringify(steps),JSON.stringify(p.pins || []),JSON.stringify(p.vocabUses || []),count,'submitted',now,now,requestId]);
