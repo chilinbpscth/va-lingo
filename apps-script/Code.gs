@@ -5,7 +5,7 @@
  *
  * 部署要點（詳見 ../DEPLOY-GOOGLE.md）：
  * 1. 在 Drive 建立根資料夾「VA-Lingo 提交」，把資料夾 ID 填入 ROOT_FOLDER_ID
- * 2. 建立試算表，把試算表 ID 填入 SHEET_ID，然後執行 setup_()
+ * 2. 建立試算表，把試算表 ID 填入 SHEET_ID，然後從執行選單選 setupMvpTest()
  * 3. 部署 → 網頁應用程式：執行身分「我」；存取範圍按學校帳戶政策設定並實測；不可為方便改成公開存取
  * 4. 把 /exec 網址貼到前端「雲端設定」
  *
@@ -357,4 +357,9 @@ function setup_() {
     }
   }
   return 'setup_ 完成：MVP Sheet 分頁已就緒。';
+}
+
+/** Apps Script 執行選單不列出尾綴底線函式；供測試初始化使用。 */
+function setupMvpTest() {
+  return setup_();
 }
