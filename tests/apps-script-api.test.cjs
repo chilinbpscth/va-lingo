@@ -21,7 +21,8 @@ class Sheet {
   }
   appendRow(row) {
     this.values.push(row.map((value,index) =>
-      typeof value === 'string' && /^\d+$/.test(value) && !this.textColumns.has(index) ? Number(value) : value));
+      typeof value === 'string' && value.startsWith("'") ? value.slice(1) :
+      typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value));
   }
 }
 
@@ -62,7 +63,10 @@ function createApi() {
   const invoke = body => process.env.VA_TEST_GOOGLE_RPC === '1'
     ? JSON.parse(JSON.stringify(context.callApi(body)))
     : JSON.parse(context.doPost({postData: {contents: JSON.stringify(body)}}).getContent());
-  const sheet = (name, headers) => context.apiSheet_(name, headers);
+  // Fixtures arrive via the Sheets RAW importer; backend appendRow uses its own coercing parser.
+  const sheet = (name, headers) => new Proxy(context.apiSheet_(name, headers), {
+    get(target, key) { if (key === 'appendRow') return row => target.values.push(row.slice()); return target[key]; }
+  });
   return {invoke, sheet, context};
 }
 

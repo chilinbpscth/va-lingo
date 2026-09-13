@@ -53,3 +53,5 @@ Google 官方通訊機制：https://developers.google.com/apps-script/guides/htm
 ## 識別欄純文字（v3）
 
 真 Google 驗收發現 appendRow 將 sessions.studentId 的 "01" 轉成數字1。apiSheet_ 現在先將 *Id／*Hash 欄設為純文字，涵蓋登入／作品／評賞索引。格式調整不改寫舊值；數字型 studentId 的旧 session 會要求重新登入，不 pad、不猜原學號。部署後必須驗 fresh login 的 userEnteredValue/effectiveValue 都是 string "01"，再測課堂、上傳和自互評。
+
+v3 真測證明單靠欄格式 @ 仍不足。v4 的 appendApiRow_ 會對 Id/Hash 字串加 Sheets 文字輸入標記 apostrophe；讀回必須是原字串且不含標記。新測試模型分開 RAW fixture 匯入與 appendRow 自動轉型，不再假設格式已足夠。Google 尚須驗 userEntered/effectiveValue string01 及識別字串沒有額外 apostrophe。

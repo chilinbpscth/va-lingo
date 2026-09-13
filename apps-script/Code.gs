@@ -24,7 +24,7 @@ var APP_HTML_FILE_ID = ''; // 由同 repo build:google 產出 App.html 並上傳
 
 var ACTIVE_SCHOOL_YEAR = '2026-27'; // IT 更新學年；舊學年名冊保留但不能登入
 
-var VERSION = 'va-lingo-google-mvp-3';
+var VERSION = 'va-lingo-google-mvp-4';
 var TZ = 'Asia/Hong_Kong';
 
 // ---------- JSON 回應 ----------
@@ -128,6 +128,15 @@ function apiSheet_(name, headers) {
   }
   return sh;
 }
+function sessionHeaders_() { return ['sessionId','tokenHash','schoolYear','classId','studentId','grade','issuedAt','expiresAt','revokedAt']; }
+function appendApiRow_(sheet, headers, row) {
+  // appendRow 的輸入解析仍可能吞掉前導零；前置 apostrophe 是 Sheets 文字輸入標記，讀回不含標記。
+  // 識別資料一律按原字串寫入，不 pad／猜測，也不改舊列。
+  sheet.appendRow(row.map(function(value, index) {
+    return /(Id|Hash)$/.test(headers[index]) && value !== '' && value != null
+      ? "'" + String(value) : value;
+  }));
+}
 function rows_(sheet) {
   if (sheet.getLastRow() < 2) return [];
   var values = sheet.getDataRange().getValues();
@@ -151,7 +160,7 @@ function tokenHash_(token) {
 function requireSession_(body) {
   var token = String(body.token || '');
   if (!token) throw new Error('AUTH_REQUIRED');
-  var sh = apiSheet_(SESSION_SHEET, ['sessionId','tokenHash','schoolYear','classId','studentId','grade','issuedAt','expiresAt','revokedAt']);
+  var sh = apiSheet_(SESSION_SHEET, sessionHeaders_());
   var hash = tokenHash_(token);
   var hit = rows_(sh).filter(function(row) { return value_(row, 'tokenHash') === hash && !value_(row, 'revokedAt'); })[0];
   if (!hit || typeof hit.studentId !== 'string' || new Date(value_(hit, 'expiresAt')).getTime() <= Date.now()) throw new Error('TOKEN_EXPIRED');
@@ -169,8 +178,7 @@ function login_(body) {
     if (!found) return apiFail_('FORBIDDEN', '班別或學號未能核對。');
     var rawToken = Utilities.getUuid() + Utilities.getUuid();
     var issued = new Date(), expires = new Date(issued.getTime() + TOKEN_TTL_MS);
-    apiSheet_(SESSION_SHEET, ['sessionId','tokenHash','schoolYear','classId','studentId','grade','issuedAt','expiresAt','revokedAt'])
-      .appendRow([randomId_('ses'), tokenHash_(rawToken), value_(found,'schoolYear'), classId, studentId, value_(found,'grade'), issued.toISOString(), expires.toISOString(), '']);
+    appendApiRow_(apiSheet_(SESSION_SHEET, sessionHeaders_()), sessionHeaders_(), [randomId_('ses'), tokenHash_(rawToken), value_(found,'schoolYear'), classId, studentId, value_(found,'grade'), issued.toISOString(), expires.toISOString(), '']);
     return apiOk_({token:rawToken, expiresAt:expires.toISOString(), classId:classId, studentId:studentId, grade:value_(found,'grade'), schoolYear:ACTIVE_SCHOOL_YEAR, displayLabel:classId + '・' + studentId + '號'});
   } catch (e) { return apiFail_('RETRYABLE_WRITE_ERROR', e.message || String(e)); } });
 }
@@ -241,7 +249,7 @@ function uploadArtwork_(body) {
     var root = DriveApp.getFolderById(ROOT_FOLDER_ID), artworkId = randomId_('art'), folder = ensureChildFolder_(ensureChildFolder_(ensureChildFolder_(root, session.schoolYear), session.classId), session.studentId);
     var file = folder.createFile(Utilities.newBlob(image.bytes, image.mime, artworkId + '.' + image.ext));
     var now = nowIso_(), hash = tokenHash_(Utilities.base64Encode(image.bytes));
-    sheet.appendRow([artworkId,1,round.id,session.classId,session.studentId,session.grade,topicId,sourceApp,'image',file.getId(),image.mime,image.bytes.length,hash,'uploaded',now,now,requestId]);
+    appendApiRow_(sheet, artworkHeaders_(), [artworkId,1,round.id,session.classId,session.studentId,session.grade,topicId,sourceApp,'image',file.getId(),image.mime,image.bytes.length,hash,'uploaded',now,now,requestId]);
     return apiOk_({artworkId:artworkId,revision:1,status:'uploaded'});
   } catch (e) { return writeError_(e, '未能儲存作品。'); } });
 }
@@ -289,7 +297,7 @@ function saveAssessment_(body) {
       if (submitted.length >= quota) return apiFail_('PEER_QUOTA_REACHED','你已完成本課堂的互評配額。');
     }
     var now = nowIso_(), id = randomId_('asm');
-    sh.appendRow([id,1,artworkId,revision,round.id,session.classId,session.studentId,type,JSON.stringify(steps),JSON.stringify(p.pins || []),JSON.stringify(p.vocabUses || []),count,'submitted',now,now,requestId]);
+    appendApiRow_(sh, assessmentHeaders_(), [id,1,artworkId,revision,round.id,session.classId,session.studentId,type,JSON.stringify(steps),JSON.stringify(p.pins || []),JSON.stringify(p.vocabUses || []),count,'submitted',now,now,requestId]);
     return apiOk_({assessmentId:id,revision:1,completedStepCount:count,status:'submitted'});
   } catch (e) { return writeError_(e, '未能儲存評賞。'); } });
 }
@@ -368,7 +376,7 @@ function setup_() {
     throw new Error('請先在 Code.gs 填入 SHEET_ID。');
   }
   apiSheet_(ROSTER_SHEET, ['schoolYear','classId','studentId','grade','displayLabel','active','updatedAt']);
-  apiSheet_(SESSION_SHEET, ['sessionId','tokenHash','schoolYear','classId','studentId','grade','issuedAt','expiresAt','revokedAt']);
+  apiSheet_(SESSION_SHEET, sessionHeaders_());
   apiSheet_(ROUND_SHEET, ['roundId','schoolYear','classId','grade','stageId','topicId','phase','peerTargetCount','openedAt','peerOpenedAt','closedAt']);
   apiSheet_(MEMBER_SHEET, ['roundId','studentId','required','exemptionReason','updatedAt']);
   apiSheet_(ARTWORK_SHEET, artworkHeaders_());
