@@ -6,7 +6,7 @@
  * 部署要點（詳見 ../DEPLOY-GOOGLE.md）：
  * 1. 在 Drive 建立根資料夾「VA-Lingo 提交」，把資料夾 ID 填入 ROOT_FOLDER_ID
  * 2. 建立試算表，把試算表 ID 填入 SHEET_ID，然後執行 setup_()
- * 3. 部署 → 網頁應用程式：執行身分「我」；存取「學校網域」或「任何擁有連結的人」
+ * 3. 部署 → 網頁應用程式：執行身分「我」；存取範圍按學校帳戶政策設定並實測；不可為方便改成公開存取
  * 4. 把 /exec 網址貼到前端「雲端設定」
  *
  * CORS：前端以簡單 fetch POST（text/plain）送 JSON，避免 preflight。
@@ -37,7 +37,7 @@ function err_(msg) {
 
 // ---------- 健康檢查 ----------
 /**
- * GET ?ping=1 → { ok:true, version:'va-lingo-submit-1' }
+ * GET ?ping=1 → { ok:true, version:'va-lingo-google-mvp-1' }
  * 其他 GET 回傳簡短說明（避免空白頁困惑）
  */
 function doGet(e) {
