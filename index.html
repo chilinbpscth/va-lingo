@@ -975,14 +975,14 @@
       }
     ];
 
-    function activateStudent(cls, id) {
+    function activateStudent(cls, id, schoolYear = state.schoolYear || '2026-27') {
       if (!save()) {
         restoreLoginInputs();
         toast('草稿未能保存，請先匯出評賞歷程卡，再處理儲存空間');
         return false;
       }
       Object.assign(state, {
-        className: cls, studentId: id, source: 'master', selectedPeer: 'peer1', step: 0,
+        schoolYear, className: cls, studentId: id, source: 'master', selectedPeer: 'peer1', step: 0,
         sessionToken: '', serverArtworkId: '', serverArtworkRevision: '',
         selfWorks: {}, activeSelfWorks: {}, pins: [], activePin: null, answers: {}, moods: {},
         rubrics: {}, usedChips: {}, lastBlankTarget: null, selectedChipWord: null
@@ -1184,10 +1184,16 @@
       return true;
     }
 
+    let loginAttempt = 0;
     async function authenticateSelectedStudent() {
       if (!state.className || !state.studentId) return;
+      const attempt = ++loginAttempt, classId = state.className, studentId = state.studentId;
       try {
-        const data = await googleApi('login', { classId: state.className, studentId: state.studentId });
+        const data = await googleApi('login', { classId, studentId });
+        if (attempt !== loginAttempt || classId !== state.className || studentId !== state.studentId) return;
+        if (!data.schoolYear) throw new Error('學校服務未提供學年，請聯絡老師');
+        if (data.schoolYear !== (state.schoolYear || '2026-27') && !activateStudent(classId, studentId, data.schoolYear)) return;
+        state.schoolYear = data.schoolYear;
         state.sessionToken = data.token;
         state.grade = data.grade;
         setGalleryStatus('已登入；請輸入老師提供的課堂代碼');
@@ -1196,6 +1202,7 @@
         renderAll();
         save();
       } catch (err) {
+        if (attempt !== loginAttempt || classId !== state.className || studentId !== state.studentId) return;
         state.sessionToken = '';
         setGalleryStatus('未能登入學校服務');
         toast(err.message);
@@ -1402,6 +1409,7 @@
           source: state.source,
           selectedPeer: state.selectedPeer,
           step: state.step,
+          schoolYear: state.schoolYear || '2026-27',
           className: state.className,
           studentId: state.studentId,
           grade: state.grade,

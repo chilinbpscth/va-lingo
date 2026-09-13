@@ -19,6 +19,8 @@ var ROOT_FOLDER_ID = ''; // 部署時由 IT 填入；不可把學校實際 ID co
 /** 私有 Sheet ID；登入、課堂、作品及評賞索引均在此儲存。 */
 var SHEET_ID = ''; // 部署時由 IT 填入；不可把學校實際 ID commit 到 repo
 
+var ACTIVE_SCHOOL_YEAR = '2026-27'; // IT 更新學年；舊學年名冊保留但不能登入
+
 var VERSION = 'va-lingo-google-mvp-1';
 var TZ = 'Asia/Hong_Kong';
 
@@ -138,14 +140,14 @@ function login_(body) {
     if (!classId || !studentId) return apiFail_('INVALID_INPUT', '請輸入班別及學號。');
     var roster = apiSheet_(ROSTER_SHEET, ['schoolYear','classId','studentId','grade','displayLabel','active','updatedAt']);
     var found = rows_(roster).filter(function(row) {
-      return value_(row,'classId') === classId && value_(row,'studentId') === studentId && String(row.active).toLowerCase() !== 'false';
+      return value_(row,'schoolYear') === ACTIVE_SCHOOL_YEAR && value_(row,'classId') === classId && value_(row,'studentId') === studentId && String(row.active).toLowerCase() !== 'false';
     })[0];
     if (!found) return apiFail_('FORBIDDEN', '班別或學號未能核對。');
     var rawToken = Utilities.getUuid() + Utilities.getUuid();
     var issued = new Date(), expires = new Date(issued.getTime() + TOKEN_TTL_MS);
     apiSheet_(SESSION_SHEET, ['sessionId','tokenHash','schoolYear','classId','studentId','grade','issuedAt','expiresAt','revokedAt'])
       .appendRow([randomId_('ses'), tokenHash_(rawToken), value_(found,'schoolYear'), classId, studentId, value_(found,'grade'), issued.toISOString(), expires.toISOString(), '']);
-    return apiOk_({token:rawToken, expiresAt:expires.toISOString(), classId:classId, studentId:studentId, grade:value_(found,'grade'), displayLabel:value_(found,'displayLabel')});
+    return apiOk_({token:rawToken, expiresAt:expires.toISOString(), classId:classId, studentId:studentId, grade:value_(found,'grade'), schoolYear:ACTIVE_SCHOOL_YEAR, displayLabel:classId + '・' + studentId + '號'});
   } catch (e) { return apiFail_('RETRYABLE_WRITE_ERROR', e.message || String(e)); } });
 }
 function round_(roundId) {

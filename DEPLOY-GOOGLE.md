@@ -33,3 +33,5 @@ Apps Script 會按需要建立 `sessions_v1`、`artworks_v1`、`assessments_v1`�
 正式發佈前要再次檢查 Pages 沒有 `roster.school.json`、Firebase SDK 或舊設定 URL。若 Google API 故障，學生保留本機草稿及匯出評賞卡；不可重新啟用 Firebase 作後備。
 
 `peerTargetCount` 必須為正整數，表示每名學生本課堂可提交的互評數。伺服器拒絕超配額及同作品版本的重複互評；網絡重試需沿用原 requestId。提交者及被評作品的作者均須已完成自評。
+
+學年由後端 `ACTIVE_SCHOOL_YEAR` 指定（目前 2026-27），登入只匹配該學年名冊，回傳 schoolYear 供前端分隔草稿。教師私有 Sheet 可另存姓名，但登入 displayLabel 由班別＋學號生成，避免誤將姓名標籤傳給學生。轉學年須先設定當年名冊及課堂，再更新後端學年。

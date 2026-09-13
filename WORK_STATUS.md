@@ -80,3 +80,5 @@ getRoundStatus 已新增只屬當前學生的 myProgress（自評已交、互評
 前端已接「取回我的作品」，按課堂逐頁讀回，身份／課堂變更即停止；合併回相應課題及答案 context，重複取回不覆寫本機修改或重複 pins。新增 recovery module 測試；18 項 Node tests、check 及既有 Chrome 回歸通過。Chrome 尚須新增真正按恢復按鈕的全流程驗證；level/revision/學年恢復邊界需再核對，不能當完成。
 
 Chrome 新增完整恢復操作：刪除合成學生本機草稿、重新登入、按「取回我的作品」、確認答案顯示、修改後再次取回不覆寫，通過。另修正 KS2 level=1 句式答案被後端誤拒：前端傳 level，後端按句式／開放模式計完成度，KS1 情緒要求保留；新增測試並更新過時 contract assertion。19 項 Node tests、check、Chrome 通過。仍是模擬 Google endpoint，未驗證 live CORS／帳戶部署。
+
+學年登入修正：後端 ACTIVE_SCHOOL_YEAR 篩選名冊，不取舊學年首筆；回傳 schoolYear，前端按伺服器學年切換草稿。登入 displayLabel 固定班別＋學號，不回私有名冊 displayLabel；新增舊／新學年重複班號和私有姓名回傳測試。前端忽略已過時登入回應。20 項 tests、check、Chrome 通過；學年切換 UI 邊界與 live Google 仍需驗證。

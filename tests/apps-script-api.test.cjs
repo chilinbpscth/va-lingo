@@ -200,3 +200,16 @@ test('KS2 scaffold mode accepts complete blanks without requiring a KS1 mood',()
  steps.form.scaffold[1]='';
  assert.equal(api.context.completedSteps_(steps,'ks2',1),4);
 });
+
+test('login ignores archived school years and never echoes a private display label',()=>{
+ const api=createApi();
+ const roster=api.sheet('roster_v1',headers.roster);
+ roster.appendRow(['2025-26','4A','01','p3','PRIVATE OLD NAME',true,'']);
+ roster.appendRow(['2026-27','4A','01','p4','PRIVATE NEW NAME',true,'']);
+ const result=api.invoke({action:'login',payload:{classId:'4A',studentId:'01'}});
+ assert.equal(result.data.schoolYear,'2026-27');
+ assert.equal(result.data.grade,'p4');
+ assert.equal(JSON.stringify(result).includes('PRIVATE'),false);
+ api.context.ACTIVE_SCHOOL_YEAR='2027-28';
+ assert.equal(api.invoke({action:'login',payload:{classId:'4A',studentId:'01'}}).error.code,'FORBIDDEN');
+});
