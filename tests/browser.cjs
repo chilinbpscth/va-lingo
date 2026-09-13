@@ -6,11 +6,15 @@ const assert = require('node:assert/strict');
 (async()=>{
  const root=path.resolve(__dirname,'..');
  await require('node:fs/promises').mkdir(path.join(root,'test-results'),{recursive:true});
- const calls=[]; let expireSession=false; let recoveryStage;
+ const calls=[]; let expireSession=false; let recoveryStage; let schoolYear="2026-27";
  const server=createServer(async(req,res)=>{try{const url=new URL(req.url,'http://localhost');
    if(url.pathname==='/exec') { let raw=''; for await(const chunk of req) raw+=chunk; const request=JSON.parse(raw); calls.push(request);
      if(expireSession && request.action==='getRoundStatus') {res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:false,error:{code:'TOKEN_EXPIRED',message:'登入已過期'}}));return;}
-     const responses={login:{schoolYear:'2026-27',token:'synthetic-token',grade:'p4',displayLabel:'4A・01號'},getRoundStatus:{phase:'peer_open',readyCount:2,expectedCount:2,myProgress:{selfSubmitted:true,peerSubmittedCount:0,peerTargetCount:1,peerRemainingCount:1}},uploadArtwork:{artworkId:'art-synthetic',revision:1},saveAssessment:{assessmentId:'asm-synthetic',revision:1,completedStepCount:5},listPeerWorks:{items:[{artworkId:'peer-synthetic',revision:1,displayLabel:'同學作品',imageData:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLuzwAAAABJRU5ErkJggg=='}]}};
+     const responses={login:{schoolYear,token:'synthetic-token',grade:'p4',displayLabel:'4A・01號'},getRoundStatus:{phase:'peer_open',readyCount:2,expectedCount:2,myProgress:{selfSubmitted:true,peerSubmittedCount:0,peerTargetCount:1,peerRemainingCount:1}},uploadArtwork:{artworkId:'art-synthetic',revision:1},saveAssessment:{assessmentId:'asm-synthetic',revision:1,completedStepCount:5},listPeerWorks:{items:[{artworkId:'peer-synthetic',revision:1,displayLabel:'同學作品',imageData:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLuzwAAAABJRU5ErkJggg=='}]}};
+     if(request.action==='listPeerWorks') {
+       const prior=calls.find(c=>c.action==='saveAssessment' && c.payload.type==='peer');
+       if(prior) responses.listPeerWorks.items[0].myAssessment={steps:prior.payload.steps,pins:prior.payload.pins};
+     }
      if(request.action==='listOwnWorks') {
        const uploaded=calls.find(c=>c.action==='uploadArtwork').payload;
        const assessment=calls.find(c=>c.action==='saveAssessment' && c.payload.type==='self').payload;
@@ -100,6 +104,20 @@ const assert = require('node:assert/strict');
  await page.locator('#btn-own-recover').click();
  await page.waitForFunction(()=>document.querySelector('#gallery-status').textContent.includes('已取回 0'));
  assert.match(await page.locator('#step-content .scaffold-blank').first().innerText(),/取回後修改/);
+ await page.locator('#btn-gallery-retry').click();
+ await page.waitForFunction(()=>document.querySelector('#gallery-status').textContent.includes('已更新'));
+ await page.locator('[data-live-work="peer-synthetic"]').click();
+ await page.locator('#gallery-lb-use').click();
+ await page.locator('.step-btn').first().click();
+ assert.match(await page.locator('#step-content .scaffold-blank').first().innerText(),/同學作品細節/);
+ // Server-selected school year creates a separate draft without overwriting the old one.
+ schoolYear='2027-28';
+ await login('01');
+ await page.locator('.source-tab[data-source="self"]').click();
+ assert.equal(await page.locator('#self-work-history').count(),0);
+ const yearDrafts=await page.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith('va-lingo-drafts-v2:')));
+ assert(yearDrafts.some(k=>k.includes('2026-27')));
+ assert(yearDrafts.some(k=>k.includes('2027-28')));
  expireSession=true;
  await page.locator('#btn-gallery-join').click();
  await page.waitForFunction(()=>document.querySelector('#toast').textContent.includes('重新登入'));
