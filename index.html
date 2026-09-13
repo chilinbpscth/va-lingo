@@ -1228,7 +1228,7 @@
       try {
         const status = await googleApi('getRoundStatus', { roundId });
         setGalleryStatus('課堂 ' + roundId + '：' + (status.phase === 'peer_open' ? '可開始互評' : '正收集作品') + '（' + (status.readyCount || 0) + '/' + (status.expectedCount || 0) + '）');
-        if (status.phase === 'peer_open') await refreshPeerWorks();
+        if (['peer_open','closed'].includes(status.phase)) await refreshPeerWorks();
         if (status.myProgress) {
           const mine = status.myProgress;
           setGalleryStatus('課堂 ' + roundId + '：全班自評 ' + status.readyCount + '/' + status.expectedCount + '；我的自評：' + (mine.selfSubmitted ? '已交' : '未交') + '；我的互評：' + mine.peerSubmittedCount + '/' + mine.peerTargetCount);
@@ -1268,10 +1268,19 @@
       const roundId = currentRoundId();
       if (!roundId) { toast('請先輸入課堂代碼'); return; }
       try {
-        const data = await googleApi('listPeerWorks', { roundId, pageSize: 12 });
+        const owner = storageKey(), token = state.sessionToken, items = [];
+        let offset = 0, readOnly = false;
+        do {
+          const data = await googleApi('listPeerWorks', {roundId, offset});
+          if (owner !== storageKey() || token !== state.sessionToken || roundId !== currentRoundId()) throw new Error('登入或課堂已改變，請重新更新');
+          items.push(...(data.items || [])); readOnly = !!data.readOnly;
+          const next = data.nextOffset == null ? null : data.nextOffset;
+          if (next !== null && (!Number.isInteger(next) || next <= offset)) throw new Error('作品頁碼不正確');
+          offset = next;
+        } while (offset !== null);
         gallerySession = roundId;
-        galleryWorks = (data.items || []).map(item => Object.assign({ id: item.artworkId, photoData: item.imageData || '' }, item));
-        setGalleryStatus('已更新：' + galleryWorks.length + ' 件同學作品');
+        galleryWorks = items.map(item => Object.assign({ id: item.artworkId, photoData: item.imageData || '' }, item));
+        setGalleryStatus('已更新：' + galleryWorks.length + ' 件同學作品' + (readOnly ? '（課堂已結束，只供重溫）' : ''));
         if (state.source !== 'peer') state.source = 'peer';
         withPreservedScroll(() => renderAll());
         save();

@@ -215,3 +215,27 @@ test('login ignores archived school years and never echoes a private display lab
  api.context.ACTIVE_SCHOOL_YEAR='2027-28';
  assert.equal(api.invoke({action:'login',payload:{classId:'4A',studentId:'01'}}).error.code,'FORBIDDEN');
 });
+
+test('peer pages reach beyond twelve works and closed rounds allow reading but reject writing',()=>{
+ const api=createApi();
+ api.sheet('roster_v1',headers.roster).appendRow(['2026-27','4A','01','p4','Seat',true,'']);
+ api.sheet('rounds_v1',headers.rounds).appendRow(['r','2026-27','4A','p4','stage1','topic','closed',1,'','','']);
+ api.sheet('round_members_v1',headers.members).appendRow(['r','01',true,'','']);
+ const token=api.invoke({action:'login',payload:{classId:'4A',studentId:'01'}}).data.token;
+ // Seed rows with the same column schema used by the real service.
+ api.context.DriveApp.getFileById=()=>({getBlob:()=>({getBytes:()=>[1,2,3]})});
+ const works=api.sheet('artworks_v1',api.context.artworkHeaders_());
+ const reviews=api.sheet('assessments_v1',api.context.assessmentHeaders_());
+ for(let n=1;n<=15;n++) {
+   const id=String(n).padStart(2,'0');
+   works.appendRow(['a'+n,1,'r','4A',id,'p4','topic','va-lingo','image','f'+n,'image/jpeg',3,'','uploaded','','','u'+n]);
+   reviews.appendRow(['s'+n,1,'a'+n,1,'r','4A',id,'self',JSON.stringify(fullKs2),'[]','[]',5,'submitted','','','s'+n]);
+ }
+ let offset=0;const ids=[];
+ do {const response=api.invoke({action:'listPeerWorks',token,payload:{roundId:'r',offset}}).data;
+   assert.equal(response.readOnly,true);assert(response.items.length<=6);
+   ids.push(...response.items.map(i=>i.artworkId));offset=response.nextOffset;
+ } while(offset!==null);
+ assert.equal(new Set(ids).size,14);
+ for(const type of ['self','peer']) assert.equal(api.invoke({action:'saveAssessment',token,requestId:'closed-'+type,payload:{roundId:'r',artworkId:type==='self'?'a1':'a2',type,ks:'ks2',steps:fullKs2}}).error.code,'ROUND_NOT_OPEN');
+});

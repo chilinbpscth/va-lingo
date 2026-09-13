@@ -242,6 +242,7 @@ function saveAssessment_(body) {
     var artwork = artworks.filter(function(row) { return value_(row,'artworkId') === artworkId && Number(row.revision) === revision && value_(row,'roundId') === round.id; })[0];
     if (!artwork || (type === 'self' && value_(artwork,'studentId') !== session.studentId) || (type === 'peer' && value_(artwork,'studentId') === session.studentId)) return apiFail_('FORBIDDEN','沒有權限提交這份評賞。');
     if (type === 'peer' && value_(round.row,'phase') !== 'peer_open') return apiFail_('ROUND_NOT_OPEN','老師尚未開放互評。');
+    if (type === 'self' && ['collecting','peer_open'].indexOf(value_(round.row,'phase')) === -1) return apiFail_('ROUND_NOT_OPEN','課堂已結束，不能提交自評。');
     var ks = p.ks === 'ks1' ? 'ks1' : p.ks === 'ks2' ? 'ks2' : '';
     if (!ks) return apiFail_('INVALID_INPUT','評賞程度不正確。');
     var level = p.level === undefined ? 2 : Number(p.level);
@@ -298,22 +299,24 @@ function listOwnWorks_(body) {
 function listPeerWorks_(body) {
   try {
     var session = requireSession_(body), round = requireRound_(body, session); requireRoundMember_(round.id, session);
-    if (value_(round.row,'phase') !== 'peer_open') return apiFail_('ROUND_NOT_OPEN','老師尚未開放互評。');
+    if (['peer_open','closed'].indexOf(value_(round.row,'phase')) === -1) return apiFail_('ROUND_NOT_OPEN','老師尚未開放互評。');
+    var offset = Number((body.payload || {}).offset || 0);
+    if (!Number.isInteger(offset) || offset < 0) return apiFail_('INVALID_INPUT','作品頁碼不正確。');
     var selfReady = readyStudents_(round.id);
     if (!selfReady[session.studentId]) return apiFail_('FORBIDDEN','請先提交自己的作品及自評。');
     var works = rows_(apiSheet_(ARTWORK_SHEET, artworkHeaders_())).filter(function(row) {
       return value_(row,'roundId') === round.id && value_(row,'studentId') !== session.studentId && value_(row,'status') === 'uploaded' && selfReady[value_(row,'studentId')];
-    }).slice(0, 12);
+    });
     var myReviews = rows_(apiSheet_(ASSESSMENT_SHEET, assessmentHeaders_())).filter(function(row) {
       return value_(row,'roundId') === round.id && value_(row,'authorClassId') === session.classId && value_(row,'authorStudentId') === session.studentId && value_(row,'type') === 'peer';
     });
-    var items = works.map(function(row) {
+    var items = works.slice(offset, offset + 6).map(function(row) {
       var data = DriveApp.getFileById(value_(row,'driveFileId')).getBlob().getBytes();
       var review = myReviews.filter(function(a) { return value_(a,'artworkId') === value_(row,'artworkId') && Number(a.artworkRevision) === Number(row.revision); }).pop();
       return {artworkId:value_(row,'artworkId'), revision:Number(row.revision), topicId:value_(row,'topicId'), stageId:value_(round.row,'stageId'), grade:session.grade, sourceApp:value_(row,'sourceApp'), displayLabel:'同學作品', imageData:'data:' + value_(row,'mime') + ';base64,' + Utilities.base64Encode(data),
         myAssessment:review ? {steps:JSON.parse(value_(review,'stepsJson') || '{}'),pins:JSON.parse(value_(review,'pinsJson') || '[]'),status:value_(review,'status')} : null};
     });
-    return apiOk_({items:items,refreshedAt:nowIso_()});
+    return apiOk_({items:items,nextOffset:offset + 6 < works.length ? offset + 6 : null,totalCount:works.length,readOnly:value_(round.row,'phase') === 'closed',refreshedAt:nowIso_()});
   } catch (e) { return apiFail_(e.message === 'TOKEN_EXPIRED' ? 'TOKEN_EXPIRED' : 'RETRYABLE_WRITE_ERROR','未能更新同學作品清單。'); }
 }
 
