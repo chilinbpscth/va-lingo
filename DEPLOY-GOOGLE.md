@@ -49,3 +49,7 @@ Google 官方通訊機制：https://developers.google.com/apps-script/guides/htm
 `peerTargetCount` 必須為正整數，表示每名學生本課堂可提交的互評數。伺服器拒絕超配額及同作品版本的重複互評；網絡重試需沿用原 requestId。提交者及被評作品的作者均須已完成自評。
 
 學年由後端 `ACTIVE_SCHOOL_YEAR` 指定（目前 2026-27），登入只匹配該學年名冊，回傳 schoolYear 供前端分隔草稿。教師私有 Sheet 可另存姓名，但登入 displayLabel 由班別＋學號生成，避免誤將姓名標籤傳給學生。轉學年須先設定當年名冊及課堂，再更新後端學年。
+
+## 識別欄純文字（v3）
+
+真 Google 驗收發現 appendRow 將 sessions.studentId 的 "01" 轉成數字1。apiSheet_ 現在先將 *Id／*Hash 欄設為純文字，涵蓋登入／作品／評賞索引。格式調整不改寫舊值；數字型 studentId 的旧 session 會要求重新登入，不 pad、不猜原學號。部署後必須驗 fresh login 的 userEnteredValue/effectiveValue 都是 string "01"，再測課堂、上傳和自互評。

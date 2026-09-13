@@ -42,3 +42,5 @@
 - Google 執行帳戶及存取設定需實測：登入重導、跨來源 fetch、第三方 cookie 限制不能由 localhost mock 證明。不能以公開名冊／公開 Drive 或降低權限解決。
 
 目前雲端恢復涵蓋已上傳作品及已提交自評；尚未交到 Google 的草稿只在原裝置。互評答案可在更新清單、選回該作品時恢復；closed 課堂只供讀回。上述已通過本機 API／瀏覽器模擬，仍須在真 Google 及 iPad 驗收。
+
+- 前導零：4A／01 fresh login 後檢查 sessions_v1.studentId 的 userEnteredValue/effectiveValue 均為 string "01"；作品與評賞作者 ID 同樣保持文字。舊數字型 session 必須被拒並要求重登入，不改寫舊列。

@@ -24,7 +24,7 @@ var APP_HTML_FILE_ID = ''; // 由同 repo build:google 產出 App.html 並上傳
 
 var ACTIVE_SCHOOL_YEAR = '2026-27'; // IT 更新學年；舊學年名冊保留但不能登入
 
-var VERSION = 'va-lingo-google-mvp-2';
+var VERSION = 'va-lingo-google-mvp-3';
 var TZ = 'Asia/Hong_Kong';
 
 // ---------- JSON 回應 ----------
@@ -104,12 +104,28 @@ function withWriteLock_(work) {
   lock.waitLock(15000);
   try { return work(); } finally { lock.releaseLock(); }
 }
+var identifierFormatsReady_ = {};
 function apiSheet_(name, headers) {
   if (!SHEET_ID) throw new Error('尚未設定 SHEET_ID。');
   var ss = SpreadsheetApp.openById(SHEET_ID);
   var sh = ss.getSheetByName(name);
   if (!sh) { sh = ss.insertSheet(name); sh.appendRow(headers); }
   if (sh.getLastRow() === 0) sh.appendRow(headers);
+  // Sheets 可將 "01" 自動變成數字 1；在任何新列寫入前固定識別欄為純文字。
+  // 只改格式，不 pad／改寫歷史值；每次執行每分頁最多格式化一次。
+  if (!identifierFormatsReady_[name]) {
+    var columns = [];
+    headers.forEach(function(header, index) {
+      if (!/(Id|Hash)$/.test(header)) return;
+      var col = '';
+      for (var n = index + 1; n > 0; n = Math.floor((n - 1) / 26)) {
+        col = String.fromCharCode(65 + (n - 1) % 26) + col;
+      }
+      columns.push(col + ':' + col);
+    });
+    if (columns.length) sh.getRangeList(columns).setNumberFormat('@');
+    identifierFormatsReady_[name] = true;
+  }
   return sh;
 }
 function rows_(sheet) {
@@ -138,7 +154,7 @@ function requireSession_(body) {
   var sh = apiSheet_(SESSION_SHEET, ['sessionId','tokenHash','schoolYear','classId','studentId','grade','issuedAt','expiresAt','revokedAt']);
   var hash = tokenHash_(token);
   var hit = rows_(sh).filter(function(row) { return value_(row, 'tokenHash') === hash && !value_(row, 'revokedAt'); })[0];
-  if (!hit || new Date(value_(hit, 'expiresAt')).getTime() <= Date.now()) throw new Error('TOKEN_EXPIRED');
+  if (!hit || typeof hit.studentId !== 'string' || new Date(value_(hit, 'expiresAt')).getTime() <= Date.now()) throw new Error('TOKEN_EXPIRED');
   return { classId:value_(hit,'classId'), studentId:value_(hit,'studentId'), grade:value_(hit,'grade'), schoolYear:value_(hit,'schoolYear') };
 }
 function login_(body) {

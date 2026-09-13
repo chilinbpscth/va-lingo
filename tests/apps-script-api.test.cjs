@@ -6,10 +6,23 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 class Sheet {
-  constructor() { this.values = []; }
+  constructor() { this.values = []; this.textColumns = new Set(); }
   getLastRow() { return this.values.length; }
   getDataRange() { return {getValues: () => this.values.map(row => row.slice())}; }
-  appendRow(row) { this.values.push(row.slice()); }
+  getRangeList(columns) {
+    return {setNumberFormat: format => {
+      assert.equal(format, '@');
+      for (const range of columns) {
+        const letters = range.split(':')[0];
+        let index=0; for (const c of letters) index=index*26+c.charCodeAt(0)-64;
+        this.textColumns.add(index-1);
+      }
+    }};
+  }
+  appendRow(row) {
+    this.values.push(row.map((value,index) =>
+      typeof value === 'string' && /^\d+$/.test(value) && !this.textColumns.has(index) ? Number(value) : value));
+  }
 }
 
 function createApi() {
@@ -49,7 +62,7 @@ function createApi() {
   const invoke = body => process.env.VA_TEST_GOOGLE_RPC === '1'
     ? JSON.parse(JSON.stringify(context.callApi(body)))
     : JSON.parse(context.doPost({postData: {contents: JSON.stringify(body)}}).getContent());
-  const sheet = (name, headers) => { let sh = sheets.get(name); if (!sh) { sh = new Sheet(); sh.appendRow(headers); sheets.set(name, sh); } return sh; };
+  const sheet = (name, headers) => context.apiSheet_(name, headers);
   return {invoke, sheet, context};
 }
 
@@ -264,4 +277,23 @@ test('public setup wrapper rejects students and missing Google identities', () =
   assert.throws(() => api.context.setupMvpTest(), /只限部署擁有者/);
   active = 'owner@example.test';
   assert.match(api.context.setupMvpTest(), /完成/);
+});
+
+
+test('leading-zero identity survives Sheets writes and corrupted old sessions fail closed', () => {
+  const api = createApi();
+  api.sheet('roster_v1',headers.roster).appendRow(['2026-27','4A','01','p4','Seat',true,'']);
+  api.sheet('rounds_v1',headers.rounds).appendRow(['r','2026-27','4A','p4','stage1','topic','collecting',1,'','','']);
+  api.sheet('round_members_v1',headers.members).appendRow(['r','01',true,'','']);
+  const first = api.invoke({action:'login',payload:{classId:'4A',studentId:'01'}});
+  const sh = api.context.apiSheet_('sessions_v1',[]);
+  assert.equal(sh.values[1][4],'01');
+  assert.equal(api.invoke({action:'getRoundStatus',token:first.data.token,payload:{roundId:'r'}}).ok,true);
+  sh.values[1][4]=1; // Historical real Sheets corruption: do not infer or pad it.
+  const rejected=api.invoke({action:'getRoundStatus',token:first.data.token,payload:{roundId:'r'}});
+  assert.equal(rejected.error.code,'TOKEN_EXPIRED');
+  assert.equal(sh.values[1][4],1);
+  const fresh=api.invoke({action:'login',payload:{classId:'4A',studentId:'01'}});
+  assert.equal(sh.values[2][4],'01');
+  assert.equal(api.invoke({action:'getRoundStatus',token:fresh.data.token,payload:{roundId:'r'}}).ok,true);
 });
