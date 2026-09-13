@@ -668,6 +668,7 @@
       <button type="button" id="btn-gallery-publish" class="btn-pill btn-primary px-4 py-2 text-sm" title="需完成作品及自評">提交作品及自評</button>
       <button type="button" id="btn-gallery-retry" class="btn-pill btn-ghost px-3 py-2 text-sm" aria-label="更新同學作品清單">更新清單</button>
       <button type="button" id="btn-peer-submit" class="btn-pill btn-primary px-4 py-2 text-sm hidden" title="需完成互評五步驟">提交互評</button>
+      <button type="button" id="btn-own-recover" class="btn-pill btn-ghost px-3 py-2 text-sm">取回我的作品</button>
       <span id="gallery-status" class="text-xs text-va-muted flex-1 min-w-[8rem]">輸入課堂代碼後查看進度</span>
     </div>
   </div>
@@ -803,6 +804,7 @@
 
   <script src="assets/js/assessment-context.js"></script>
   <script src="assets/js/assessment-snapshot.js"></script>
+  <script src="assets/js/assessment-recovery.js"></script>
   <script>
   (function () {
     'use strict';
@@ -1224,6 +1226,31 @@
         setGalleryStatus('未能讀取課堂狀態');
         if (!handleSessionError(err)) toast(err.message);
       }
+    }
+
+    let recoveryBusy = false;
+    async function recoverOwnWorks() {
+      const roundId = currentRoundId(), owner = storageKey(), token = state.sessionToken;
+      if (!roundId || !token) { toast('請先登入並輸入課堂代碼'); return; }
+      if (recoveryBusy) return;
+      recoveryBusy = true;
+      try {
+        let offset = 0, added = 0;
+        do {
+          const data = await googleApi('listOwnWorks', {roundId, offset});
+          if (owner !== storageKey() || token !== state.sessionToken || roundId !== currentRoundId()) throw new Error('登入或課堂已改變，已停止取回');
+          for (const item of data.items || []) if (VAAssessmentRecovery.merge(state, item)) added++;
+          if (!save()) throw new Error('裝置儲存空間不足，請保留此頁並匯出作品');
+          if (data.nextOffset !== null && (!Number.isInteger(data.nextOffset) || data.nextOffset <= offset)) throw new Error('作品頁碼不正確');
+          offset = data.nextOffset;
+        } while (offset !== null);
+        state.source = 'self';
+        const work = Context.selectedWork(state);
+        if (work && work.recoveredLevel) state.level = work.recoveredLevel;
+        renderAll(); save();
+        setGalleryStatus('已取回 ' + added + ' 件作品；本機原有草稿已保留，請選擇對應課題查看');
+      } catch (err) { if (!handleSessionError(err)) toast(err.message); }
+      finally { recoveryBusy = false; }
     }
 
     async function refreshPeerWorks() {
@@ -1834,6 +1861,8 @@
         const history = document.getElementById('self-work-history');
         if (history) history.addEventListener('change', () => {
           Context.selectWork(state, history.value || null);
+          const selected = Context.selectedWork(state);
+          if (selected && selected.recoveredLevel) state.level = selected.recoveredLevel;
           renderAll();
           save();
         });
@@ -2875,6 +2904,7 @@
       const lbUse = document.getElementById('gallery-lb-use');
       const lb = document.getElementById('gallery-lightbox');
       const retryBtn = document.getElementById('btn-gallery-retry');
+      document.getElementById('btn-own-recover').addEventListener('click', recoverOwnWorks);
       if (lbClose) lbClose.addEventListener('click', closeGalleryLightbox);
       if (lbUse) lbUse.addEventListener('click', () => {
         if (lightboxWorkId) selectLiveWorkForPeer(lightboxWorkId);
