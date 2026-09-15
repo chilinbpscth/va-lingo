@@ -1,0 +1,14 @@
+{
+  "name": "va-lingo",
+  "private": true,
+  "version": "0.3.0",
+  "description": "藝言堂・時間膠囊 — 引導式視覺藝術評賞（佛教志蓮小學）",
+  "scripts": {
+    "preview": "node scripts/preview-guided.cjs",
+    "check": "node scripts/check-scripts.cjs",
+    "build:google": "node scripts/build-google.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.58.2"
+  }
+}

@@ -1,27 +1,22 @@
 /**
- * VA-Lingo 藝言堂 — Google Workspace 提交後端（Apps Script）
- *
- * 用途：接收前端 JSON POST，把學生評賞歷程寫入 Drive 資料夾，
- *       並可選寫入試算表 submissions 分頁作索引。
- *
- * 部署要點（詳見 ../DEPLOY-GOOGLE.md）：
- * 1. 在 Drive 建立根資料夾「VA-Lingo 提交」，把資料夾 ID 填入 ROOT_FOLDER_ID
- * 2.（選填）建立試算表，把試算表 ID 填入 SHEET_ID，然後執行 setup_()
- * 3. 部署 → 網頁應用程式：執行身分「我」；存取「學校網域」或「任何擁有連結的人」
- * 4. 把 /exec 網址貼到前端「雲端設定」
- *
- * CORS：ContentService JSON 回應即可；前端請用簡單 fetch POST（勿加自訂標頭）。
- * 圖片過大時仍會嘗試儲存；前端應先壓縮至約 1600px JPEG。
+ * 藝術時間膠囊 v2：同源 HtmlService / google.script.run，保留 v1 API 與記錄。
+ * 新版測試部署請依 DEPLOY-GUIDED-V2.md；不要使用舊靜態頁跨來源設定流程。
+ * 學校 ID 只填於私有 Apps Script；教師權限由實際 Google 使用者及班別名單核對。
  */
 
 // ========== 設定（部署前請填寫）==========
 /** Drive 根資料夾 ID；建立資料夾後從網址複製，例如 .../folders/XXXXXXXX */
-var ROOT_FOLDER_ID = '17649WLgqeOIf_7x5ejwkE1ezfyLPUe4U'; // ← 請填入；留空則提交會回傳錯誤
+var ROOT_FOLDER_ID = ''; // 部署時由 IT 填入；不可把學校實際 ID commit 到 repo
 
-/** 選填：試算表 ID，用於 submissions 紀錄。留空則不寫 Sheet */
-var SHEET_ID = '1O8ZTcYJdypGFRnMAe6Lk5TINwJDQCRn7gnfNv5UVwLA';
+/** 私有 Sheet ID；登入、課堂、作品及評賞索引均在此儲存。 */
+var SHEET_ID = ''; // 部署時由 IT 填入；不可把學校實際 ID commit 到 repo
 
-var VERSION = 'va-lingo-submit-1';
+// 每次部署使用新的私有前端檔案，保留舊版本可回退。
+var APP_HTML_FILE_ID = ''; // 由同 repo build:google 產出 App.html 並上傳私有 Drive
+
+var ACTIVE_SCHOOL_YEAR = '2026-27'; // IT 更新學年；舊學年名冊保留但不能登入
+
+var VERSION = 'va-lingo-guided-v2-1';
 var TZ = 'Asia/Hong_Kong';
 
 // ---------- JSON 回應 ----------
@@ -37,8 +32,8 @@ function err_(msg) {
 
 // ---------- 健康檢查 ----------
 /**
- * GET ?ping=1 → { ok:true, version:'va-lingo-submit-1' }
- * 其他 GET 回傳簡短說明（避免空白頁困惑）
+ * GET ?ping=1 → { ok:true, version:'va-lingo-google-mvp-1' }
+ * 其他 GET 載入同 repo 打包的私有 Drive 前端；未設定則回傳說明。
  */
 function doGet(e) {
   e = e || {};
@@ -46,37 +41,314 @@ function doGet(e) {
   if (String(p.ping || '') === '1') {
     return json_({ ok: true, version: VERSION });
   }
+  if (APP_HTML_FILE_ID) {
+    var html = DriveApp.getFileById(APP_HTML_FILE_ID).getBlob().getDataAsString('UTF-8');
+    if (String(p.demo || '') === '1') {
+      var embedded = html.match(/<script type="application\/json" id="capsule-demo">([\s\S]*?)<\/script>/);
+      if (!embedded) throw new Error('此版本尚未包含拼貼示範，請聯絡老師更新。');
+      html = JSON.parse(embedded[1]);
+    }
+    html = html.split('__CAPSULE_HOME_URL__').join(ScriptApp.getService().getUrl());
+    return HtmlService.createHtmlOutput(html).setTitle(p.demo === '1' ? '藝術時間膠囊 — 拼貼自評示範' : '藝術時間膠囊 — 自評與互評')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
   return json_({
     ok: true,
     version: VERSION,
-    message: 'VA-Lingo 提交 API。請用 POST JSON（action:submit），或 ?ping=1 檢查狀態。'
+    message: 'VA-Lingo Google MVP API。請用已登入的 POST JSON，或 ?ping=1 檢查狀態。'
   });
 }
 
 // ---------- 提交 API ----------
-/**
- * POST body（JSON 字串）：
- * {
- *   action: 'submit',
- *   className, studentName, studentId,
- *   ks, level, source, unit,
- *   steps: {...},
- *   pins: [...],
- *   imageBase64: 選填（data URL 或 raw base64）,
- *   imageMime: 選填
- * }
- */
+/** POST body 是 { action, requestId, token, payload }；詳見 DEPLOY-GOOGLE.md。 */
 function doPost(e) {
   try {
     var body = parseBody_(e);
+    if (body.schemaVersion === 2) return apiV2_(body);
     var action = String(body.action || 'submit').trim();
-    if (action === 'submit') {
-      return handleSubmit_(body);
-    }
-    return err_('未知的 action：「' + action + '」。目前只支援 submit。');
+    if (action === 'login') return login_(body);
+    if (action === 'getRoundStatus') return getRoundStatus_(body);
+    if (action === 'uploadArtwork') return uploadArtwork_(body);
+    if (action === 'saveAssessment') return saveAssessment_(body);
+    if (action === 'listPeerWorks') return listPeerWorks_(body);
+    if (action === 'listOwnWorks') return listOwnWorks_(body);
+    if (action === 'submit') return apiFail_('NOT_SUPPORTED', '舊 submit API 已退役；請使用登入後的 MVP 操作。');
+    return apiFail_('UNKNOWN_ACTION', '未知的操作。');
   } catch (ex) {
     return err_('伺服器錯誤：' + (ex.message || String(ex)));
   }
+}
+
+// ---------- MVP identity, artwork and assessment API ----------
+// The public client sends an opaque short-lived token in the POST body. Name is
+// intentionally never returned or used as a browser-visible identity.
+var ROSTER_SHEET = 'roster_v1';
+var SESSION_SHEET = 'sessions_v1';
+var ROUND_SHEET = 'rounds_v1';
+var MEMBER_SHEET = 'round_members_v1';
+var ARTWORK_SHEET = 'artworks_v1';
+var ASSESSMENT_SHEET = 'assessments_v1';
+var REQUEST_SHEET = 'requests_v1';
+var TOKEN_TTL_MS = 45 * 60 * 1000;
+
+function apiOk_(data) { return json_({ ok: true, data: data || {} }); }
+function apiFail_(code, message) { return json_({ ok: false, error: { code: code, message: message } }); }
+function writeError_(error, message) {
+  var code = error && error.message;
+  if (code === 'TOKEN_EXPIRED' || code === 'AUTH_REQUIRED' || code === 'FORBIDDEN' || code === 'INVALID_INPUT') return apiFail_(code, message);
+  return apiFail_('RETRYABLE_WRITE_ERROR', message);
+}
+function withWriteLock_(work) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try { return work(); } finally { lock.releaseLock(); }
+}
+var identifierFormatsReady_ = {};
+function apiSheet_(name, headers) {
+  if (!SHEET_ID) throw new Error('尚未設定 SHEET_ID。');
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var sh = ss.getSheetByName(name);
+  if (!sh) { sh = ss.insertSheet(name); sh.appendRow(headers); }
+  if (sh.getLastRow() === 0) sh.appendRow(headers);
+  // Sheets 可將 "01" 自動變成數字 1；在任何新列寫入前固定識別欄為純文字。
+  // 只改格式，不 pad／改寫歷史值；每次執行每分頁最多格式化一次。
+  if (!identifierFormatsReady_[name]) {
+    var columns = [];
+    headers.forEach(function(header, index) {
+      if (!/(Id|Hash)$/.test(header)) return;
+      var col = '';
+      for (var n = index + 1; n > 0; n = Math.floor((n - 1) / 26)) {
+        col = String.fromCharCode(65 + (n - 1) % 26) + col;
+      }
+      columns.push(col + ':' + col);
+    });
+    if (columns.length) sh.getRangeList(columns).setNumberFormat('@');
+    identifierFormatsReady_[name] = true;
+  }
+  return sh;
+}
+function sessionHeaders_() { return ['sessionId','tokenHash','schoolYear','classId','studentId','grade','issuedAt','expiresAt','revokedAt']; }
+function appendApiRow_(sheet, headers, row) {
+  // appendRow 的輸入解析仍可能吞掉前導零；前置 apostrophe 是 Sheets 文字輸入標記，讀回不含標記。
+  // 識別資料一律按原字串寫入，不 pad／猜測，也不改舊列。
+  sheet.appendRow(row.map(function(value, index) {
+    return /(Id|Hash)$/.test(headers[index]) && value !== '' && value != null
+      ? "'" + String(value) : value;
+  }));
+}
+function rows_(sheet) {
+  if (sheet.getLastRow() < 2) return [];
+  var values = sheet.getDataRange().getValues();
+  return values.slice(1).map(function(row) {
+    var obj = {}; values[0].forEach(function(key, i) { obj[key] = row[i]; }); return obj;
+  });
+}
+function value_(row, key) { return row[key] == null ? '' : String(row[key]); }
+function nowIso_() { return new Date().toISOString(); }
+function safeText_(s, max) {
+  s = String(s == null ? '' : s).trim().replace(/[\u0000-\u001f]/g, ' ');
+  // Spreadsheet formula injection protection for any user-entered string.
+  if (/^[=+\-@]/.test(s)) s = "'" + s;
+  return s.slice(0, max || 5000);
+}
+function randomId_(prefix) { return prefix + '_' + Utilities.getUuid(); }
+function tokenHash_(token) {
+  var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, token);
+  return bytes.map(function(b) { var n = b < 0 ? b + 256 : b; return ('0' + n.toString(16)).slice(-2); }).join('');
+}
+function requireSession_(body) {
+  var token = String(body.token || '');
+  if (!token) throw new Error('AUTH_REQUIRED');
+  var sh = apiSheet_(SESSION_SHEET, sessionHeaders_());
+  var hash = tokenHash_(token);
+  var hit = rows_(sh).filter(function(row) { return value_(row, 'tokenHash') === hash && !value_(row, 'revokedAt'); })[0];
+  if (!hit || typeof hit.studentId !== 'string' || new Date(value_(hit, 'expiresAt')).getTime() <= Date.now()) throw new Error('TOKEN_EXPIRED');
+  return { classId:value_(hit,'classId'), studentId:value_(hit,'studentId'), grade:value_(hit,'grade'), schoolYear:value_(hit,'schoolYear') };
+}
+function login_(body) {
+  return withWriteLock_(function() { try {
+    var p = body.payload || {};
+    var classId = safeText_(p.classId, 30), studentId = safeText_(p.studentId, 30);
+    if (!classId || !studentId) return apiFail_('INVALID_INPUT', '請輸入班別及學號。');
+    var roster = apiSheet_(ROSTER_SHEET, ['schoolYear','classId','studentId','grade','displayLabel','active','updatedAt']);
+    var found = rows_(roster).filter(function(row) {
+      return value_(row,'schoolYear') === ACTIVE_SCHOOL_YEAR && value_(row,'classId') === classId && value_(row,'studentId') === studentId && String(row.active).toLowerCase() !== 'false';
+    })[0];
+    if (!found) return apiFail_('FORBIDDEN', '班別或學號未能核對。');
+    var rawToken = Utilities.getUuid() + Utilities.getUuid();
+    var issued = new Date(), expires = new Date(issued.getTime() + TOKEN_TTL_MS);
+    appendApiRow_(apiSheet_(SESSION_SHEET, sessionHeaders_()), sessionHeaders_(), [randomId_('ses'), tokenHash_(rawToken), value_(found,'schoolYear'), classId, studentId, value_(found,'grade'), issued.toISOString(), expires.toISOString(), '']);
+    return apiOk_({token:rawToken, expiresAt:expires.toISOString(), classId:classId, studentId:studentId, grade:value_(found,'grade'), schoolYear:ACTIVE_SCHOOL_YEAR, displayLabel:classId + '・' + studentId + '號'});
+  } catch (e) { return apiFail_('RETRYABLE_WRITE_ERROR', e.message || String(e)); } });
+}
+function round_(roundId) {
+  var sheet = apiSheet_(ROUND_SHEET, ['roundId','schoolYear','classId','grade','stageId','topicId','phase','peerTargetCount','openedAt','peerOpenedAt','closedAt']);
+  return rows_(sheet).filter(function(row) { return value_(row,'roundId') === roundId; })[0] || null;
+}
+function requireRound_(body, session) {
+  var roundId = safeText_((body.payload || {}).roundId, 64), round = round_(roundId);
+  if (!round) throw new Error('NOT_FOUND');
+  if (value_(round,'schoolYear') !== session.schoolYear || value_(round,'classId') !== session.classId || value_(round,'grade') !== session.grade) throw new Error('FORBIDDEN');
+  return { id:roundId, row:round };
+}
+function requireRoundMember_(roundId, session) {
+  var members = rows_(apiSheet_(MEMBER_SHEET, ['roundId','studentId','required','exemptionReason','updatedAt']));
+  var member = members.filter(function(row) {
+    return value_(row,'roundId') === roundId && value_(row,'studentId') === session.studentId && String(row.required).toLowerCase() !== 'false';
+  })[0];
+  if (!member) throw new Error('FORBIDDEN');
+  return member;
+}
+function readyStudents_(roundId) {
+  var sh = apiSheet_(ASSESSMENT_SHEET, ['assessmentId','revision','artworkId','artworkRevision','roundId','authorClassId','authorStudentId','type','stepsJson','pinsJson','vocabJson','completedStepCount','status','createdAt','updatedAt','requestId']);
+  var out = {};
+  rows_(sh).forEach(function(row) { if (value_(row,'roundId') === roundId && value_(row,'type') === 'self' && value_(row,'status') === 'submitted' && Number(row.completedStepCount) === 5) out[value_(row,'authorStudentId')] = true; });
+  return out;
+}
+function getRoundStatus_(body) {
+  try {
+    var session = requireSession_(body), round = requireRound_(body, session); requireRoundMember_(round.id, session);
+    var members = rows_(apiSheet_(MEMBER_SHEET, ['roundId','studentId','required','exemptionReason','updatedAt']))
+      .filter(function(row) { return value_(row,'roundId') === round.id && String(row.required).toLowerCase() !== 'false'; });
+    var ready = readyStudents_(round.id), count = members.filter(function(member) { return ready[value_(member,'studentId')]; }).length;
+    var own = rows_(apiSheet_(ASSESSMENT_SHEET, assessmentHeaders_())).filter(function(row) {
+      return value_(row,'roundId') === round.id && value_(row,'authorClassId') === session.classId && value_(row,'authorStudentId') === session.studentId && value_(row,'status') === 'submitted';
+    });
+    var peerIds = {};
+    own.forEach(function(row) { if (value_(row,'type') === 'peer') peerIds[value_(row,'artworkId') + ':' + value_(row,'artworkRevision')] = true; });
+    var peerCount = Object.keys(peerIds).length, target = Number(round.row.peerTargetCount) || 0;
+    return apiOk_({roundId:round.id, phase:value_(round.row,'phase'), expectedCount:members.length, readyCount:count,
+      myProgress:{selfSubmitted:!!ready[session.studentId],peerSubmittedCount:peerCount,peerTargetCount:target,peerRemainingCount:Math.max(0,target-peerCount)}});
+  } catch (e) { return apiFail_(e.message === 'TOKEN_EXPIRED' ? 'TOKEN_EXPIRED' : 'FORBIDDEN', '未能讀取課堂狀態。'); }
+}
+
+function artworkHeaders_() { return ['artworkId','revision','roundId','classId','studentId','grade','topicId','sourceApp','mediaType','driveFileId','mime','byteSize','contentHash','status','createdAt','updatedAt','requestId']; }
+function assessmentHeaders_() { return ['assessmentId','revision','artworkId','artworkRevision','roundId','authorClassId','authorStudentId','type','stepsJson','pinsJson','vocabJson','completedStepCount','status','createdAt','updatedAt','requestId']; }
+function imageBlob_(base64, mime) {
+  var raw = String(base64 || ''), match = raw.match(/^data:([^;]+);base64,(.+)$/i);
+  if (match) { mime = match[1]; raw = match[2]; }
+  if (['image/jpeg','image/png','image/webp'].indexOf(mime) === -1) throw new Error('INVALID_INPUT');
+  var bytes = Utilities.base64Decode(raw.replace(/\s/g, ''));
+  if (!bytes.length || bytes.length > 250 * 1024) throw new Error('INVALID_INPUT');
+  var ext = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg';
+  return { bytes:bytes, mime:mime, ext:ext };
+}
+function uploadArtwork_(body) {
+  return withWriteLock_(function() { try {
+    var session = requireSession_(body), round = requireRound_(body, session), p = body.payload || {}; requireRoundMember_(round.id, session);
+    if (value_(round.row,'phase') !== 'collecting') return apiFail_('ROUND_NOT_OPEN', '課堂已停止收集作品。');
+    var topicId = safeText_(p.topicId, 80), sourceApp = safeText_(p.sourceApp, 40);
+    if (!topicId || ['va-lingo','paper-cut','face-change','shadow-puppet'].indexOf(sourceApp) === -1) return apiFail_('INVALID_INPUT','作品資料不正確。');
+    if (topicId !== value_(round.row,'topicId')) return apiFail_('FORBIDDEN','作品課題與課堂不符。');
+    var image = imageBlob_(p.imageBase64, String(p.imageMime || ''));
+    if (!body.requestId || !String(body.requestId).trim()) return apiFail_('INVALID_INPUT','缺少提交識別碼。');
+    var requestId = safeText_(body.requestId, 100), sheet = apiSheet_(ARTWORK_SHEET, artworkHeaders_());
+    var prior = rows_(sheet).filter(function(row) { return value_(row,'requestId') === requestId && value_(row,'studentId') === session.studentId && value_(row,'classId') === session.classId && value_(row,'roundId') === round.id; })[0];
+    if (prior) return apiOk_({artworkId:value_(prior,'artworkId'), revision:Number(prior.revision), status:value_(prior,'status')});
+    var root = DriveApp.getFolderById(ROOT_FOLDER_ID), artworkId = randomId_('art'), folder = ensureChildFolder_(ensureChildFolder_(ensureChildFolder_(root, session.schoolYear), session.classId), session.studentId);
+    var file = folder.createFile(Utilities.newBlob(image.bytes, image.mime, artworkId + '.' + image.ext));
+    var now = nowIso_(), hash = tokenHash_(Utilities.base64Encode(image.bytes));
+    appendApiRow_(sheet, artworkHeaders_(), [artworkId,1,round.id,session.classId,session.studentId,session.grade,topicId,sourceApp,'image',file.getId(),image.mime,image.bytes.length,hash,'uploaded',now,now,requestId]);
+    return apiOk_({artworkId:artworkId,revision:1,status:'uploaded'});
+  } catch (e) { return writeError_(e, '未能儲存作品。'); } });
+}
+function completedSteps_(steps, ks, level) {
+  var ids = ['feel','describe','form','meaning','judge'];
+  return ids.filter(function(id) {
+    var step = steps && steps[id];
+    if (!step || typeof step !== 'object') return false;
+    if (ks === 'ks1' || level === 1) {
+      var blanks = Array.isArray(step.scaffold) ? step.scaffold : [];
+      return blanks.length > 0 && blanks.every(function(value) { return safeText_(value, 500).length > 0; }) && (ks !== 'ks1' || id !== 'feel' || safeText_(step.mood, 40).length > 0);
+    }
+    return safeText_(step.open, 3000).length > 0;
+  }).length;
+}
+function saveAssessment_(body) {
+  return withWriteLock_(function() { try {
+    var session = requireSession_(body), round = requireRound_(body, session), p = body.payload || {}; requireRoundMember_(round.id, session);
+    var type = p.type === 'peer' ? 'peer' : 'self', artworkId = safeText_(p.artworkId,100), revision = Number(p.artworkRevision || 1);
+    if (!artworkId || !Number.isFinite(revision)) return apiFail_('INVALID_INPUT','評賞作品資料不正確。');
+    var artworks = rows_(apiSheet_(ARTWORK_SHEET, artworkHeaders_()));
+    var artwork = artworks.filter(function(row) { return value_(row,'artworkId') === artworkId && Number(row.revision) === revision && value_(row,'roundId') === round.id; })[0];
+    if (!artwork || (type === 'self' && value_(artwork,'studentId') !== session.studentId) || (type === 'peer' && value_(artwork,'studentId') === session.studentId)) return apiFail_('FORBIDDEN','沒有權限提交這份評賞。');
+    if (type === 'peer' && value_(round.row,'phase') !== 'peer_open') return apiFail_('ROUND_NOT_OPEN','老師尚未開放互評。');
+    if (type === 'self' && ['collecting','peer_open'].indexOf(value_(round.row,'phase')) === -1) return apiFail_('ROUND_NOT_OPEN','課堂已結束，不能提交自評。');
+    var ks = p.ks === 'ks1' ? 'ks1' : p.ks === 'ks2' ? 'ks2' : '';
+    if (!ks) return apiFail_('INVALID_INPUT','評賞程度不正確。');
+    var level = p.level === undefined ? 2 : Number(p.level);
+    if (level !== 1 && level !== 2) return apiFail_('INVALID_INPUT','評賞模式不正確。');
+    var steps = p.steps || {}, count = completedSteps_(steps, ks, level);
+    if (count !== 5) return apiFail_('INVALID_INPUT', type === 'peer' ? '請完成互評五步驟。' : '請完成評賞五步驟。');
+    if (!body.requestId || !String(body.requestId).trim()) return apiFail_('INVALID_INPUT','缺少提交識別碼。');
+    var requestId = safeText_(body.requestId,100), sh = apiSheet_(ASSESSMENT_SHEET, assessmentHeaders_());
+    var prior = rows_(sh).filter(function(row) { return value_(row,'requestId') === requestId && value_(row,'authorStudentId') === session.studentId && value_(row,'authorClassId') === session.classId && value_(row,'roundId') === round.id && value_(row,'artworkId') === artworkId && Number(row.artworkRevision) === revision && value_(row,'type') === type; })[0];
+    if (prior) return apiOk_({assessmentId:value_(prior,'assessmentId'),revision:Number(prior.revision),completedStepCount:Number(prior.completedStepCount)});
+    if (type === 'peer') {
+      var ready = readyStudents_(round.id);
+      if (!ready[session.studentId] || !ready[value_(artwork,'studentId')]) return apiFail_('FORBIDDEN','請先完成自評，並選擇已完成自評的同學作品。');
+      var submitted = rows_(sh).filter(function(row) {
+        return value_(row,'roundId') === round.id && value_(row,'authorClassId') === session.classId && value_(row,'authorStudentId') === session.studentId && value_(row,'type') === 'peer' && value_(row,'status') === 'submitted';
+      });
+      if (submitted.some(function(row) { return value_(row,'artworkId') === artworkId && Number(row.artworkRevision) === revision; })) return apiFail_('ALREADY_SUBMITTED','這件作品已提交互評。');
+      var quota = Number(round.row.peerTargetCount);
+      if (!Number.isInteger(quota) || quota < 1) return apiFail_('ROUND_NOT_OPEN','老師尚未設定互評配額。');
+      if (submitted.length >= quota) return apiFail_('PEER_QUOTA_REACHED','你已完成本課堂的互評配額。');
+    }
+    var now = nowIso_(), id = randomId_('asm');
+    appendApiRow_(sh, assessmentHeaders_(), [id,1,artworkId,revision,round.id,session.classId,session.studentId,type,JSON.stringify(steps),JSON.stringify(p.pins || []),JSON.stringify(p.vocabUses || []),count,'submitted',now,now,requestId]);
+    return apiOk_({assessmentId:id,revision:1,completedStepCount:count,status:'submitted'});
+  } catch (e) { return writeError_(e, '未能儲存評賞。'); } });
+}
+// Private recovery: one image per page bounds the response size on school Wi-Fi.
+function listOwnWorks_(body) {
+  try {
+    var session = requireSession_(body), round = requireRound_(body, session);
+    requireRoundMember_(round.id, session);
+    var offset = Number((body.payload || {}).offset || 0);
+    if (!Number.isInteger(offset) || offset < 0) return apiFail_('INVALID_INPUT','作品頁碼不正確。');
+    var own = rows_(apiSheet_(ARTWORK_SHEET, artworkHeaders_())).filter(function(row) {
+      return value_(row,'roundId') === round.id && value_(row,'classId') === session.classId && value_(row,'studentId') === session.studentId;
+    });
+    var assessments = rows_(apiSheet_(ASSESSMENT_SHEET, assessmentHeaders_())).filter(function(row) {
+      return value_(row,'roundId') === round.id && value_(row,'authorClassId') === session.classId && value_(row,'authorStudentId') === session.studentId && value_(row,'type') === 'self';
+    });
+    var items = own.slice(offset, offset + 1).map(function(row) {
+      var history = assessments.filter(function(a) { return value_(a,'artworkId') === value_(row,'artworkId') && Number(a.artworkRevision) === Number(row.revision); });
+      var latest = history.length ? history[history.length - 1] : null;
+      var bytes = DriveApp.getFileById(value_(row,'driveFileId')).getBlob().getBytes();
+      return {artworkId:value_(row,'artworkId'),revision:Number(row.revision),roundId:round.id,
+        topicId:value_(row,'topicId'),stageId:value_(round.row,'stageId'),grade:session.grade,
+        sourceApp:value_(row,'sourceApp'),createdAt:value_(row,'createdAt'),
+        imageData:'data:' + value_(row,'mime') + ';base64,' + Utilities.base64Encode(bytes),
+        assessment:latest ? {assessmentId:value_(latest,'assessmentId'),steps:JSON.parse(value_(latest,'stepsJson') || '{}'),pins:JSON.parse(value_(latest,'pinsJson') || '[]'),completedStepCount:Number(latest.completedStepCount),status:value_(latest,'status')} : null};
+    });
+    return apiOk_({items:items,nextOffset:offset + 1 < own.length ? offset + 1 : null,totalCount:own.length});
+  } catch (e) { return apiFail_(e.message === 'TOKEN_EXPIRED' ? 'TOKEN_EXPIRED' : 'FORBIDDEN','未能讀取自己的作品。'); }
+}
+
+function listPeerWorks_(body) {
+  try {
+    var session = requireSession_(body), round = requireRound_(body, session); requireRoundMember_(round.id, session);
+    if (['peer_open','closed'].indexOf(value_(round.row,'phase')) === -1) return apiFail_('ROUND_NOT_OPEN','老師尚未開放互評。');
+    var offset = Number((body.payload || {}).offset || 0);
+    if (!Number.isInteger(offset) || offset < 0) return apiFail_('INVALID_INPUT','作品頁碼不正確。');
+    var selfReady = readyStudents_(round.id);
+    if (!selfReady[session.studentId]) return apiFail_('FORBIDDEN','請先提交自己的作品及自評。');
+    var works = rows_(apiSheet_(ARTWORK_SHEET, artworkHeaders_())).filter(function(row) {
+      return value_(row,'roundId') === round.id && value_(row,'studentId') !== session.studentId && value_(row,'status') === 'uploaded' && selfReady[value_(row,'studentId')];
+    });
+    var myReviews = rows_(apiSheet_(ASSESSMENT_SHEET, assessmentHeaders_())).filter(function(row) {
+      return value_(row,'roundId') === round.id && value_(row,'authorClassId') === session.classId && value_(row,'authorStudentId') === session.studentId && value_(row,'type') === 'peer';
+    });
+    var items = works.slice(offset, offset + 6).map(function(row) {
+      var data = DriveApp.getFileById(value_(row,'driveFileId')).getBlob().getBytes();
+      var review = myReviews.filter(function(a) { return value_(a,'artworkId') === value_(row,'artworkId') && Number(a.artworkRevision) === Number(row.revision); }).pop();
+      return {artworkId:value_(row,'artworkId'), revision:Number(row.revision), topicId:value_(row,'topicId'), stageId:value_(round.row,'stageId'), grade:session.grade, sourceApp:value_(row,'sourceApp'), displayLabel:'同學作品', imageData:'data:' + value_(row,'mime') + ';base64,' + Utilities.base64Encode(data),
+        myAssessment:review ? {steps:JSON.parse(value_(review,'stepsJson') || '{}'),pins:JSON.parse(value_(review,'pinsJson') || '[]'),status:value_(review,'status')} : null};
+    });
+    return apiOk_({items:items,nextOffset:offset + 6 < works.length ? offset + 6 : null,totalCount:works.length,readOnly:value_(round.row,'phase') === 'closed',refreshedAt:nowIso_()});
+  } catch (e) { return apiFail_(e.message === 'TOKEN_EXPIRED' ? 'TOKEN_EXPIRED' : 'RETRYABLE_WRITE_ERROR','未能更新同學作品清單。'); }
 }
 
 function parseBody_(e) {
@@ -91,210 +363,23 @@ function parseBody_(e) {
   }
 }
 
-function handleSubmit_(body) {
-  var className = sanitizeName_(body.className || body.klass || '');
-  var studentId = sanitizeName_(body.studentId || body.sid || '');
-  var studentName = sanitizeName_(body.studentName || body.name || '');
-
-  if (!className) {
-    return err_('請選擇班別（className）。');
-  }
-  if (!studentId && !studentName) {
-    return err_('請選擇學生（需要學號或姓名）。');
-  }
-
-  if (!ROOT_FOLDER_ID) {
-    return err_('尚未設定 ROOT_FOLDER_ID。請 IT 在 Code.gs 填入 Drive 根資料夾 ID 後重新部署。');
-  }
-
-  var root;
-  try {
-    root = DriveApp.getFolderById(ROOT_FOLDER_ID);
-  } catch (ex) {
-    return err_('找不到根資料夾。請檢查 ROOT_FOLDER_ID 是否正確，以及部署帳號是否有權限。');
-  }
-
-  // 路徑：班別 / 學號_姓名 /
-  var classFolder = ensureChildFolder_(root, className || '未分班');
-  var studentLabel = buildStudentFolderName_(studentId, studentName);
-  var studentFolder = ensureChildFolder_(classFolder, studentLabel);
-
-  var now = new Date();
-  var submittedAt = Utilities.formatDate(now, TZ, "yyyy-MM-dd'T'HH:mm:ss");
-
-  // submission.json：中繼資料 + steps + pins（圖片另存，避免重複塞進 JSON）
-  var meta = {
-    version: VERSION,
-    submittedAt: submittedAt,
-    className: className,
-    studentId: studentId,
-    studentName: studentName,
-    ks: body.ks || '',
-    level: body.level != null ? body.level : '',
-    source: body.source || '',
-    unit: body.unit || '觀我香港：熱鬧的香港',
-    steps: body.steps || {},
-    pins: Array.isArray(body.pins) ? body.pins : [],
-    answers: body.answers || null,
-    moods: body.moods || null,
-    rubrics: body.rubrics || null,
-    hasImage: !!(body.imageBase64)
-  };
-
-  var jsonBlob = Utilities.newBlob(
-    JSON.stringify(meta, null, 2),
-    'application/json',
-    'submission.json'
-  );
-  var jsonFile = upsertFile_(studentFolder, 'submission.json', jsonBlob);
-
-  var artworkFile = null;
-  if (body.imageBase64) {
-    try {
-      artworkFile = saveArtwork_(studentFolder, body.imageBase64, body.imageMime);
-      meta.hasImage = true;
-    } catch (imgErr) {
-      // 圖片失敗仍保留 JSON；回傳警告
-      return json_({
-        ok: true,
-        folderUrl: studentFolder.getUrl(),
-        fileUrl: jsonFile.getUrl(),
-        warning: '評賞已儲存，但圖片儲存失敗：' + (imgErr.message || String(imgErr))
-      });
-    }
-  }
-
-  // 選填：寫入試算表索引
-  if (SHEET_ID) {
-    try {
-      appendSubmissionRow_({
-        time: submittedAt,
-        className: className,
-        studentId: studentId,
-        studentName: studentName,
-        source: body.source || '',
-        ks: body.ks || '',
-        folderUrl: studentFolder.getUrl()
-      });
-    } catch (sheetErr) {
-      // Sheet 失敗不阻斷 Drive 提交
-    }
-  }
-
-  return json_({
-    ok: true,
-    folderUrl: studentFolder.getUrl(),
-    fileUrl: artworkFile ? artworkFile.getUrl() : jsonFile.getUrl()
-  });
-}
-
-// ---------- Drive 輔助 ----------
-function sanitizeName_(s) {
-  s = String(s || '').trim();
-  // 移除路徑危險字元與控制字元
-  s = s.replace(/[\/\\:\*\?"<>\|\u0000-\u001f]/g, '_');
-  s = s.replace(/\s+/g, ' ');
-  if (s.length > 80) s = s.substring(0, 80);
-  return s;
-}
-
-function buildStudentFolderName_(id, name) {
-  if (id && name) return id + '_' + name;
-  if (id) return id;
-  return name || '未知名';
-}
-
 function ensureChildFolder_(parent, name) {
   var it = parent.getFoldersByName(name);
   if (it.hasNext()) return it.next();
   return parent.createFolder(name);
 }
 
-/** 同名檔案則刪舊建新（避免 MIME／內容殘留），否則新建 */
-function upsertFile_(folder, filename, blob) {
-  var it = folder.getFilesByName(filename);
-  while (it.hasNext()) {
-    it.next().setTrashed(true);
-  }
-  return folder.createFile(blob.setName(filename));
-}
-
-function saveArtwork_(folder, imageBase64, imageMime) {
-  var raw = String(imageBase64 || '');
-  var mime = String(imageMime || '').trim();
-  // 剝離 data URL 前綴：data:image/jpeg;base64,....
-  var m = raw.match(/^data:([^;]+);base64,(.+)$/i);
-  if (m) {
-    mime = mime || m[1];
-    raw = m[2];
-  }
-  raw = raw.replace(/\s/g, '');
-  if (!raw) throw new Error('圖片資料為空。');
-
-  mime = mime || 'image/jpeg';
-  var ext = 'jpg';
-  if (mime.indexOf('png') !== -1) ext = 'png';
-  else if (mime.indexOf('webp') !== -1) ext = 'webp';
-  else if (mime.indexOf('gif') !== -1) ext = 'gif';
-  else {
-    mime = 'image/jpeg';
-    ext = 'jpg';
-  }
-
-  var bytes = Utilities.base64Decode(raw);
-  var filename = 'artwork.' + ext;
-  var blob = Utilities.newBlob(bytes, mime, filename);
-
-  // 刪除舊 artwork.* 再寫入（統一檔名）
-  var names = ['artwork.jpg', 'artwork.jpeg', 'artwork.png', 'artwork.webp', 'artwork.gif'];
-  names.forEach(function (n) {
-    var it = folder.getFilesByName(n);
-    while (it.hasNext()) it.next().setTrashed(true);
-  });
-
-  return folder.createFile(blob);
-}
-
-// ---------- Sheet 輔助 ----------
-function appendSubmissionRow_(row) {
-  var ss = SpreadsheetApp.openById(SHEET_ID);
-  var sh = ss.getSheetByName('submissions');
-  if (!sh) {
-    sh = ss.insertSheet('submissions');
-    sh.appendRow(['time', 'class', 'id', 'name', 'source', 'ks', 'folderUrl']);
-  }
-  // 若首列空白，補上標題
-  if (sh.getLastRow() === 0) {
-    sh.appendRow(['time', 'class', 'id', 'name', 'source', 'ks', 'folderUrl']);
-  }
-  sh.appendRow([
-    row.time,
-    row.className,
-    row.studentId,
-    row.studentName,
-    row.source,
-    row.ks,
-    row.folderUrl
-  ]);
-}
-
-/**
- * 一次性設定：若已填 SHEET_ID，建立／補齊 submissions 標題列。
- * 在 Apps Script 編輯器手動執行 setup_()。
- */
+/** 一次性設定：建立 MVP 運作分頁；名冊、課堂及應交名單由老師填寫。 */
 function setup_() {
   if (!SHEET_ID) {
-    throw new Error('請先在 Code.gs 填入 SHEET_ID，或留空略過試算表。');
+    throw new Error('請先在 Code.gs 填入 SHEET_ID。');
   }
-  var ss = SpreadsheetApp.openById(SHEET_ID);
-  var sh = ss.getSheetByName('submissions');
-  if (!sh) sh = ss.insertSheet('submissions');
-  var headers = ['time', 'class', 'id', 'name', 'source', 'ks', 'folderUrl'];
-  var first = sh.getRange(1, 1, 1, headers.length).getValues()[0];
-  var empty = first.every(function (v) { return String(v).trim() === ''; });
-  if (empty || sh.getLastRow() === 0) {
-    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
-  }
+  apiSheet_(ROSTER_SHEET, ['schoolYear','classId','studentId','grade','displayLabel','active','updatedAt']);
+  apiSheet_(SESSION_SHEET, sessionHeaders_());
+  apiSheet_(ROUND_SHEET, ['roundId','schoolYear','classId','grade','stageId','topicId','phase','peerTargetCount','openedAt','peerOpenedAt','closedAt']);
+  apiSheet_(MEMBER_SHEET, ['roundId','studentId','required','exemptionReason','updatedAt']);
+  apiSheet_(ARTWORK_SHEET, artworkHeaders_());
+  apiSheet_(ASSESSMENT_SHEET, assessmentHeaders_());
   if (ROOT_FOLDER_ID) {
     try {
       DriveApp.getFolderById(ROOT_FOLDER_ID);
@@ -302,5 +387,19 @@ function setup_() {
       throw new Error('ROOT_FOLDER_ID 無效或無權限：' + ex.message);
     }
   }
-  return 'setup_ 完成：submissions 標題已就緒。';
+  return 'setup_ 完成：MVP Sheet 分頁已就緒。';
+}
+
+/** Apps Script 執行選單不列出尾綴底線函式；供測試初始化使用。 */
+function setupMvpTest() {
+  var active = Session.getActiveUser().getEmail();
+  if (!active || active !== Session.getEffectiveUser().getEmail()) {
+    throw new Error('只限部署擁有者執行初始化。');
+  }
+  return setup_();
+}
+
+/** HtmlService 通訊亦經相同 action／token／課堂驗證，不能略過授權。 */
+function callApi(body) {
+  return JSON.parse(doPost({postData:{contents:JSON.stringify(body)}}).getContent());
 }

@@ -1,7 +1,11 @@
-shots/
-.DS_Store
 *.local
-roster.school.json
+.DS_Store
+build/
 ks1-shot.html
+node_modules/
+package-lock.json
 peer-shot.html
+roster.school.json
 shots/
+test-results/
+work/
