@@ -284,7 +284,7 @@ async function main() {
       const x = box.x + box.width * c.xRatio;
       const y = box.y + box.height * c.yRatio;
       await page.mouse.click(x, y);
-      await page.waitForTimeout(250);
+      await page.waitForTimeout(350);
       const pins = page.locator('.image-wrap .pin');
       const count = await pins.count();
       const texts = [];
