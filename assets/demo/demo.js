@@ -7,7 +7,7 @@ const gateClass=params.get('class')||'';
 const gateStudent=params.get('student')||'';
 const fromGate=params.get('from')==='gate'||params.has('return');
 function markOnboardingDone(){if(!gateClass||!gateStudent)return;try{localStorage.setItem(ONBOARDING_PREFIX+gateClass+':'+gateStudent,'done');}catch(_){}}
-function homeHref(){return '/';}
+function homeHref(){if(window.VA_BASE)return window.VA_BASE;const b=document.querySelector('base');if(b&&b.getAttribute('href')){try{const u=new URL(b.getAttribute('href'),location.href);let p=u.pathname||'/';return p.endsWith('/')?p:p.replace(/[^/]*$/,'')||'/';}catch(_){}}let p=location.pathname||'/';if(/\/assets\//.test(p))return p.replace(/\/assets\/.*$/,'/');if(/\.[a-zA-Z0-9]+$/.test(p))p=p.replace(/\/[^/]+$/,'/');else if(!p.endsWith('/'))p=p.replace(/\/[^/]*$/,'/')||'/';return p.endsWith('/')?p:p+'/';}
 const $=id=>document.getElementById(id),root=$('demo-app');
 const labels=['今天學甚麼','找一個地方','比較效果','回看作品','自己試試','我的自評卡'];
 const prompts=['你選了甚麼形狀或大小？','你想這隻小貓看起來怎樣？','看回作品，哪個地方做到你的想法？'];
