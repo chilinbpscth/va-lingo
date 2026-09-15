@@ -48,6 +48,15 @@
   }
 
   root.VA_BASE = detectBase();
+  // GitHub project Pages: always /<repo>/ even if landed on wrong absolute /assets/...
+  if (/\.github\.io$/i.test(String(location.hostname || ''))) {
+    var segs = String(location.pathname || '').split('/').filter(Boolean);
+    if (segs[0] === 'va-lingo') root.VA_BASE = '/va-lingo/';
+    else if (segs[0] === 'assets') {
+      // wrong absolute link — bounce into project root
+      root.VA_BASE = '/va-lingo/';
+    }
+  }
   root.VA_withBase = withBase;
 
   if (!wantsPreview()) return;
