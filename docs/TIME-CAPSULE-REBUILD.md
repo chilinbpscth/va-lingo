@@ -1,33 +1,29 @@
 # 時間膠囊重建說明（feature/time-capsule-rebuild）
 
-本分支把 **VA Lingo 藝言堂** 主學生路徑改為「時間膠囊」引導式體驗（一屏一題・小貓式），並規定 **拼貼小貓示範為必做入門**。舊 Firebase 單頁保留為 legacy，不作刪除。
+本分支把 **VA Lingo 藝言堂** 主學生路徑改為「時間膠囊」引導式體驗（一屏一題）。**已取消**拼貼小貓強制入門；登入後直接進課堂。舊 Firebase 單頁保留為 legacy。
 
 ## 目標對齊
 
-1. **必做入門**：`assets/demo/` 拼貼小貓；未完成不可進入名作／自評／互評。
+1. **無入門閘**：不再強制 `assets/demo/` 拼貼小貓；該資料夾可留作廢案／日後選用，主路徑不引用。
 2. **統一引導流**：正式評賞全部使用時間膠囊 guided UI（`assets/js/guided-app.js`）。
 3. **Legacy 保留**：原根目錄 Firebase 巨石頁改名為 `legacy-firebase.html`。
 4. **主入口**：根目錄 `index.html` = 引導式時間膠囊。
 5. **本機預覽**：`npm run preview` → http://127.0.0.1:8768/
 6. **不做**：不部署 Google／Pages；不把學校私密 ID 寫入新檔。
 
-## 入門閘（Onboarding gate）
+## 入門閘（已取消）
 
-- **完成鍵**：`localStorage` 鍵名  
-  `va-lingo-onboarding-kitten:v1:{classId}:{studentId}`  
-  值為 `done`。
-- **設定時機**：示範到達最後一屏「我的自評卡」（screen 5）或重新整理停留在該屏時，由 `assets/demo/demo.js` 寫入（需 URL 帶 `class`、`student`）。
-- **強制路由**：學生登入後若未完成，`guided-app.js` 顯示粵語說明閘頁，並攔截 `enterRound`／名作／自評／互評。
-- **教師**：教師入口不經小貓閘。
+學生登入後直接 `listMyRounds`／進入課題。不再檢查 `va-lingo-onboarding-kitten`，首頁與課題頁亦無「必做小貓」連結。
+
 
 ## 主要路徑
 
 | 路徑 | 用途 |
 |------|------|
 | `index.html` | 學生／教師主入口（引導式） |
-| `assets/demo/index.html` | 拼貼小貓必做入門 |
+| `assets/demo/` | （廢案）舊拼貼小貓示範，主路徑不強制 |
 | `assets/guided/*` | 外觀、校徽、名作圖 |
-| `assets/js/guided-app.js` | UI 流程與入門閘 |
+| `assets/js/guided-app.js` | UI 流程 |
 | `assets/js/guided-model.js` | 課題模板與答題規則 |
 | `assets/js/assessment-*.js` | 評賞上下文／復原／快照輔助 |
 | `apps-script/Code.gs` + `Guided.gs` | 合成預覽／日後部署用後端（ID 留空） |
@@ -49,11 +45,11 @@ npm run preview
 
 ## 正式評賞互動（與小貓一致）
 
-名作／自評／互評必須重用拼貼小貓的互動模式：**看 → 指一指（標記）→ 說一說 → 下一題**，一屏一題、作品可持續標記。
+名作／自評／互評使用引導互動：**看 → 指一指（標記）→ 說一說 → 下一題**，一屏一題、作品可持續標記。
 
 - **不要**再走「warmup 看一看」死路：`openSubject` 直接進入 `question`（step 0），標記與「整件作品／取消標記／文字位置」在答題時一律可見。
 - 感受詞可選，僅作第一題上方精簡條；不可替代標記與逐步答題流。
-- 伴讀提示沿用小貓語感（指一指／說一說），不必把小貓 SVG 搬進蒙羅麗莎。
+- 伴讀提示用語：指一指／說一說。
 
 ## 品牌
 

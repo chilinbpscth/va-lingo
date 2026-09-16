@@ -3,7 +3,7 @@
 香港小學視覺藝術評賞 · 佛教志蓮小學 2026–27  
 介面：繁體中文（zh-HK）／粵語說明
 
-本分支主路徑為 **引導式時間膠囊**（一屏一題），並規定學生須先完成 **拼貼小貓** 入門示範，才可進入名作／自評／互評。
+本分支主路徑為 **引導式時間膠囊**（一屏一題）。登入後直接進入課堂；**不再**強制拼貼小貓入門。
 
 ## 本機預覽（主路徑）
 
@@ -14,7 +14,6 @@ npm run preview
 瀏覽器開啟：
 
 - 主入口：http://127.0.0.1:8768/
-- 拼貼小貓示範：http://127.0.0.1:8768/assets/demo/index.html
 - 舊 Firebase 單頁（legacy）：http://127.0.0.1:8768/legacy-firebase.html
 
 預覽使用合成班別／學號與模擬後端，**不會**寫入學校資料。建議試用 `2A`／`5A`、學號 `01`／`02`。
@@ -23,8 +22,8 @@ npm run preview
 
 ## 產品規則（本分支）
 
-1. **必做入門**：拼貼小貓 demo；完成後寫入本機鍵 `va-lingo-onboarding-kitten:v1:{班別}:{學號}`。
-2. **統一引導流**：正式評賞皆為小貓式一題一屏。
+1. **登入即課堂**：學生登入後直接見可用 round／課題，無拼貼小貓強制閘。
+2. **引導流**：正式評賞為一題一屏（指一指・說一說）。
 3. **Legacy 保留**：`legacy-firebase.html`（原 Firebase 巨石頁）；舊 Drive 腳本在 `apps-script/legacy-drive/`。
 4. **課程資料**：`curriculum.json` 六級進度表保留；另有備份 `curriculum.legacy.json`。引導課題模板在 `assets/js/guided-model.js`。
 
@@ -43,7 +42,6 @@ npm run preview
 | 檔案／目錄 | 說明 |
 |------------|------|
 | `index.html` | 引導式主入口 |
-| `assets/demo/` | 拼貼小貓必做入門 |
 | `assets/guided/`、`assets/js/guided-*.js` | 引導 UI 與邏輯 |
 | `legacy-firebase.html` | 舊 Firebase UI |
 | `curriculum.json` | 六級課題進度表 |

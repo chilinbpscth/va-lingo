@@ -13,7 +13,6 @@ const ROOT = path.resolve(__dirname, '..');
 const REPORT_PATH = path.join(ROOT, 'docs', 'QA-PIN-CLICKS.md');
 const ARTIFACT_DIR = path.join(ROOT, 'work', 'qa-artifacts');
 const BASE = 'https://chilinbpscth.github.io/va-lingo/';
-const ONBOARDING_KEY = 'va-lingo-onboarding-kitten:v1:2A:01';
 const CLICK_COORDS = [
   { label: 'upper-left', xRatio: 0.25, yRatio: 0.25 },
   { label: 'center', xRatio: 0.5, yRatio: 0.5 },
@@ -112,17 +111,6 @@ async function main() {
     locale: 'zh-HK',
   });
 
-  // Phase A: set ISO timestamp as requested (expected to fail gate on live code)
-  const isoStamp = new Date().toISOString();
-  await context.addInitScript(
-    ({ key, value }) => {
-      try {
-        localStorage.setItem(key, value);
-      } catch (_) {}
-    },
-    { key: ONBOARDING_KEY, value: isoStamp }
-  );
-
   const page = await context.newPage();
   page.setDefaultTimeout(20000);
 
@@ -131,9 +119,7 @@ async function main() {
     await page.waitForSelector('#login-class, .login-box, select#login-class', { timeout: 20000 });
     record('page-load', true, `Loaded ${BASE}`);
 
-    // Login 2A / 01
     await page.selectOption('#login-class', '2A');
-    // student options populate on class change
     await page.waitForFunction(() => {
       const s = document.querySelector('#login-student');
       return s && [...s.options].some((o) => o.value === '01');
@@ -141,76 +127,27 @@ async function main() {
     await page.selectOption('#login-student', '01');
     await page.click('form#login-form button[type="submit"]');
 
-    // Wait for either onboarding gate or rounds/lesson
     await page.waitForTimeout(800);
     await page.waitForFunction(() => {
-      const app = document.getElementById('app');
-      if (!app) return false;
-      const t = app.innerText || '';
+      const t = document.getElementById('app')?.innerText || '';
       return (
-        t.includes('拼貼小貓') ||
         t.includes('我的課堂') ||
         t.includes('進入課題') ||
         t.includes('今天，我們留意甚麼') ||
-        t.includes('指一指')
+        t.includes('指一指') ||
+        t.includes('名作')
       );
     }, { timeout: 20000 });
 
     const afterLoginText = await page.locator('#app').innerText();
     const onGate = afterLoginText.includes('拼貼小貓') && afterLoginText.includes('必做');
-    const stored = await page.evaluate((key) => localStorage.getItem(key), ONBOARDING_KEY);
+    record(
+      'login-no-kitten-gate',
+      !onGate,
+      onGate ? 'Still showed 拼貼小貓必做 gate after login' : 'Login went to classroom / lesson (no kitten gate)'
+    );
+    await shot(page, '01-after-login-classroom');
 
-    if (onGate) {
-      record(
-        'onboarding-skip-via-ISO-timestamp',
-        false,
-        `ISO value did NOT skip gate. Key ${ONBOARDING_KEY}=${JSON.stringify(stored)}. Live app requires value === "done".`
-      );
-      notes.push(
-        `As requested, initScript set \`${ONBOARDING_KEY}\` to ISO \`${isoStamp}\`; gate still shown (expected vs live code).`
-      );
-      await shot(page, '01-onboarding-gate-after-iso');
-
-      // Phase B: set correct 'done' and re-check / continue
-      await page.evaluate((key) => {
-        localStorage.setItem(key, 'done');
-      }, ONBOARDING_KEY);
-      // Prefer "我已完成，再檢查一次" button
-      const checkBtn = page.locator('button[data-action="check-onboarding"]');
-      if (await checkBtn.count()) {
-        await checkBtn.click();
-      } else {
-        await page.reload({ waitUntil: 'networkidle' });
-        // re-login if needed
-        if (await page.locator('#login-class').count()) {
-          await page.selectOption('#login-class', '2A');
-          await page.waitForFunction(() => {
-            const s = document.querySelector('#login-student');
-            return s && [...s.options].some((o) => o.value === '01');
-          });
-          await page.selectOption('#login-student', '01');
-          await page.click('form#login-form button[type="submit"]');
-        }
-      }
-      await page.waitForTimeout(600);
-      const afterDone = await page.locator('#app').innerText();
-      const stillGate = afterDone.includes('必做') && afterDone.includes('拼貼小貓') && afterDone.includes('未完成入門');
-      record(
-        'onboarding-skip-via-done',
-        !stillGate,
-        stillGate
-          ? 'Still on gate after setting done'
-          : 'Gate cleared after setting localStorage to "done"'
-      );
-    } else {
-      record(
-        'onboarding-skip-via-ISO-timestamp',
-        true,
-        `Unexpected: ISO timestamp skipped gate (stored=${JSON.stringify(stored)}). Live code historically requires "done".`
-      );
-    }
-
-    // Ensure we are past gate: rounds or auto-entered lesson
     await page.waitForFunction(() => {
       const t = document.getElementById('app')?.innerText || '';
       return t.includes('進入課題') || t.includes('今天，我們留意甚麼') || t.includes('名作');

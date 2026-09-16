@@ -2,10 +2,10 @@
 
 對齊時間膠囊重建後的學生產品邊界。
 
-## 1. Onboarding-Kitten（入門・拼貼小貓）
+## 1. Onboarding-Kitten（已取消）
 
-- 路徑：`assets/demo/`
-- 職責：必做示範；寫入 `va-lingo-onboarding-kitten:v1:{class}:{student}`
+- 路徑：`assets/demo/`（廢案，主路徑不強制）
+- 狀態：**已剔除**強制入門閘；登入直入課堂。
 - 閘：`guided-app.js` 攔截正式評賞入口
 
 ## 2. Appreciation-Engine（評賞引擎）
